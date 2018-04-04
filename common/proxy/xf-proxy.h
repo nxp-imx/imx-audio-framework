@@ -434,7 +434,15 @@ int xf_proxy_cmd(xf_proxy_t *proxy, xf_handle_t *handle, xf_user_msg_t *m);
 
 int xf_proxy_init(xf_proxy_t *proxy, u32 core);
 
+int xf_open(xf_proxy_t *proxy, xf_handle_t *handle, xf_id_t id, u32 core, xf_response_cb response);
+
 void xf_close(xf_handle_t *handle);
+
+int xf_command(xf_handle_t *handle, u32 port, u32 opcode, void *buffer, u32 length);
+
+int xf_route(xf_handle_t *src, u32 src_port, xf_handle_t *dst, u32 dst_port, u32 num, u32 size, u32 align);
+
+int xf_unroute(xf_handle_t *src, u32 src_port);
 
 void xf_proxy_close(xf_proxy_t *proxy);
 

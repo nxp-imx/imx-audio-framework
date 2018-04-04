@@ -36,12 +36,6 @@
     " " __DATE__ " " __TIME__)
 
 
-#ifdef  TGT_OS_ANDROID
-#define CORE_LIB_PATH   "/vendor/lib/"
-#else
-#define CORE_LIB_PATH   "/usr/lib/imx-mm/audio-codec/hifi/"
-#endif
-
 /*
  * UniACodecQueryInterface - Query a codec's interface
  *
@@ -125,9 +119,7 @@ const char * DSPDecVersionInfo() {
 UniACodec_Handle DSPDecCreate(UniACodecMemoryOps * memOps, AUDIOFORMAT type) {
     DSP_Handle * pDSP_handle = NULL;
     uint32 frame_maxlen;
-	uint32 process_id = 0;
-    char lib_path[200];
-    char lib_wrap_path[200];
+    int comp_type = 0;
     int err = 0;
 
     if(NULL == memOps)
@@ -136,7 +128,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps * memOps, AUDIOFORMAT type) {
     pDSP_handle =  memOps->Malloc(sizeof(DSP_Handle));
     if(NULL == pDSP_handle) {
 #ifdef DEBUG
-        printf("memory allocation error for pDSP_handle\n");
+        TRACE("memory allocation error for pDSP_handle\n");
 #endif
         return NULL;
     }
@@ -145,114 +137,81 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps * memOps, AUDIOFORMAT type) {
     memcpy(&(pDSP_handle->sMemOps), memOps, sizeof(UniACodecMemoryOps));
     pDSP_handle->codec_type = type;
 
-    strcpy(lib_path, CORE_LIB_PATH);
-    strcpy(lib_wrap_path, CORE_LIB_PATH);
-
-    frame_maxlen = 4096;
-    pDSP_handle->outbuf_alloc_size = 16384;
-
-    pDSP_handle->dsp_binary_info.file = lib_path;
-    pDSP_handle->dsp_wrap_binary_info.file = lib_wrap_path;
-
-    pDSP_handle->dsp_binary_info.lib_type = HIFI_CODEC_LIB;
-    pDSP_handle->dsp_wrap_binary_info.lib_type = HIFI_CODEC_WRAP_LIB;
+    frame_maxlen = INBUF_SIZE;
+    pDSP_handle->outbuf_alloc_size = OUTBUF_SIZE;
 
     switch (pDSP_handle->codec_type) {
         case MP2:
-            pDSP_handle->dsp_binary_info.type = CODEC_MP2_DEC;
-            strcat(lib_path, "lib_dsp_mp2_dec.so");
+            comp_type = CODEC_MP2_DEC;
             break;
         case MP3:
-            pDSP_handle->dsp_binary_info.type = CODEC_MP3_DEC;
-            strcat(lib_path, "lib_dsp_mp3_dec.so");
+            comp_type = CODEC_MP3_DEC;
             break;
         case AAC:
         case AAC_PLUS:
-            pDSP_handle->dsp_binary_info.type = CODEC_AAC_DEC;
-            strcat(lib_path, "lib_dsp_aac_dec.so");
+            comp_type = CODEC_AAC_DEC;
             break;
         case DAB_PLUS:
-            pDSP_handle->dsp_binary_info.type = CODEC_DAB_DEC;
-            strcat(lib_path, "lib_dsp_dabplus_dec.so");
+            comp_type = CODEC_DAB_DEC;
             break;
         case BSAC:
-            pDSP_handle->dsp_binary_info.type = CODEC_BSAC_DEC;
-            strcat(lib_path, "lib_dsp_bsac_dec.so");
+            comp_type = CODEC_BSAC_DEC;
             break;
         case DRM:
-            pDSP_handle->dsp_binary_info.type = CODEC_DRM_DEC;
-            strcat(lib_path, "lib_dsp_drm_dec.so");
+            comp_type = CODEC_DRM_DEC;
             break;
         case SBCDEC:
-            pDSP_handle->dsp_binary_info.type = CODEC_SBC_DEC;
-            strcat(lib_path, "lib_dsp_sbc_dec.so");
+            comp_type = CODEC_SBC_DEC;
             break;
         case SBCENC:
-            pDSP_handle->dsp_binary_info.type = CODEC_SBC_ENC;
-            strcat(lib_path, "lib_dsp_sbc_enc.so");
+            comp_type = CODEC_SBC_ENC;
             break;
         default:
 #ifdef DEBUG
-            printf("HIFI4 DSP doesn't support this audio type, please check it!\n");
+            TRACE("HIFI4 DSP doesn't support this audio type, please check it!\n");
 #endif
             goto Err2;
             break;
     }
-    strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
 
-    pDSP_handle->inner_buf.data = memOps->Malloc(4096);
+    pDSP_handle->inner_buf.data = memOps->Malloc(INBUF_SIZE);
     if(NULL == pDSP_handle->inner_buf.data) {
 #ifdef DEBUG
-        printf("memory allocation error for inner_buf.data\n");
+        TRACE("memory allocation error for inner_buf.data\n");
 #endif
         goto Err2;
     }
 
-    pDSP_handle->inner_buf.buf_size = 4096;
-    pDSP_handle->inner_buf.threshold = 4096;
-    memset(pDSP_handle->inner_buf.data, 0, 4096);
+    pDSP_handle->inner_buf.buf_size = INBUF_SIZE;
+    pDSP_handle->inner_buf.threshold = INBUF_SIZE;
+    memset(pDSP_handle->inner_buf.data, 0, INBUF_SIZE);
 
-    pDSP_handle->fd_hifi = open("/dev/mxc_hifi4", O_RDWR);
-    if(pDSP_handle->fd_hifi < 0)
+    /* ...open DSP proxy - specify "DSP#0" */
+    err = xaf_adev_open(&pDSP_handle->adev);
+    if(err)
     {
 #ifdef DEBUG
-        printf("Unable to open device\n");
-#endif
-        goto Err2;
-    }
-
-	err = ioctl(pDSP_handle->fd_hifi, HIFI4_CLIENT_REGISTER, &process_id);
-	if(err) {
-#ifdef DEBUG
-        printf("Load codec err in DSPDecCreate(), err = %d\n", err);
+        printf("open proxy error, err = %d\n", err);
 #endif
         goto Err1;
-	}
-	pDSP_handle->process_id = process_id;
-
-	pDSP_handle->dsp_wrap_binary_info.process_id = process_id;
-	pDSP_handle->dsp_wrap_binary_info.type = pDSP_handle->dsp_binary_info.type;
-    err = ioctl(pDSP_handle->fd_hifi, HIFI4_LOAD_CODEC, &(pDSP_handle->dsp_wrap_binary_info));
-    if(err) {
-#ifdef DEBUG
-        printf("Load codec wrapper err in DSPDecCreate(), err = %d\n", err);
-#endif
-        goto Err;
     }
 
-	pDSP_handle->dsp_binary_info.process_id = process_id;
-    err = ioctl(pDSP_handle->fd_hifi, HIFI4_LOAD_CODEC, &(pDSP_handle->dsp_binary_info));
-    if(err) {
+    /* ...create pipeline */
+    err = xaf_pipeline_create(&pDSP_handle->adev, &pDSP_handle->pipeline);
+    if(err)
+    {
 #ifdef DEBUG
-        printf("Load codec err in DSPDecCreate(), err = %d\n", err);
+        printf("create pipeline error, err = %d\n", err);
 #endif
-        goto Err;
+        goto Err1;
     }
 
-    err = ioctl(pDSP_handle->fd_hifi, HIFI4_INIT_CODEC, &(pDSP_handle->process_id));
-    if(err) {
+    /* ...create component */
+    err = xaf_comp_create(&pDSP_handle->adev, &pDSP_handle->component, comp_type);
+    if(err)
+    {
 #ifdef DEBUG
-        printf("Init codec err in DSPDecInit(), err = %d\n", err);
+        printf("create component failed, type = %d, err = %d\n", comp_type, err);
 #endif
         goto Err;
     }
@@ -260,18 +219,19 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps * memOps, AUDIOFORMAT type) {
     pDSP_handle->memory_allocated = FALSE;
 
 #ifdef DEBUG
-    printf("inner_buf threshold = %d, inner output buf size = %d\n", frame_maxlen, pDSP_handle->outbuf_alloc_size);
+    TRACE("inner_buf threshold = %d, inner output buf size = %d\n", frame_maxlen, pDSP_handle->outbuf_alloc_size);
 #endif
 
     return (UniACodec_Handle)pDSP_handle;
 
 Err:
 #ifdef DEBUG
-    printf("Create Decoder Failed, Please Check it!\n");
+    TRACE("Create Decoder Failed, Please Check it!\n");
 #endif
-    err = ioctl(pDSP_handle->fd_hifi, HIFI4_CLIENT_UNREGISTER, &(pDSP_handle->process_id));
+    xaf_comp_delete(&pDSP_handle->component);
 Err1:
-    close(pDSP_handle->fd_hifi);
+    xaf_pipeline_delete(&pDSP_handle->pipeline);
+    xaf_adev_close(&pDSP_handle->adev);
 Err2:
     if(pDSP_handle->inner_buf.data) {
         pDSP_handle->sMemOps.Free(pDSP_handle->inner_buf.data);
@@ -297,15 +257,9 @@ UA_ERROR_TYPE DSPDecDelete(UniACodec_Handle pua_handle) {
     if (NULL == pua_handle)
         return ACODEC_PARA_ERROR;
 
-    err = ioctl(pDSP_handle->fd_hifi, HIFI4_CODEC_CLOSE, &(pDSP_handle->process_id));
-    err = ioctl(pDSP_handle->fd_hifi, HIFI4_CLIENT_UNREGISTER, &(pDSP_handle->process_id));
-    if(err) {
-#ifdef DEBUG
-        printf("Close HIFI4 Failed, Please Check it, err = 0x%x\n", err);
-#endif
-    }
-
-    close(pDSP_handle->fd_hifi);
+    xaf_comp_delete(&pDSP_handle->component);
+    xaf_pipeline_delete(&pDSP_handle->pipeline);
+    xaf_adev_close(&pDSP_handle->adev);
 
     if (pDSP_handle->inner_buf.data) {
         pDSP_handle->sMemOps.Free(pDSP_handle->inner_buf.data);
@@ -330,6 +284,7 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle) {
     DSP_Handle * pDSP_handle = (DSP_Handle *)pua_handle;
     int ret = ACODEC_SUCCESS;
 
+#if 0
     /*
      * The HIFI4_RESET_CODEC command is used to reset codec buffers and its related parameters
      * in dsp firmware. However, the related buffers of dsp core lib have not been allocated
@@ -339,15 +294,12 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle) {
         ret = ioctl(pDSP_handle->fd_hifi, HIFI4_RESET_CODEC, &(pDSP_handle->process_id));
         if(ret) {
 #ifdef DEBUG
-            printf("Reset HIFI4 Failed, Please Check it, ret = 0x%x\n", ret);
+            TRACE("Reset HIFI4 Failed, Please Check it, ret = 0x%x\n", ret);
 #endif
             goto Fail;
         }
     }
-    memset(&(pDSP_handle->dsp_decode_info), 0, sizeof(struct decode_info));
-    memset(&(pDSP_handle->dsp_prop_info), 0, sizeof(struct prop_info));
-    memset(&(pDSP_handle->dsp_prop_config), 0, sizeof(struct prop_config));
-
+#endif
     ResetInnerBuf(&(pDSP_handle->inner_buf),pDSP_handle->inner_buf.threshold, pDSP_handle->inner_buf.threshold);
 
 Fail:
@@ -366,18 +318,19 @@ Fail:
 UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, UniACodecParameter * parameter) {
     DSP_Handle * pDSP_handle = (DSP_Handle *)pua_handle;
     UA_ERROR_TYPE ret = ACODEC_SUCCESS;
-    int err = XA_SUCCESS;
+    xf_set_param_msg_t param = {0,0};
+    int err = 0;
 	int type;
 
     switch (ParaType) {
         case UNIA_SAMPLERATE:
-            pDSP_handle->dsp_prop_config.val = parameter->samplerate;
+            param.value = parameter->samplerate;
             break;
         case UNIA_CHANNEL:
             if (parameter->channels == 0 || parameter->channels > 8)
                 return ACODEC_PARA_ERROR;
             else
-                pDSP_handle->dsp_prop_config.val = parameter->channels;
+                param.value = parameter->channels;
             break;
         case UNIA_FRAMED:
             pDSP_handle->framed = parameter->framed;
@@ -386,7 +339,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
             if (parameter->depth != 16 && parameter->depth != 24 && parameter->depth !=32)
                 return ACODEC_PARA_ERROR;
             else {
-                pDSP_handle->dsp_prop_config.val = parameter->depth;
+                param.value = parameter->depth;
                 pDSP_handle->depth_is_set = 1;
             }
             break;
@@ -397,13 +350,13 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
             pDSP_handle->downmix = parameter->downmix;
             break;
         case UNIA_TO_STEREO:
-            pDSP_handle->dsp_prop_config.val = parameter->mono_to_stereo;
+            param.value = parameter->mono_to_stereo;
             break;
         case UNIA_STREAM_TYPE:
-            pDSP_handle->dsp_prop_config.val = parameter->stream_type;
+            param.value = parameter->stream_type;
             break;
         case UNIA_BITRATE:
-            pDSP_handle->dsp_prop_config.val = parameter->bitrate;
+            param.value = parameter->bitrate;
             break;
         case UNIA_OUTPUT_PCM_FORMAT:
             pDSP_handle->outputFormat = parameter->outputFormat;
@@ -419,13 +372,13 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
         switch (ParaType) {
         /******************dedicate for mp3 dec and mp2 dec*******************/
             case UNIA_MP3_DEC_CRC_CHECK:
-                pDSP_handle->dsp_prop_config.val = parameter->crc_check;
+                param.value = parameter->crc_check;
                 break;
             case UNIA_MP3_DEC_MCH_ENABLE:
-                pDSP_handle->dsp_prop_config.val = parameter->mch_enable;
+                param.value = parameter->mch_enable;
 				break;
             case UNIA_MP3_DEC_NONSTD_STRM_SUPPORT:
-                pDSP_handle->dsp_prop_config.val = parameter->nonstd_strm_support;
+                param.value = parameter->nonstd_strm_support;
                 break;
             default:
                 break;
@@ -434,7 +387,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
         switch (ParaType) {
         /******************dedicate for bsac dec****************************/
             case UNIA_BSAC_DEC_DECODELAYERS:
-                pDSP_handle->dsp_prop_config.val = parameter->layers;
+                param.value = parameter->layers;
                 break;
             default:
                 break;
@@ -443,21 +396,21 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
         switch (ParaType) {
         /******************dedicate for aacplus dec*************************/
             case UNIA_CHANNEL:
-                if(pDSP_handle->dsp_prop_config.val > 2) {
+                if(param.value > 2) {
 #ifdef DEBUG
-                    printf("Error: multi-channnel decoding doesn't support for AACPLUS\n");
+                    TRACE("Error: multi-channnel decoding doesn't support for AACPLUS\n");
 #endif
                     return ACODEC_PROFILE_NOT_SUPPORT;
                 }
                 break;
             case UNIA_AACPLUS_DEC_BDOWNSAMPLE:
-                pDSP_handle->dsp_prop_config.val = parameter->bdownsample;
+                param.value = parameter->bdownsample;
                 break;
             case UNIA_AACPLUS_DEC_BBITSTREAMDOWNMIX:
-                pDSP_handle->dsp_prop_config.val = parameter->bbitstreamdownmix;
+                param.value = parameter->bbitstreamdownmix;
                 break;
             case UNIA_AACPLUS_DEC_CHANROUTING:
-                pDSP_handle->dsp_prop_config.val = parameter->chanrouting;
+                param.value = parameter->chanrouting;
                 break;
             default:
                 break;
@@ -466,13 +419,13 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
         switch (ParaType) {
         /*****************dedicate for dabplus dec******************/
             case UNIA_DABPLUS_DEC_BDOWNSAMPLE:
-                pDSP_handle->dsp_prop_config.val = parameter->bdownsample;
+                param.value = parameter->bdownsample;
                 break;
             case UNIA_DABPLUS_DEC_BBITSTREAMDOWNMIX:
-                pDSP_handle->dsp_prop_config.val = parameter->bbitstreamdownmix;
+                param.value = parameter->bbitstreamdownmix;
                 break;
             case UNIA_DABPLUS_DEC_CHANROUTING:
-                pDSP_handle->dsp_prop_config.val = parameter->chanrouting;
+                param.value = parameter->chanrouting;
                 break;
             default:
                 break;
@@ -481,33 +434,30 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
         switch (ParaType) {
         /*******************dedicate for sbc enc******************/
             case UNIA_SBC_ENC_SUBBANDS:
-                pDSP_handle->dsp_prop_config.val = parameter->enc_subbands;
+                param.value = parameter->enc_subbands;
                 break;
             case UNIA_SBC_ENC_BLOCKS:
-                pDSP_handle->dsp_prop_config.val = parameter->enc_blocks;
+                param.value = parameter->enc_blocks;
                 break;
             case UNIA_SBC_ENC_SNR:
-                pDSP_handle->dsp_prop_config.val = parameter->enc_snr;
+                param.value = parameter->enc_snr;
                 break;
             case UNIA_SBC_ENC_BITPOOL:
-                pDSP_handle->dsp_prop_config.val = parameter->enc_bitpool;
+                param.value = parameter->enc_bitpool;
                 break;
             case UNIA_SBC_ENC_CHMODE:
-                pDSP_handle->dsp_prop_config.val = parameter->enc_chmode;
+                param.value = parameter->enc_chmode;
                 break;
             default:
                 break;
         }
     }
 
-    pDSP_handle->dsp_prop_config.cmd = ParaType;
-    pDSP_handle->dsp_prop_config.codec_id = pDSP_handle->dsp_binary_info.type;
-    pDSP_handle->dsp_prop_config.process_id = pDSP_handle->process_id;
-
-    err = ioctl(pDSP_handle->fd_hifi, HIFI4_SET_CONFIG, &(pDSP_handle->dsp_prop_config));
+    param.id = ParaType;
+    err = xaf_comp_set_config(&pDSP_handle->component, 1, &param);
 
 #ifdef DEBUG
-    printf("SetPara: cmd = 0x%x, value = %d\n", pDSP_handle->dsp_prop_config.cmd, pDSP_handle->dsp_prop_config.val);
+    TRACE("SetPara: cmd = 0x%x, value = %d\n", ParaType, param.value);
 #endif
 
 	if(err)
@@ -527,26 +477,29 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
  */
 UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, UniACodecParameter * parameter) {
     DSP_Handle * pDSP_handle = (DSP_Handle *)pua_handle;
+    xf_get_param_msg_t  msg = {0,0};
     int err = XA_SUCCESS;
-
-    pDSP_handle->dsp_prop_info.process_id = pDSP_handle->process_id;
 
     switch (ParaType) {
         case UNIA_SAMPLERATE:
-             err = ioctl(pDSP_handle->fd_hifi, HIFI4_GET_PCM_PROP, &(pDSP_handle->dsp_prop_info));
-             parameter->samplerate= pDSP_handle->dsp_prop_info.samplerate;
+            msg.id = UNIA_SAMPLERATE;
+            err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
+            parameter->samplerate= msg.value;
             break;
         case UNIA_CHANNEL:
-            err = ioctl(pDSP_handle->fd_hifi, HIFI4_GET_PCM_PROP, &(pDSP_handle->dsp_prop_info));
-            parameter->channels = pDSP_handle->dsp_prop_info.channels;
+            msg.id = UNIA_CHANNEL;
+            err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
+            parameter->channels = msg.value;
             break;
         case UNIA_DEPTH:
-            err = ioctl(pDSP_handle->fd_hifi, HIFI4_GET_PCM_PROP, &(pDSP_handle->dsp_prop_info));
-            parameter->depth = pDSP_handle->dsp_prop_info.bits;
+            msg.id = UNIA_DEPTH;
+            err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
+            parameter->depth = msg.value;
             break;
         case UNIA_CONSUMED_LENGTH:
-            err = ioctl(pDSP_handle->fd_hifi, HIFI4_GET_PCM_PROP, &(pDSP_handle->dsp_prop_info));
-            parameter->consumed_length= pDSP_handle->dsp_prop_info.consumed_bytes;
+            msg.id = UNIA_CONSUMED_LENGTH;
+            err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
+            parameter->consumed_length= msg.value;
             break;
         case UNIA_OUTPUT_PCM_FORMAT:
             parameter->outputFormat = pDSP_handle->outputFormat;
@@ -574,8 +527,10 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle, UA_ParaType  ParaType, 
             break;
     }
 #ifdef DEBUG
-	printf("Get parameter: cmd = 0x%x\n", ParaType);
+	TRACE("Get parameter: cmd = 0x%x\n", ParaType);
 #endif
+	if(err)
+        return ACODEC_PARA_ERROR;
 
     return ACODEC_SUCCESS;
 }
@@ -596,12 +551,14 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
                                  uint32 * offset, uint8 ** OutputBuf, uint32 * OutputSize) {
     UA_ERROR_TYPE ret = ACODEC_SUCCESS;
     DSP_Handle * pDSP_handle = (DSP_Handle *)pua_handle;
+    xf_get_param_msg_t  param[3];
     uint8 *inbuf_data;
     uint32 *inner_offset, *inner_size;
-    uint8 *pOut = NULL;
+    uint8 *pIn = NULL, *pOut = NULL;
     int err = XA_SUCCESS;
     bool buf_from_out = FALSE;
     uint32* channel_map = NULL;
+    uint32 in_size = 0, in_off = 0, out_size = 0;
 
     if(*OutputBuf != NULL) {
         buf_from_out = TRUE;
@@ -612,7 +569,7 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
     }
 
 #ifdef DEBUG
-    printf("InputSize = %d, offset = %d\n", InputSize, *offset);
+    TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
 #endif
 
     ret = InputBufHandle( &(pDSP_handle->inner_buf), InputBuf, InputSize, offset, pDSP_handle->framed);
@@ -624,22 +581,22 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
     inner_offset = &(pDSP_handle->inner_buf.inner_offset);
     inner_size = &(pDSP_handle->inner_buf.inner_size);
 
-    if((pDSP_handle->dsp_decode_info.input_over == 1) && (pDSP_handle->dsp_decode_info.out_buf_off <= 0))
+    if((pDSP_handle->input_over == TRUE) && (!pDSP_handle->outptr_busy) && (pDSP_handle->last_output_size <= 0))
     {
         ret = ACODEC_END_OF_STREAM;
-        pDSP_handle->dsp_decode_info.input_over = 0;
+        pDSP_handle->input_over = FALSE;
 
         return ret;
     }
 
     if(!InputBuf && (*inner_size <= 0))
     {
-        pDSP_handle->dsp_decode_info.input_over = 1;
+        pDSP_handle->input_over = TRUE;
     }
 
     if(!pDSP_handle->ID3flag && !memcmp(inbuf_data + (*inner_offset), "ID3", 3))
     {
-        char *pBuff = inbuf_data + (*inner_offset);
+        uint8 *pBuff = inbuf_data + (*inner_offset);
         pDSP_handle->tagsize = (pBuff[6]<<21) | (pBuff[7]<<14) | (pBuff[8]<<7) | pBuff[9];
         pDSP_handle->tagsize += 10;
         pDSP_handle->ID3flag = TRUE;
@@ -669,10 +626,9 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
 
     if(pDSP_handle->memory_allocated == FALSE) {
         err = SetDefaultFeature(pua_handle);        /* Set the default function of dsp codec */
-        err = ioctl(pDSP_handle->fd_hifi, HIFI4_CODEC_OPEN, &(pDSP_handle->process_id));
         if(err) {
 #ifdef DEBUG
-            printf("hifi4 open error, please check it!\n");
+            TRACE("hifi4 open error, please check it!\n");
 #endif
             return ACODEC_INIT_ERR;
         }
@@ -683,7 +639,7 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
         pDSP_handle->dsp_out_buf = pDSP_handle->sMemOps.Malloc(pDSP_handle->outbuf_alloc_size);
         if(NULL == pDSP_handle->dsp_out_buf) {
 #ifdef DEBUG
-            printf("memory allocation error for output buffer\n");
+            TRACE("memory allocation error for output buffer\n");
 #endif
             return ACODEC_INSUFFICIENT_MEM;
         }
@@ -692,37 +648,39 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
     }
 
     pOut = *OutputBuf;
-
-    pDSP_handle->dsp_decode_info.in_buf_addr = inbuf_data;
-    pDSP_handle->dsp_decode_info.in_buf_size = *inner_size + *inner_offset;
-    pDSP_handle->dsp_decode_info.in_buf_off = *inner_offset;
+    pIn = inbuf_data + *inner_offset;
+    in_size = *inner_size;
+    in_off = 0;
 
 #ifdef DEBUG
-	printf("in_buf_size = %d, in_buf_off = %d\n", pDSP_handle->dsp_decode_info.in_buf_size, pDSP_handle->dsp_decode_info.in_buf_off);
+	TRACE("inner buffer data size = %d, inner buffer offset = %d\n", in_size, *inner_offset);
 #endif
 
-    pDSP_handle->dsp_decode_info.out_buf_addr = pOut;
-    pDSP_handle->dsp_decode_info.out_buf_size = pDSP_handle->outbuf_alloc_size;
-    pDSP_handle->dsp_decode_info.out_buf_off = 0;
-    pDSP_handle->dsp_decode_info.process_id = pDSP_handle->process_id;
+    err = comp_process(pDSP_handle, pIn, in_size, &in_off, pOut, &out_size);
 
-    err = ioctl(pDSP_handle->fd_hifi, HIFI4_DECODE_ONE_FRAME, &(pDSP_handle->dsp_decode_info));
-
-    *inner_size -= (pDSP_handle->dsp_decode_info.in_buf_off - *inner_offset);
-    *inner_offset = pDSP_handle->dsp_decode_info.in_buf_off;
+    *inner_size -= in_off;
+    *inner_offset += in_off;
     if (buf_from_out)
-        memcpy(*OutputBuf, pOut, pDSP_handle->dsp_decode_info.out_buf_off);
-    *OutputSize = pDSP_handle->dsp_decode_info.out_buf_off;
+        memcpy(*OutputBuf, pOut, out_size);
+    *OutputSize = out_size;
+
+    pDSP_handle->last_output_size = out_size;
 
     if (err == XA_SUCCESS) {
 #ifdef DEBUG
-        printf("NO_ERROR: consumed input length = %d, output size = %d\n", pDSP_handle->dsp_decode_info.in_buf_off - *inner_offset, pDSP_handle->dsp_decode_info.out_buf_off);
+        TRACE("NO_ERROR: consumed input length = %d, output size = %d\n", in_size, out_size);
 #endif
 
-        pDSP_handle->dsp_prop_info.process_id = pDSP_handle->process_id;
-        err = ioctl(pDSP_handle->fd_hifi, HIFI4_GET_PCM_PROP, &(pDSP_handle->dsp_prop_info));
-        pDSP_handle->samplerate = pDSP_handle->dsp_prop_info.samplerate;
-        pDSP_handle->channels = pDSP_handle->dsp_prop_info.channels;
+        param[0].id = UNIA_SAMPLERATE;
+        param[1].id = UNIA_CHANNEL;
+        param[2].id = UNIA_DEPTH;
+
+        xaf_comp_get_config(&pDSP_handle->component, 3, &param[0]);
+
+        pDSP_handle->samplerate = param[0].value;
+        pDSP_handle->channels = param[1].value;
+        pDSP_handle->depth = param[2].value;
+
 
         if((pDSP_handle->channels == 1) &&
            ((pDSP_handle->codec_type == AAC)      ||
@@ -731,7 +689,7 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
             (pDSP_handle->codec_type == DAB_PLUS)
            )
           ) {
-            cancel_unused_channel_data(*OutputBuf, *OutputSize, pDSP_handle->dsp_prop_info.bits);
+            cancel_unused_channel_data(*OutputBuf, *OutputSize, pDSP_handle->depth);
 
             *OutputSize >>= 1;
         }
@@ -766,11 +724,11 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
                || (memcmp(pDSP_handle->outputFormat.layout, pDSP_handle->layout_bak, sizeof(uint32)*pDSP_handle->channels)))
                && (pDSP_handle->channels != 0)){
 #ifdef DEBUG
-            printf("output format changed\n");
+            TRACE("output format changed\n");
 #endif
 
-            pDSP_handle->outputFormat.width = pDSP_handle->dsp_prop_info.bits;
-            pDSP_handle->outputFormat.depth = pDSP_handle->dsp_prop_info.bits;
+            pDSP_handle->outputFormat.width = pDSP_handle->depth;
+            pDSP_handle->outputFormat.depth = pDSP_handle->depth;
             pDSP_handle->outputFormat.channels = pDSP_handle->channels;
             pDSP_handle->outputFormat.interleave = TRUE;
             pDSP_handle->outputFormat.samplerate = pDSP_handle->samplerate;
@@ -789,7 +747,7 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
 
             if((*OutputSize > 0) && (pDSP_handle->channels > 0))
             {
-                channel_pos_convert(pDSP_handle, (uint8 *)(*OutputBuf), *OutputSize, pDSP_handle->channels, pDSP_handle->dsp_prop_info.bits);
+                channel_pos_convert(pDSP_handle, (uint8 *)(*OutputBuf), *OutputSize, pDSP_handle->channels, pDSP_handle->depth);
             }
 
             ret =  ACODEC_CAPIBILITY_CHANGE;
@@ -807,7 +765,7 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
     }
 
 #ifdef DEBUG
-    printf("HAS_ERROR: err = 0x%x\n", (int)err);
+    TRACE("HAS_ERROR: err = 0x%x\n", (int)err);
 #endif
 
     switch (pDSP_handle->codec_type) {
@@ -907,7 +865,7 @@ UA_ERROR_TYPE DSPDecFrameDecode( UniACodec_Handle pua_handle, uint8 *InputBuf,  
             break;
 	}
 
-    if(!(pDSP_handle->dsp_decode_info.out_buf_off)) {
+    if(!(out_size)) {
         if((*OutputBuf) && (buf_from_out == FALSE)) {
             pDSP_handle->sMemOps.Free(*OutputBuf);
             pDSP_handle->dsp_out_buf = NULL;

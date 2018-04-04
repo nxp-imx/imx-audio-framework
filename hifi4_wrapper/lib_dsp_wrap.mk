@@ -30,11 +30,11 @@ PROGRAM	        = dsp_wrap
 CSRCS_DIR       = src
 OBJ_DIR         = object
 INC_DIR         = include
-COMM_SRC_DIR    =
+COMM_SRC_DIR    = ../common
 
 LIBRARY     = $(LIB_DIR)/lib_$(PROGRAM)_$(TGT_OS_BIN)
 INCLUDES    = -I./include/uni_audio/
-INCLUDES    += -I../include
+INCLUDES    += -I../include -I$(COMM_SRC_DIR)/libloader -I$(COMM_SRC_DIR)/proxy -I$(COMM_SRC_DIR)/api
 
 CARM    =  $(CFLAGS_$(BUILD)) $(INCLUDES) $(OPTIMIZE) $(C_DEFINES)
 
@@ -59,8 +59,11 @@ endif
 
 # Put the C files here
 C_OBJS	    = $(OBJ_DIR)/dsp_wrap.o
-C_OBJS	   += $(OBJ_DIR)/dsp_dec.o
-#              $(OBJ_DIR)/buf.o
+C_OBJS	   += $(OBJ_DIR)/dsp_dec.o           \
+              $(OBJ_DIR)/xaf-api.o           \
+              $(OBJ_DIR)/library_load.o      \
+              $(OBJ_DIR)/xf-fio.o            \
+              $(OBJ_DIR)/xf-proxy.o
 
 SONAME = lib_$(PROGRAM)_$(TGT_OS_BIN).so.$(VERSION)
 
@@ -93,11 +96,17 @@ LIB_ARMV8_ELINUX	:$(OBJS)
 LIB_ARM12_ELINUX	:$(OBJS)
 			$(LD) -o $(LIB_ARGS) $(LIBRARY).so --shared -Wl,-soname,$(SONAME) -fPIC $(OBJS) $(STDLIBDIR) $(OPT_ASM_LIB) -lgcc -lm
 
-$(OBJ_DIR)/%.o: 	$(CSRCS_DIR)/%.c
-			$(CC) $(CARM) -I$(INC_DIR) -c  -o $@ $<
-$(OBJ_DIR)/%.o: 	$(COMM_SRC_DIR)/%.c
+$(OBJ_DIR)/%.o:		$(CSRCS_DIR)/%.c
 			$(CC) $(CARM) -I$(INC_DIR) -c  -o $@ $<
 
+$(OBJ_DIR)/%.o:		$(COMM_SRC_DIR)/libloader/%.c
+			$(CC) $(CARM) -I$(INC_DIR) -c  -o $@ $<
+
+$(OBJ_DIR)/%.o:		$(COMM_SRC_DIR)/proxy/%.c
+			$(CC) $(CARM) -I$(INC_DIR) -c  -o $@ $<
+
+$(OBJ_DIR)/%.o:		$(COMM_SRC_DIR)/api/%.c
+			$(CC) $(CARM) -I$(INC_DIR) -c  -o $@ $<
 
 clean:
 		rm -f $(OBJS) *~ core

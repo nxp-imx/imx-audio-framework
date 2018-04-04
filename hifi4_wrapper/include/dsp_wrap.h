@@ -28,6 +28,7 @@
 #include "fsl_unia.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -43,7 +44,21 @@
 #include <sys/time.h>
 #include <pthread.h>
 #include <linux/types.h>
+#include "xf-proxy.h"
+#include "library_load.h"
 #include "mxc_hifi4.h"
+#include "xaf-api.h"
+
+
+/* ...size of auxiliary pool for communication with HiFi */
+#define XA_AUX_POOL_SIZE                32
+
+/* ...length of auxiliary pool messages */
+#define XA_AUX_POOL_MSG_LENGTH          128
+
+/* ...number of max input buffers */
+#define INBUF_SIZE                      4096
+#define OUTBUF_SIZE                     16384
 
 
 #define N_ELEMENTS(arr)		(sizeof (arr) / sizeof ((arr)[0]))
@@ -166,6 +181,7 @@ typedef struct{
 
     uint32 samplerate;
     uint32 channels;
+    uint32 depth;
     bool framed;
     uint32 SampleBits;
     bool downmix;
@@ -191,18 +207,18 @@ typedef struct{
     uint32 tagsize;
 
 /****************DSP******************/
-    int fd_hifi;
-    char *dsp_out_buf;
-    struct decode_info dsp_decode_info;
-    struct prop_info   dsp_prop_info;
-    struct prop_config dsp_prop_config;
-    struct binary_info dsp_binary_info;
-    struct binary_info dsp_wrap_binary_info;
+    xaf_adev_t adev;
+    xaf_pipeline_t pipeline;
+    xaf_comp_t component;
+
+    uint8 *dsp_out_buf;
     AUDIOFORMAT codec_type;
     uint32 outbuf_alloc_size;
+    uint32 last_output_size;
     bool memory_allocated;
     bool depth_is_set;
-    unsigned int process_id;
+    bool input_over;
+    bool inptr_busy, outptr_busy;
 
 }DSP_Handle;
 
@@ -213,6 +229,8 @@ UA_ERROR_TYPE SetDefaultFeature(UniACodec_Handle pua_handle);
 void channel_pos_convert(UniACodec_Handle pua_handle, uint8 *data_in,
                           int32 frameSize, int32 channels, int32 depth);
 void cancel_unused_channel_data(uint8 *data_in, int32 length, int32 depth);
+
+int comp_process(UniACodec_Handle pua_handle, uint8 *input, uint32 in_size, uint32 *in_off, uint8 *output, uint32 *out_size);
 
 const char * DSPDecVersionInfo();
 UniACodec_Handle DSPDecCreate(UniACodecMemoryOps * memOps, AUDIOFORMAT type);

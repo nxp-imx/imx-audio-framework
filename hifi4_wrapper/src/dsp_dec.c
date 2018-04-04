@@ -280,3 +280,77 @@ void cancel_unused_channel_data(uint8 *data_in, int32 length, int32 depth)
         }
     }
 }
+
+int comp_process(UniACodec_Handle pua_handle, uint8 *input, uint32 in_size, uint32 *in_off, uint8 *output, uint32 *out_size)
+{
+	DSP_Handle * pDSP_handle = (DSP_Handle *)pua_handle;
+	xaf_comp_t *p_comp = &pDSP_handle->component;
+	xaf_pipeline_t *p_pipe = &pDSP_handle->pipeline;
+	xaf_info_t p_info;
+	int err = 0;
+	int ret = XA_SUCCESS;
+
+	if((input == NULL) || (output == NULL))
+	{
+		return XA_PARA_ERROR;
+	}
+
+	if(!pDSP_handle->outptr_busy)
+	{
+		err = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+		pDSP_handle->outptr_busy = TRUE;
+	}
+
+	if(!pDSP_handle->inptr_busy)
+	{
+		if(in_size)
+		{
+			memcpy(p_comp->inptr, input, in_size);
+			*in_off = in_size;
+
+			err = xaf_comp_process(p_comp, p_comp->inptr, in_size, XF_EMPTY_THIS_BUFFER);
+		}
+		else
+			err = xaf_comp_process(p_comp, NULL, 0, XF_EMPTY_THIS_BUFFER);
+
+		pDSP_handle->inptr_busy = TRUE;
+	}
+
+	do {
+		/* ...wait until result is delivered */
+		err = xaf_comp_get_status(p_comp, &p_info);
+		if(err)
+		{
+			ret = XA_ERR_UNKNOWN;
+			break;
+		}
+
+		if ((p_info.opcode == XF_FILL_THIS_BUFFER) && (p_info.buf == p_comp->outptr))
+		{
+			memcpy(output, p_comp->outptr, p_info.length);
+			*out_size = p_info.length;
+
+			pDSP_handle->outptr_busy = FALSE;
+			ret = p_info.ret;
+			break;
+		}
+		else
+		{
+			/* ...make sure response is expected */
+			if((p_info.opcode == XF_EMPTY_THIS_BUFFER) && (p_info.buf == p_comp->inptr))
+			{
+				pDSP_handle->inptr_busy = FALSE;
+				ret = XA_SUCCESS;
+				break;
+			}
+			else
+			{
+				ret = XA_ERR_UNKNOWN;
+				break;
+			}
+		}
+	} while(1);
+
+	return ret;
+}
+
