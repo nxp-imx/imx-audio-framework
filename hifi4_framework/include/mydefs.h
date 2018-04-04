@@ -1,5 +1,4 @@
 //*****************************************************************
-// Copyright (c) 2017 Cadence Design Systems, Inc.
 // Copyright 2018 NXP
 //
 // Permission is hereby granted, free of charge, to any person obtaining
@@ -23,39 +22,80 @@
 //
 //*****************************************************************
 
-/*
- * mydefs.h
- *
- */
 
-#ifndef _MYDEFS_H_
-#define _MYDEFS_H_
+#ifndef __MY_DEFS_H
+#define __MY_DEFS_H
 
-#include <xtensa/config/core.h>
-#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#if 0
-#define TIMESTAMP hifi_printf("%d: ", (int)clock());
-#define COREINFO  hifi_printf("Core_%x %s: ", my_prid, XCHAL_CORE_ID);
+#include "xf-msg.h"
+#include "xf-opcode.h"
+#include "xf-sched.h"
+#include "xf-component.h"
+#include "memory.h"
+
+/* ...allocate 6 bits for client number per core */
+#define XF_CFG_MAX_CLIENTS             (1 << 6)
+
+typedef union {
+	struct {
+		u32 msg     : 6;        // intr = 1 when sending msg.
+		u32 sub_msg : 6;        // sub_msg will have ICM_MSG when msg=ICM_XXX_ACTION_COMPLETE
+		u32 rsvd    : 3;        // reserved
+		u32 intr    : 1;
+		u32 size    : 15;       // =size in bytes (excluding header) to follow when intr=1, =response message when ack=1
+		u32 ack     : 1;
+	};
+	u32 allbits;
+} icm_header_t;
+
+typedef enum {
+	ICM_CORE_READY = 1,
+	ICM_CORE_INIT,
+	ICM_CORE_EXIT,
+} icm_action_t;
+
+typedef struct {
+	u32     ext_msg_addr;
+	u32     ext_msg_size;
+	u32     scratch_buf_phys;
+	u32     scratch_buf_size;
+	u32     hifi_config_phys;
+	u32     hifi_config_size;
+} icm_dpu_ext_msg;
+
+#define XF_CFG_MESSAGE_POOL_SIZE  256
+typedef struct {
+	/* shared memory message pool data */
+	xf_message_t icm_msg_que[XF_CFG_MESSAGE_POOL_SIZE];
+	xf_msg_pool_t pool;
+
+	/* ...scheduler queue (sorted by execution timestamp) */
+	xf_sched_t sched;
+
+	/* ...command/response queue for communication within local core (including ISRs) */
+	xf_msg_queue_t queue;
+
+	/* ...message queue containing responses to remote proxy */
+	xf_msg_queue_t response;
+
+	/* ...per-core component mapping */
+	xf_cmap_link_t cmap[XF_CFG_MAX_CLIENTS];
+
+	/* ...index of first free client */
+	u32 free;
+
+	/* ...opaque system-specific shared memory data handle */
+	volatile void *shmem;
+
+	u32 is_core_init;
+	u32 is_interrupt;
+	icm_dpu_ext_msg dpu_ext_msg;
+
+	hifi_mem_info scratch_mem_info;
+
+} hifi_main_struct;
+
 #endif
-
-#define TIMESTAMP
-#define COREINFO
-
-#ifdef DEBUG
-#define hifi_printf(...) __hifi_printf(__VA_ARGS__)
-#define LOG(msg)                    { TIMESTAMP; COREINFO; hifi_printf(msg);                    }
-#define LOG1(msg, arg1)             { TIMESTAMP; COREINFO; hifi_printf(msg, arg1);              }
-#define LOG2(msg, arg1, arg2)       { TIMESTAMP; COREINFO; hifi_printf(msg, arg1, arg2);        }
-#define LOG3(msg, arg1, arg2, arg3) { TIMESTAMP; COREINFO; hifi_printf(msg, arg1, arg2, arg3);  }
-#define LOG4(msg, arg1, arg2, arg3, arg4) { TIMESTAMP; COREINFO; hifi_printf(msg, arg1, arg2, arg3, arg4); }
-#else
-#define hifi_printf(...)
-#define LOG(msg)                    { }
-#define LOG1(msg, arg1)             { }
-#define LOG2(msg, arg1, arg2)       { }
-#define LOG3(msg, arg1, arg2, arg3) { }
-#define LOG4(msg, arg1, arg2, arg3, arg4) { }
-#endif
-
-#endif /* _MYDEFS_H_ */

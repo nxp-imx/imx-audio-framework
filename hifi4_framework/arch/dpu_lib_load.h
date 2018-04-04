@@ -22,35 +22,46 @@
 //
 //*****************************************************************
 
-#ifndef __MEMORY_H_
-#define __MEMORY_H_
+#ifndef _DPU_LIB_LOAD_
+#define _DPU_LIB_LOAD_
 
 #include "xf-types.h"
+#include "xt_library_loader.h"
+#include "system_address.h"
+#include "loader_internal.h"
+#include "xf-debug.h"
 
-union header {
-	struct {
-		union header *ptr;
-		unsigned long size;
-	}s;
-	char c[8];
-};
-typedef union header HEADER;
+typedef enum {
+	HIFI_CODEC_LIB =1,
+	HIFI_CODEC_WRAP_LIB
+} lib_type;
+
+typedef enum {
+	lib_unloaded = 0,
+	lib_loaded,
+	lib_in_use
+} pilib_status_t;
 
 typedef struct {
-	char *scratch_buf_ptr;
-	long int scratch_total_size;
-	long int scratch_remaining;
-	HEADER *Base;
-	HEADER *First;
-	HEADER *Allocp;
-	unsigned long Heapsize;
-	unsigned long Availmem;
-} hifi_mem_info;
+	xtlib_pil_info pil_info;
+	u32 lib_type;
+} icm_xtlib_pil_info;
 
-void MEM_scratch_init(hifi_mem_info *mem_info, u32 ptr, u32 size);
-void *MEM_scratch_malloc(hifi_mem_info *mem_info, int size);
-void MEM_scratch_mfree(hifi_mem_info *mem_info, void *blk);
+typedef struct {
+	u32 start_addr;
+	u32 codec_type;
+} xtlib_overlay_info;
+
+typedef struct {
+	u32 type: 16;   /* codec type; e.g., 1: mp3dec */
+	u32 stat: 16;   /* loaded, init_done, active, closed */
+	u32 size_libtext;
+	u32 size_libdata;
+	xtlib_overlay_info ol_inf_hifiLib_dpu;
+	xtlib_pil_info pil_inf_hifiLib_dpu;
+} dpu_lib_stat_t;
+
+void *dpu_process_init_pi_lib(xtlib_pil_info *pil_info, dpu_lib_stat_t *lib_stat, u32 byteswap);
+void dpu_process_unload_pi_lib(dpu_lib_stat_t *lib_stat);
 
 #endif
-
-
