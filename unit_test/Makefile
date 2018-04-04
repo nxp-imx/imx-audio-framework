@@ -29,6 +29,7 @@
 # **************************************************************************
 
 SRC_DIR     = ./src
+COM_DIR     = ../common
 INC_DIR     = ./include
 INCLUDE_DIR = ../include
 
@@ -36,19 +37,27 @@ TOOLS_DIR   = /usr/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu
 CC          = $(TOOLS_DIR)/bin/aarch64-linux-gnu-gcc
 LN          = $(TOOLS_DIR)/bin/aarch64-linux-gnu-gcc
 
-CFLAGS      = -Wl,--hash-style=gnu
+CFLAGS      = -Wl,--hash-style=gnu -lpthread
+
+ifeq ($(DEBUG), 1)
+	CFLAGS += -DDEBUG
+endif
 
 ifeq ($(TIME_PROFILE), 1)
 	CPU_FREQ = 1200
 	CFLAGS += -DTIME_PROFILE -DCPUFREQ=$(CPU_FREQ)
 endif
 
-INCLUDES    = -I$(INC_DIR) -I$(INCLUDE_DIR)
+INCLUDES    = -I$(INC_DIR) -I$(INCLUDE_DIR) -I$(COM_DIR)/libloader -I$(COM_DIR)/proxy -I$(COM_DIR)/api
 
 # Put common C files here
 C_OBJS      = $(SRC_DIR)/common.o                         \
               $(SRC_DIR)/id3_tag_decode.o                 \
-              $(SRC_DIR)/dsp_test.o
+              $(SRC_DIR)/dsp_test.o                       \
+              $(COM_DIR)/proxy/xf-fio.o                   \
+              $(COM_DIR)/proxy/xf-proxy.o                 \
+			  $(COM_DIR)/libloader/library_load.o         \
+              $(COM_DIR)/api/xaf-api.o
 
 
 
@@ -61,5 +70,8 @@ all: $(C_OBJS)
 
 clean:
 	rm -f $(SRC_DIR)/*.o
+	rm -f $(COM_DIR)/proxy/*.o
+	rm -f $(COM_DIR)/libloader/*.o
+	rm -f $(COM_DIR)/api/*.o
 	rm -f ./dsp_test
 

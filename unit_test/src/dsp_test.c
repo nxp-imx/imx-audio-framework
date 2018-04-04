@@ -25,25 +25,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <errno.h>
-#include <stdint.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <math.h>
-#include <string.h>
-#include <malloc.h>
-#include <sys/time.h>
+#include <inttypes.h>
 #include <pthread.h>
-#include <linux/types.h>
-#include "mxc_hifi4.h"
 #include "id3_tag_decode.h"
 #include "common.h"
-
+#include "xaf-api.h"
 
 #define ENABLE_ID3  1
 #define ENABLE_BSAC_HEADER  1
@@ -67,83 +53,65 @@ typedef struct
 	/* Input & Output File Name */
 	char *InFileName;
 	char *OutFileName;
+
+	/* Route audio format */
+	int AudioFormatRoute;
+	int comp_routed;
 }AudioOption;
+
+
+/* define global variables */
+FILE *fd_dst;
+FILE *fd_src;
+u32 frame_count;
+
 
 void help_info(int ac, char *av[])
 {
-	printf("\n\n**************************************************\n");
-	printf("* Test aplication for HIFI\n");
-	printf("* Options : \n\n");
-	printf("          -f AudFormat  Audio Format(1-8)             \n");
-	printf("                        MP3        for 1              \n");
-	printf("                        AAC        for 2              \n");
-	printf("                        DAB        for 3              \n");
-	printf("                        MP2        for 4              \n");
-	printf("                        BSAC       for 5              \n");
-	printf("                        DRM        for 6              \n");
-	printf("                        SBCDEC     for 7              \n");
-	printf("                        SBCENC     for 8              \n");
-	printf("          -i InFileNam  Input File Name               \n");
-	printf("          -o OutName    Output File Name              \n");
-	printf("          -s Samplerate Sampling Rate of Audio        \n");
-	printf("          -n Channel    Channel Number of Audio       \n");
-	printf("          -d Width      The Width of Samples          \n");
-	printf("          -r bitRate    Bit Rate                      \n");
-	printf("          -t StreamType Stream Type                   \n");
-	printf("                        0(STREAM_UNKNOWN)             \n");
-	printf("                        1(STREAM_ADTS)                \n");
-	printf("                        2(STREAM_ADIF)                \n");
-	printf("                        3(STREAM_RAW)                 \n");
-	printf("                        4(STREAM_LATM)                \n");
-	printf("                        5(STREAM_LATM_OUTOFBAND_CONFIG)\n");
-	printf("                        6(STREAM_LOAS)                \n");
-	printf("                        48(STREAM_DABPLUS_RAW_SIDEINFO)\n");
-	printf("                        49(STREAM_DABPLUS)             \n");
-	printf("                        50(STREAM_BSAC_RAW)            \n");
-	printf("          -u Channel modes only for SBC_ENC           \n");
-	printf("                        0(CHMODE_MONO)                \n");
-	printf("                        1(CHMODE_DUAL)                \n");
-	printf("                        2(CHMODE_STEREO)              \n");
-	printf("                        3(CHMODE_JOINT)               \n");
-	printf("**************************************************\n\n");
-}
-
-static void
-write16_bits_lh(FILE *fp, WORD32 i)
-{
-	putc(i & 0xff, fp);
-	putc((i >> 8) & 0xff, fp);
-}
-
-static void
-write32_bits_lh(FILE *fp, WORD32 i)
-{
-	write16_bits_lh(fp, (WORD32)(i & 0xffffL));
-	write16_bits_lh(fp, (WORD32)((i >> 16) & 0xffffL));
-}
-
-WORD32
-write_wav_header (FILE *fp, /* file to write */
-		WORD32 pcmbytes, /* total bytes in the wav file */
-		WORD32 freq, /* sample rate */
-		WORD32 channels, /* output channels */
-		WORD32 bits /* bits per sample */)
-{
-	WORD32 bytes = (bits + 7) / 8;
-	fwrite("RIFF", 1, 4, fp); /* label */
-	write32_bits_lh(fp, pcmbytes + 44 - 8); /* length in bytes without header */
-	fwrite("WAVEfmt ", 1, 8, fp); /* 2 labels */
-	write32_bits_lh(fp, 2 + 2 + 4 + 4 + 2 + 2); /* length of PCM format decl area */
-	write16_bits_lh(fp, 1); /* is pcm? */
-	write16_bits_lh(fp, channels);
-	write32_bits_lh(fp, freq);
-	write32_bits_lh(fp, freq * channels * bytes); /* bps */
-	write16_bits_lh(fp, channels * bytes);
-	write16_bits_lh(fp, bits);
-	fwrite("data", 1, 4, fp);
-	write32_bits_lh(fp, pcmbytes);
-
-	return (ferror(fp) ? -1 : 0);
+	TRACE("\n\n**************************************************\n");
+	TRACE("* Test aplication for HIFI\n");
+	TRACE("* Options : \n\n");
+	TRACE("          -f AudFormat  Audio Format(1-8)             \n");
+	TRACE("                        MP3        for 1              \n");
+	TRACE("                        AAC        for 2              \n");
+	TRACE("                        DAB        for 3              \n");
+	TRACE("                        MP2        for 4              \n");
+	TRACE("                        BSAC       for 5              \n");
+	TRACE("                        DRM        for 6              \n");
+	TRACE("                        SBCDEC     for 7              \n");
+	TRACE("                        SBCENC     for 8              \n");
+	TRACE("          -i InFileNam  Input File Name               \n");
+	TRACE("          -o OutName    Output File Name              \n");
+	TRACE("          -s Samplerate Sampling Rate of Audio        \n");
+	TRACE("          -n Channel    Channel Number of Audio       \n");
+	TRACE("          -d Width      The Width of Samples          \n");
+	TRACE("          -r bitRate    Bit Rate                      \n");
+	TRACE("          -t StreamType Stream Type                   \n");
+	TRACE("                        0(STREAM_UNKNOWN)             \n");
+	TRACE("                        1(STREAM_ADTS)                \n");
+	TRACE("                        2(STREAM_ADIF)                \n");
+	TRACE("                        3(STREAM_RAW)                 \n");
+	TRACE("                        4(STREAM_LATM)                \n");
+	TRACE("                        5(STREAM_LATM_OUTOFBAND_CONFIG)\n");
+	TRACE("                        6(STREAM_LOAS)                \n");
+	TRACE("                        48(STREAM_DABPLUS_RAW_SIDEINFO)\n");
+	TRACE("                        49(STREAM_DABPLUS)             \n");
+	TRACE("                        50(STREAM_BSAC_RAW)            \n");
+	TRACE("          -u Channel modes only for SBC_ENC           \n");
+	TRACE("                        0(CHMODE_MONO)                \n");
+	TRACE("                        1(CHMODE_DUAL)                \n");
+	TRACE("                        2(CHMODE_STEREO)              \n");
+	TRACE("                        3(CHMODE_JOINT)               \n");
+	TRACE("          -c Route AudFormat(1-8)                     \n");
+	TRACE("                        MP3        for 1              \n");
+	TRACE("                        AAC        for 2              \n");
+	TRACE("                        DAB        for 3              \n");
+	TRACE("                        MP2        for 4              \n");
+	TRACE("                        BSAC       for 5              \n");
+	TRACE("                        DRM        for 6              \n");
+	TRACE("                        SBCDEC     for 7              \n");
+	TRACE("                        SBCENC     for 8              \n");
+	TRACE("**************************************************\n\n");
 }
 
 int GetParameter(int argc_t, char *argv_t[], AudioOption *pAOption)
@@ -190,6 +158,10 @@ int GetParameter(int argc_t, char *argv_t[], AudioOption *pAOption)
 				case 'u':
 					pAOption->channel_mode = atoi(in);
 					break;
+				case 'c':
+					pAOption->AudioFormatRoute = atoi(in);
+					pAOption->comp_routed = 1;
+					break;
 				default:
 					goto Error;
 			}
@@ -201,28 +173,194 @@ Error:
 	return 1;
 }
 
+void *comp_process_entry(void *arg)
+{
+	xaf_comp_t *p_comp = (xaf_comp_t *)arg;
+	xaf_pipeline_t *p_pipe = p_comp->pipeline;
+	xaf_info_t p_info;
+	int size_read = INBUF_SIZE;
+	int size;
+	int ret = 0;
+
+	do {
+		/* ...wait until result is delivered */
+		ret = xaf_comp_get_status(p_comp, &p_info);
+		if(ret)
+		{
+			goto Fail;
+		}
+
+		if ((p_info.opcode == XF_FILL_THIS_BUFFER) && (p_info.buf == p_comp->outptr))
+		{
+			TRACE("msg.ret = %x\n", p_info.ret);
+			if(p_info.length)
+			{
+				u32 actual_size;
+				frame_count++;
+
+				actual_size = fwrite((void *)p_comp->outptr, 1, p_info.length, fd_dst);
+				TRACE("frame_count = %d, length = %d\n", frame_count, p_info.length);
+			}
+
+			if(p_info.ret != XA_SUCCESS)
+			{
+				TRACE("error occur during decoding, err = 0x%x\n", p_info.ret);
+
+				switch(p_comp->comp_type)
+				{
+					case CODEC_AAC_DEC:
+						if(p_info.ret == XA_PROFILE_NOT_SUPPORT)
+						{
+							TRACE("error: aac_dec execute fatal unsupported feature!\n");
+							ret = p_info.ret;
+							goto Fail;
+						}
+						else if((p_info.ret == XA_NOT_ENOUGH_DATA) || (p_info.ret != XA_ERROR_STREAM))
+						{
+							/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
+							ret = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+							continue;
+						}
+						else
+						{
+							ret = p_info.ret;
+							goto Fail;
+						}
+						break;
+					case CODEC_MP2_DEC:
+					case CODEC_MP3_DEC:
+						if((p_info.ret == XA_NOT_ENOUGH_DATA) || (p_info.ret != XA_ERROR_STREAM))
+						{
+							/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
+							ret = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+							continue;
+						}
+						else
+						{
+							ret = p_info.ret;
+							goto Fail;
+						}
+						break;
+					case CODEC_BSAC_DEC:
+						if((p_info.ret == XA_NOT_ENOUGH_DATA) || (p_info.ret != XA_ERROR_STREAM))
+						{
+							/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
+							ret = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+							continue;
+						}
+						else
+						{
+							ret = p_info.ret;
+							goto Fail;
+						}
+						break;
+					case CODEC_DRM_DEC:
+						if((p_info.ret == XA_NOT_ENOUGH_DATA) || (p_info.ret != XA_ERROR_STREAM))
+						{
+							/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
+							ret = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+							continue;
+						}
+						else
+						{
+							ret = p_info.ret;
+							goto Fail;
+						}
+						break;
+					case CODEC_DAB_DEC:
+						if((p_info.ret == XA_NOT_ENOUGH_DATA) || (p_info.ret != XA_ERROR_STREAM))
+						{
+							/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
+							ret = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+							continue;
+						}
+						else
+						{
+							ret = p_info.ret;
+							goto Fail;
+						}
+						break;
+					case CODEC_SBC_DEC:
+						if((p_info.ret == XA_NOT_ENOUGH_DATA) || (p_info.ret != XA_ERROR_STREAM))
+						{
+							/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
+							ret = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+							continue;
+						}
+						else
+						{
+							ret = p_info.ret;
+							goto Fail;
+						}
+						break;
+					case CODEC_SBC_ENC:
+						if((p_info.ret == XA_NOT_ENOUGH_DATA) || (p_info.ret != XA_ERROR_STREAM))
+						{
+							/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
+							ret = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+							continue;
+						}
+						else
+						{
+							ret = p_info.ret;
+							goto Fail;
+						}
+						break;
+					default:
+						break;
+				}
+			}
+
+			if((p_info.length <= 0) && p_pipe->input_eos)
+			{
+				p_pipe->output_eos = 1;
+				xaf_pipeline_send_eos(p_pipe);
+			}
+
+			if(!p_pipe->output_eos)
+			{
+				/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
+				ret = xaf_comp_process(p_comp, p_comp->outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+			}
+		}
+		else
+		{
+            /* ...make sure response is expected */
+			if((p_info.opcode == XF_EMPTY_THIS_BUFFER) && (p_info.buf == p_comp->inptr))
+			{
+				TRACE("Get XF_EMPTY_THIS_BUFFER response from dsp, msg.buffer = %lx\n", p_info.buf);
+				size = fread(p_comp->inptr, 1, size_read, fd_src);
+				TRACE("size_read = %d\n", size);
+				if(size > 0)
+					ret = xaf_comp_process(p_comp, p_comp->inptr, size, XF_EMPTY_THIS_BUFFER);
+				else
+				{
+					if(!p_pipe->input_eos)
+					{
+						ret = xaf_comp_process(p_comp, NULL, 0, XF_EMPTY_THIS_BUFFER);
+						p_pipe->input_eos = 1;
+					}
+				}
+			}
+			else if(p_info.opcode == XF_OUTPUT_EOS)
+			{
+				break;
+			}
+		}
+	} while (1);
+
+Fail:
+	return (void *)(intptr_t)ret;
+}
+
 int main(int ac, char *av[])
 {
-	FILE *fd_dst = NULL;
-	FILE *fd_src = NULL;
-	FILE *fd_wav = NULL;
-	int fd_hifi;
-	int *input_buffer = NULL;
-	int *output_buffer = NULL;
 	int err = 0;
-	struct decode_info   decode_info;
-	struct prop_info     prop_info;
-	struct binary_info   binary_info;
-	struct binary_info   binary_info_wrap;
-	struct prop_config   config;
 	AudioOption   AOption;
 	BSAC_Block_Params  BSAC_Params;
-	int size_read;
-	int size;
+	int size, i;
 	int filelen;
-	int type = CODEC_MP3_DEC;
-	unsigned int frame_count = 0;
-	unsigned int process_id = 0;
+	int type;
 
 #if ENABLE_ID3
 	/* ID3 tag specific declarations */
@@ -270,7 +408,17 @@ int main(int ac, char *av[])
 	}
 #endif
 
-	printf("Hi... \n");
+	xaf_adev_t adev;
+	xaf_pipeline_t pipeline;
+
+	pthread_t thread[2];
+	void *thread_ret[2];
+	xaf_comp_t component[2];
+
+	xf_set_param_msg_t s_param;
+	xf_get_param_msg_t r_param[3];
+
+	TRACE("Hi... \n");
 
 	//Initialize Audio Option structure
 	AOption.SampleRate = -1;
@@ -279,105 +427,73 @@ int main(int ac, char *av[])
 	AOption.Bitrate = -1;
 	AOption.streamtype = -1;
 	AOption.channel_mode = -1;
+	AOption.comp_routed = 0;
 
 	if(GetParameter(ac, av, &AOption))
 	{
 		return 1;
 	}
-	printf("Audio Format type = %d\n", AOption.AudioFormat);
+	TRACE("Audio Format type = %d\n", AOption.AudioFormat);
 	type = AOption.AudioFormat;
 
-	fd_hifi = open("/dev/mxc_hifi4", O_RDWR);
-	if (fd_hifi < 0)
-	{
-		printf("Unable to open device\n");
-		return 1;
-	}
-
-
-	err = ioctl(fd_hifi, HIFI4_CLIENT_REGISTER, &process_id);
-	if(err) {
-		printf("no valiable client in dsp driver\n");
-		goto Fail2;
-	}
-
-	binary_info.process_id = process_id;
-	binary_info.lib_type = HIFI_CODEC_LIB;
-
-	if (type == CODEC_MP3_DEC) {
-		binary_info.type = CODEC_MP3_DEC;
-		binary_info.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_mp3_dec.so";
-	} else if (type == CODEC_AAC_DEC) {
-		binary_info.type = CODEC_AAC_DEC;
-		binary_info.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_aac_dec.so";
-	} else if (type == CODEC_BSAC_DEC) {
-		binary_info.type = CODEC_BSAC_DEC;
-		binary_info.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_bsac_dec.so";
-	} else if (type == CODEC_DAB_DEC) {
-		binary_info.type = CODEC_DAB_DEC;
-		binary_info.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_dabplus_dec.so";
-	} else if (type == CODEC_MP2_DEC) {
-		binary_info.type = CODEC_MP2_DEC;
-		binary_info.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_mp2_dec.so";
-	} else if (type == CODEC_DRM_DEC) {
-		binary_info.type = CODEC_DRM_DEC;
-		binary_info.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_drm_dec.so";
-	} else if (type == CODEC_SBC_DEC) {
-		binary_info.type = CODEC_SBC_DEC;
-		binary_info.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_sbc_dec.so";
-	} else if (type == CODEC_SBC_ENC) {
-		binary_info.type = CODEC_SBC_ENC;
-		binary_info.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_sbc_enc.so";
-	}
-
-	binary_info_wrap.type = binary_info.type;
-	binary_info_wrap.file = "/usr/lib/imx-mm/audio-codec/hifi/lib_dsp_codec_wrap.so";
-	binary_info_wrap.process_id = process_id;
-	binary_info_wrap.lib_type = HIFI_CODEC_WRAP_LIB;
-
-	printf("infile: %s\n", AOption.InFileName);
+	TRACE("infile: %s\n", AOption.InFileName);
 	fd_src = fopen(AOption.InFileName, "rb");
 	if(fd_src == NULL)
 	{
-		printf("infile: %s open failed!\n", AOption.InFileName);
-		goto Fail1;
+		TRACE("infile: %s open failed!\n", AOption.InFileName);
+		return -ENOENT;
 	}
-	printf("outfile: %s\n", AOption.OutFileName);
+	TRACE("outfile: %s\n", AOption.OutFileName);
 	fd_dst = fopen(AOption.OutFileName, "wb");
 	if(fd_dst == NULL)
 	{
-		printf("outfile: %s open failed!\n", AOption.OutFileName);
-		goto Fail1;
+		TRACE("outfile: %s open failed!\n", AOption.OutFileName);
+		return -ENOENT;
 	}
 
-	input_buffer  = malloc(4096);
-	output_buffer = malloc(16384);
-	printf("malloc is ok in input & output buffer\n");
-
-	err = ioctl(fd_hifi, HIFI4_LOAD_CODEC, &binary_info_wrap);
+	/* ...open proxy */
+	err = xaf_adev_open(&adev);
 	if(err)
 	{
-		printf("LOAD_CODEC Wrapper Failed\n");
-		goto Fail1;
+		printf("open proxy error, err = %d\n", err);
+		goto Fail2;
 	}
 
-	err = ioctl(fd_hifi, HIFI4_LOAD_CODEC, &binary_info);
+	/* ...create pipeline */
+	err = xaf_pipeline_create(&adev, &pipeline);
 	if(err)
 	{
-		printf("LOAD_CODEC Failed\n");
+		printf("create pipeline error, err = %d\n", err);
 		goto Fail1;
 	}
 
-	err = ioctl(fd_hifi, HIFI4_INIT_CODEC, &process_id);
+	/* ...create component */
+	err = xaf_comp_create(&adev, &component[0], type);
 	if(err)
 	{
-		printf("INIT_CODEC Failed\n");
-		goto Fail1;
+		printf("create component failed, type = %d, err = %d\n", type, err);
+		goto Fail;
 	}
 
-	memset(&config, 0, sizeof(struct prop_config));
-	config.codec_id = type;
-	config.process_id = process_id;
+	/* ...create routed component */
+	if(AOption.comp_routed)
+	{
+		err = xaf_comp_create(&adev, &component[1], AOption.AudioFormatRoute);
+		if(err)
+		{
+			printf("create component failed, type = %d, err = %d\n", AOption.AudioFormatRoute, err);
+			goto Fail;
+		}
+	}
+
+	/* ...add component into pipeline */
+	err = xaf_comp_add(&pipeline, &component[0]);
+
+	/* ...add routed component into pipeline */
+	if(AOption.comp_routed)
+	{
+		err = xaf_comp_add(&pipeline, &component[1]);
+	}
 
 #if ENABLE_ID3
 	/* ID3V1 handling */
@@ -389,13 +505,13 @@ int main(int ac, char *av[])
 		id3_v1_found = search_id3_v1(id3_buf + 0);
 		if (id3_v1_found)
 		{
-			printf("ID3V1 data : \n");
+			TRACE("ID3V1 data : \n");
 
 			/* if ID3V1 is found, decode ID3V1 */
 			decode_id3_v1(id3_buf + 3, &id3v1);
 			id3_v1_decoded = 1;
 
-			printf("\n");
+			TRACE("\n");
 		}
 		fseek(fd_src, 0, SEEK_SET);
 	}
@@ -405,21 +521,21 @@ int main(int ac, char *av[])
 		signed int flag = 0;
 		signed int continue_flag = 0;
 
-		i_fread_bytes = fread(input_buffer, sizeof(char), 0x1000, fd_src);
+		i_fread_bytes = fread(component[0].inptr, sizeof(char), 0x1000, fd_src);
 
 		/* search for ID3V2 */
-		id3_v2_found = search_id3_v2((unsigned char *)input_buffer);
+		id3_v2_found = search_id3_v2((unsigned char *)component[0].inptr);
 
 		if (id3_v2_found)
 		{
-			printf("ID3V2 data : \n");
+			TRACE("ID3V2 data : \n");
 			/* initialise the max fields */
 			init_id3v2_field(&id3v2);
 
 			while (!id3_v2_complete && id3_v2_found)
 			{
 				/* if ID3V2 is found, decode ID3V2 */
-				id3_v2_complete = decode_id3_v2((const char *const)input_buffer, &id3v2, continue_flag, i_fread_bytes);
+				id3_v2_complete = decode_id3_v2((const char *const)component[0].inptr, &id3v2, continue_flag, i_fread_bytes);
 
 				if (!id3_v2_complete)
 				{
@@ -427,15 +543,15 @@ int main(int ac, char *av[])
 					i_bytes_consumed = id3v2.bytes_consumed;
 
 					if (i_bytes_consumed < i_fread_bytes)
-						xa_shift_input_buffer((char *)input_buffer, i_fread_bytes, i_bytes_consumed);
+						xa_shift_input_buffer((char *)component[0].inptr, i_fread_bytes, i_bytes_consumed);
 
 					fseek(fd_src, i_bytes_consumed, SEEK_SET);
 
-					pub_input_ptr = (unsigned char *)input_buffer;
+					pub_input_ptr = (unsigned char *)component[0].inptr;
 
 					if((i_fread_bytes = fread(pub_input_ptr, sizeof(unsigned char), 0x1000, fd_src)) <= 0)
 					{
-						printf("ID3 Tag Decoding: End of file reached.\n");
+						TRACE("ID3 Tag Decoding: End of file reached.\n");
 						flag = 1;      /* failed */
 						break;
 					}
@@ -445,16 +561,16 @@ int main(int ac, char *av[])
 
 			if (id3_v2_complete)
 			{
-				printf("\n");
+				TRACE("\n");
 
 				i_bytes_consumed = id3v2.bytes_consumed;
 				fseek(fd_src, i_bytes_consumed, SEEK_SET);
 
-				pub_input_ptr = (unsigned char *)input_buffer;
+				pub_input_ptr = (unsigned char *)component[0].inptr;
 
 				if((i_fread_bytes = fread(pub_input_ptr, sizeof(unsigned char), 0x1000, fd_src)) <= 0)
 				{
-					printf("ID3V2 tag decoding: end of file reached.\n");
+					TRACE("ID3V2 tag decoding: end of file reached.\n");
 					flag = 1;      /* failed */
 				}
 
@@ -471,16 +587,16 @@ int main(int ac, char *av[])
 	if(type == CODEC_BSAC_DEC)
 	{
 		/* Parse the BSAC header */
-		err = App_get_mp4forbsac_header(&BSAC_Params, (char *)input_buffer, i_fread_bytes);
+		err = App_get_mp4forbsac_header(&BSAC_Params, (char *)component[0].inptr, i_fread_bytes);
 		if(err == -1)
 		{
-			printf("Parse the BSAC header error!\n");
+			TRACE("Parse the BSAC header error!\n");
 			goto Fail;
 		}
 
-		xa_shift_input_buffer((char *)input_buffer, i_fread_bytes, 16);
+		xa_shift_input_buffer((char *)component[0].inptr, i_fread_bytes, 16);
 		i_buff_size = i_fread_bytes - 16;
-		pub_input_ptr = (unsigned char *)input_buffer + i_buff_size;
+		pub_input_ptr = (unsigned char *)component[0].inptr + i_buff_size;
 		i_fread_bytes = fread(pub_input_ptr, sizeof(unsigned char), 16, fd_src);
 		i_fread_bytes = i_fread_bytes + i_buff_size;
 
@@ -493,301 +609,216 @@ int main(int ac, char *av[])
 
 	if(AOption.SampleRate > 0)
 	{
-		config.cmd = XA_SAMPLERATE;   //SAMPLINGRATE
-		config.val = AOption.SampleRate;
-		err = ioctl(fd_hifi, HIFI4_SET_CONFIG, &config);
+		s_param.id = XA_SAMPLERATE;
+		s_param.value = AOption.SampleRate;
+		err = xaf_comp_set_config(&component[0], 1, &s_param);
+		if(err)
+		{
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n", s_param.id, s_param.value, err);
+			goto Fail;
+		}
 	}
 
 	if(AOption.Width > 0)
 	{
-		config.cmd = XA_DEPTH;    //PCM_WDSZ
-		config.val = AOption.Width;
-		err = ioctl(fd_hifi, HIFI4_SET_CONFIG, &config);
+		s_param.id = XA_DEPTH;
+		s_param.value = AOption.Width;
+		err = xaf_comp_set_config(&component[0], 1, &s_param);
+		if(err)
+		{
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n", s_param.id, s_param.value, err);
+			goto Fail;
+		}
 	}
 
 	if(AOption.Channel > 0)
 	{
-		config.cmd = XA_CHANNEL;    //NUM_CHANNELS
-		config.val = AOption.Channel;
-		err = ioctl(fd_hifi, HIFI4_SET_CONFIG, &config);
+		s_param.id = XA_CHANNEL;
+		s_param.value = AOption.Channel;
+		err = xaf_comp_set_config(&component[0], 1, &s_param);
+		if(err)
+		{
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n", s_param.id, s_param.value, err);
+			goto Fail;
+		}
 	}
 
 	if(AOption.Bitrate > 0)
 	{
-		config.cmd = XA_BITRATE;    //EXTERNALBITRATE
-		config.val = AOption.Bitrate;
-		err = ioctl(fd_hifi, HIFI4_SET_CONFIG, &config);
+		s_param.id = XA_BITRATE;
+		s_param.value = AOption.Bitrate;
+		err = xaf_comp_set_config(&component[0], 1, &s_param);
+		if(err)
+		{
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n", s_param.id, s_param.value, err);
+			goto Fail;
+		}
 	}
 
 	if(AOption.streamtype >= 0)
 	{
-		config.cmd = XA_STREAM_TYPE;    //EXTERNALBSFORMAT
-		config.val = AOption.streamtype;
-		err = ioctl(fd_hifi, HIFI4_SET_CONFIG, &config);
+		s_param.id = XA_STREAM_TYPE;
+		s_param.value = AOption.streamtype;
+		err = xaf_comp_set_config(&component[0], 1, &s_param);
+		if(err)
+		{
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n", s_param.id, s_param.value, err);
+			goto Fail;
+		}
 	}
 
 	if((AOption.channel_mode >= 0) && (type == CODEC_SBC_ENC))
 	{
-		config.cmd = XA_SBC_ENC_CHMODE;   //CHMODE
-		config.val = AOption.channel_mode;
-		err = ioctl(fd_hifi, HIFI4_SET_CONFIG, &config);
+		s_param.id = XA_SBC_ENC_CHMODE;
+		s_param.value = AOption.channel_mode;
+		err = xaf_comp_set_config(&component[0], 1, &s_param);
+		if(err)
+		{
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n", s_param.id, s_param.value, err);
+			goto Fail;
+		}
 	}
 
 	/* relax the standard validity checks for mp3_dec in default */
 	if(type == CODEC_MP3_DEC)
 	{
-		config.cmd = XA_MP3_DEC_NONSTD_STRM_SUPPORT;           //NONSTD_STRM_SUPPORT
-		config.val = 1;
-		err = ioctl(fd_hifi, HIFI4_SET_CONFIG, &config);
+		s_param.id = XA_MP3_DEC_NONSTD_STRM_SUPPORT;
+		s_param.value = 1;
+		err = xaf_comp_set_config(&component[0], 1, &s_param);
+		if(err)
+		{
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n", s_param.id, s_param.value, err);
+			goto Fail;
+		}
 	}
 
-	/* malloc buffer for dsp core lib and set parameters */
-	err = ioctl(fd_hifi, HIFI4_CODEC_OPEN, &process_id);
+	if(AOption.comp_routed)
+	{
+		/* ...issue asynchronous buffer to routed output port (port-id=1) */
+		err = xaf_comp_process(&component[1], component[1].outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+		if(err)
+		{
+			printf("Failed to send XF_FILL_THIS_BUFFER cmd to routed output port, err = %d\n", err);
+			goto Fail;
+		}
+	}
+	else
+	{
+		/* ...issue asynchronous buffer to output port (port-id=1) */
+		err = xaf_comp_process(&component[0], component[0].outptr, OUTBUF_SIZE, XF_FILL_THIS_BUFFER);
+		if(err)
+		{
+			printf("Failed to send XF_FILL_THIS_BUFFER cmd to output port, err = %d\n", err);
+			goto Fail;
+		}
+	}
+
+	/* ...send input data to dsp */
+	size = i_fread_bytes;
+	err = xaf_comp_process(&component[0], component[0].inptr, size, XF_EMPTY_THIS_BUFFER);
 	if(err)
 	{
-		printf("INIT_CODEC Failed\n");
+		printf("Failed to send XF_EMPTY_THIS_BUFFER cmd to input port, err = %d\n", err);
 		goto Fail;
 	}
 
-	memset(output_buffer, 0, 16384);
-
-	size_read = 0x1000;
-
-//	size = fread(input_buffer, 1, size_read, fd_src);
-	size = i_fread_bytes;
-
-	decode_info.in_buf_off = 0;
-	decode_info.input_over = 0;
-	decode_info.process_id = process_id;
-
-	do {
-		decode_info.in_buf_addr = input_buffer;
-		decode_info.in_buf_size = size;
-		decode_info.out_buf_addr = output_buffer;
-		decode_info.out_buf_size = 16384;
-		decode_info.out_buf_off = 0;
-
-#ifdef TIME_PROFILE
-		gettimeofday(&StartTime, NULL);
-#endif
-		err = ioctl(fd_hifi, HIFI4_DECODE_ONE_FRAME, &decode_info);
-#ifdef TIME_PROFILE
-		gettimeofday(&EndTime, NULL);
-#endif
-
-		fwrite(output_buffer, 1, decode_info.out_buf_off, fd_dst);
-
-		if (decode_info.in_buf_off == decode_info.in_buf_size) {
-			size = fread(input_buffer, 1, size_read, fd_src);
-			decode_info.in_buf_off = 0;
-
-			if(size == 0)
-				decode_info.input_over = 1;
-		}
-
-		if(decode_info.out_buf_off > 0)
+	/* ...connect component when routed */
+	if(AOption.comp_routed)
+	{
+		err = xaf_connect(&component[0], &component[1], 1, OUTBUF_SIZE);
+		if(err)
 		{
-			frame_count++;
-			printf("loop count = %d\n", frame_count);
-
-#ifdef TIME_PROFILE
-			MaxDecTimeUs = (EndTime.tv_usec - StartTime.tv_usec) + (EndTime.tv_sec - StartTime.tv_sec)*1000000L;
-			TotalDecTimeUs += MaxDecTimeUs;
-
-			prop_info.process_id = process_id;
-			err = ioctl(fd_hifi, HIFI4_GET_PCM_PROP, &prop_info);
-			if(type == CODEC_SBC_ENC)
-				samples = prop_info.consumed_bytes / (prop_info.channels * (prop_info.bits / 8));
-			else
-				samples = decode_info.out_buf_off / (prop_info.channels * (prop_info.bits / 8));
-
-			curr = (double)MaxDecTimeUs * 0.000001 * cpu_freq * prop_info.samplerate/samples;
-			curr_dsp = prop_info.cycles * 0.000001 * prop_info.samplerate/samples;
-			performance += curr;
-			performance_dsp += curr_dsp;
-			Ave = performance / frame_count;
-			Ave_dsp = performance_dsp / frame_count;
-
-			if(Peak < curr)
-			{
-				Peak = curr;
-				Peak_frame = frame_count;
-			}
-			if(Peak_dsp < curr_dsp)
-			{
-				Peak_dsp = curr_dsp;
-			}
-
-			fprintf(fp_log,"[A35]: Frame Count: %d Sample Rate: %d Samples: %d MCPS: %.2f Average: %.2f Peak: %.2f @[%d]\n", frame_count, prop_info.samplerate, samples, curr, Ave, Peak, Peak_frame);
-			fprintf(fp_log,"[DSP]: Frame Count: %d Sample Rate: %d Samples: %d MCPS: %.2f Average: %.2f Peak: %.2f @[%d]\n", frame_count, prop_info.samplerate, samples,curr_dsp, Ave_dsp, Peak_dsp, Peak_frame);
-#endif
+			printf("Failed to connect component, err = %d\n", err);
+			goto Fail;
 		}
+	}
 
-		if(err != XA_SUCCESS)
+	/* ...create thread to process component[0] message */
+	pthread_create(&thread[0], 0, comp_process_entry, &component[0]);
+
+	/* ...create thread to process component[1] message */
+	if(AOption.comp_routed)
+	{
+		pthread_create(&thread[1], 0, comp_process_entry, &component[1]);
+	}
+
+	/* ...wait component[0] thread end */
+	pthread_join(thread[0], &thread_ret[0]);
+
+	/* ...wait component[1] thread end */
+	if(AOption.comp_routed)
+	{
+		pthread_join(thread[1], &thread_ret[1]);
+	}
+
+	/* ...judge the return value of thread */
+	if((int)(intptr_t)(thread_ret[0]) == -ETIMEDOUT)
+	{
+		printf("thread response timeout\n");
+		return -ETIMEDOUT;
+	}
+	if(AOption.comp_routed)
+	{
+		if((int)(intptr_t)(thread_ret[1]) == -ETIMEDOUT)
 		{
-			printf("error occur during decoding, err = 0x%x\n", err);
-
-			switch(type)
-			{
-				case CODEC_AAC_DEC:
-					if(err == XA_PROFILE_NOT_SUPPORT)
-					{
-						printf("error: aac_dec execute fatal unsupported feature!\n");
-						goto Fail;
-					}
-					else if(err == XA_NOT_ENOUGH_DATA)
-					{
-						printf("error: aac_dec insufficient frame data\n");
-						continue;
-					}
-					else
-					{
-						if(err == XA_ERROR_STREAM)
-							goto Fail;
-						else
-							continue;
-					}
-					break;
-				case CODEC_MP2_DEC:
-				case CODEC_MP3_DEC:
-					if(err == XA_NOT_ENOUGH_DATA)
-					{
-						printf("error: mp2_dec or mp3_dec insufficient frame data\n");
-						continue;
-					}
-					else
-					{
-						if(err == XA_ERROR_STREAM)
-							goto Fail;
-						else
-							continue;
-					}
-					break;
-				case CODEC_BSAC_DEC:
-					if(err == XA_NOT_ENOUGH_DATA)
-					{
-						printf("error: bsac_dec insufficient frame data\n");
-						continue;
-					}
-					else
-					{
-						if(err == XA_ERROR_STREAM)
-							goto Fail;
-						else
-							continue;
-					}
-					break;
-				case CODEC_DRM_DEC:
-					if(err == XA_NOT_ENOUGH_DATA)
-					{
-						printf("error: drm_dec insufficient frame data\n");
-						continue;
-					}
-					else
-					{
-						if(err == XA_ERROR_STREAM)
-							goto Fail;
-						else
-							continue;
-					}
-					break;
-				case CODEC_DAB_DEC:
-					if(err == XA_NOT_ENOUGH_DATA)
-					{
-						printf("error: dabplus_dec insufficient frame data\n");
-						continue;
-					}
-					else
-					{
-						if(err == XA_ERROR_STREAM)
-							goto Fail;
-						else
-							continue;
-					}
-					break;
-				case CODEC_SBC_DEC:
-					if(err == XA_NOT_ENOUGH_DATA)
-					{
-						printf("error: sbc_dec insufficient frame data\n");
-						continue;
-					}
-					else
-					{
-						if(err == XA_ERROR_STREAM)
-							goto Fail;
-						else
-							continue;
-					}
-					break;
-				case CODEC_SBC_ENC:
-					if(err == XA_NOT_ENOUGH_DATA)
-					{
-						printf("error: sbc_enc insufficient frame data\n");
-						continue;
-					}
-					else
-					{
-						if(err == XA_ERROR_STREAM)
-							goto Fail;
-						else
-							continue;
-					}
-					break;
-				default:
-					break;
-			}
+			printf("thread response timeout\n");
+			return -ETIMEDOUT;
 		}
-		if((size <= 0) && (decode_info.out_buf_off <= 0))
-			break;
+	}
 
-	} while (1);
+	/* ...get paramter from component */
+	r_param[0].id = XA_SAMPLERATE;
+	r_param[1].id = XA_CHANNEL;
+	r_param[2].id = XA_DEPTH;
 
-	prop_info.process_id = process_id;
-	err = ioctl(fd_hifi, HIFI4_GET_PCM_PROP, &prop_info);
+	if(AOption.comp_routed)
+	{
+		err = xaf_comp_get_config(&component[1], 3, &r_param[0]);
+		if(err)
+		{
+			printf("Fail to get routed component parameter, err = %d\n", err);
+			goto Fail;
+		}
+	}
+	else
+	{
+		err = xaf_comp_get_config(&component[0], 3, &r_param[0]);
+		if(err)
+		{
+			printf("Fail to get component parameter, err = %d\n", err);
+			goto Fail;
+		}
+	}
+	TRACE("prop: samplerate = %d, channel = %d, width = %d\n", r_param[0].value, r_param[1].value, r_param[2].value);
 
-	printf("prop %d, %d, %d\n", prop_info.samplerate, prop_info.channels, prop_info.bits);
-
-//	fclose(fd_src);
-//	fclose(fd_dst);
-
-#ifdef TIME_PROFILE
-	fprintf(fp_mhz,"\n|\tPlat\t|\tAudio Format\t|\tPlat\t|\tSamplerate\t|\tCh\t|\tBiterate\t|\tBit\t|\tPerf(MIPS)\t|\tAudio file name\n");
-	fprintf(fp_mhz, "|\t[A35]: \t|\tDSP Decoder \t|\tARM%d\t|\t%9d\t|\t%d\t|\t%8d\t|\t%d\t|\t%.8f\t|%s\n", 8, prop_info.samplerate, prop_info.channels, 0, prop_info.bits, Ave, AOption.InFileName);
-	fprintf(fp_mhz, "|\t[DSP]: \t|\tDSP Decoder \t|\tARM%d\t|\t%9d\t|\t%d\t|\t%8d\t|\t%d\t|\t%.8f\t|%s\n", 8, prop_info.samplerate, prop_info.channels, 0, prop_info.bits, Ave_dsp, AOption.InFileName);
-
-	fclose(fp_mhz);
-	fclose(fp_log);
-#endif
-
-	fd_wav = fopen("./out.wav", "wb");
-//	fd_dst = fopen(AOption.OutFileName, "rb");
-	fseek(fd_dst, 0, SEEK_END);
-	filelen = ftell(fd_dst);
-	fseek(fd_dst, 0, SEEK_SET);
-	write_wav_header(fd_wav, filelen, prop_info.samplerate, prop_info.channels, prop_info.bits);
-
-	while ((size = fread(input_buffer, 1, 4096, fd_dst)) > 0 )
-		fwrite(input_buffer, 1, size, fd_wav);
-
-
-	fclose(fd_wav);
+	/* ...disconnect component when routed */
+	if(AOption.comp_routed)
+	{
+		err = xaf_disconnect(&component[0]);
+		if(err)
+		{
+			printf("Fail to disconnect component, err = %d\n", err);
+			goto Fail;
+		}
+	}
 
 Fail:
-	err = ioctl(fd_hifi, HIFI4_CODEC_CLOSE, &process_id);
+	xaf_comp_delete(&component[0]);
+	if(AOption.comp_routed)
+	{
+		xaf_comp_delete(&component[1]);
+	}
+
 Fail1:
-	err = ioctl(fd_hifi, HIFI4_CLIENT_UNREGISTER, &process_id);
+	xaf_pipeline_delete(&pipeline);
+
 Fail2:
+	xaf_adev_close(&adev);
+
 	if(fd_src)
 		fclose(fd_src);
 	if(fd_dst)
 		fclose(fd_dst);
-
-	close(fd_hifi);
-
-	if(input_buffer)
-		free(input_buffer);
-	if(output_buffer)
-		free(output_buffer);
 
 	return 0;
 }

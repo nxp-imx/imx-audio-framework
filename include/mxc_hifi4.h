@@ -25,12 +25,12 @@
 #ifndef __MXC_HIFI4_UAPI_H__
 #define __MXC_HIFI4_UAPI_H__
 
-#define HIFI4_IOC_MAGIC		'H'
-#define HIFI4_CLIENT_REGISTER       _IOW(HIFI4_IOC_MAGIC, 0, unsigned int)
-#define HIFI4_CLIENT_UNREGISTER     _IOW(HIFI4_IOC_MAGIC, 1, unsigned int)
-#define HIFI4_IPC_MSG_SEND      _IOW(HIFI4_IOC_MAGIC, 2, unsigned int)
-#define HIFI4_IPC_MSG_RECV      _IOW(HIFI4_IOC_MAGIC, 3, unsigned int)
-#define HIFI4_SHARED_MEM_INFO   _IOW(HIFI4_IOC_MAGIC, 4, unsigned int)
+#define DSP_IOC_MAGIC		'H'
+#define DSP_CLIENT_REGISTER     _IOW(DSP_IOC_MAGIC, 0, unsigned int)
+#define DSP_CLIENT_UNREGISTER   _IOW(DSP_IOC_MAGIC, 1, unsigned int)
+#define DSP_IPC_MSG_SEND        _IOW(DSP_IOC_MAGIC, 2, unsigned int)
+#define DSP_IPC_MSG_RECV        _IOW(DSP_IOC_MAGIC, 3, unsigned int)
+#define DSP_GET_SHMEM_INFO      _IOW(DSP_IOC_MAGIC, 4, unsigned int)
 
 #define CODEC_MP3_DEC		1
 #define CODEC_AAC_DEC		2
@@ -137,9 +137,9 @@ enum HIFI_SbcEncChmode {
     XA_CHMODE_JOINT =  3,
 };
 
-struct shared_mem_info {
-	unsigned int mem_phys_addr;
-	unsigned int mem_size;
+struct shmem_info {
+	unsigned int phys_addr;
+	unsigned int size;
 };
 
 #endif/* __MXC_HIFI4_UAPI_H__ */

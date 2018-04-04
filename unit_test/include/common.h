@@ -25,6 +25,8 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
+#include "xf-debug.h"
+
 typedef signed char             WORD8   ;
 typedef signed char         *   pWORD8  ;
 typedef unsigned char           UWORD8  ;

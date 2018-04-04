@@ -63,7 +63,7 @@ static void
 {
     int j;
 
-    printf("%s", disp);
+    TRACE("%s", disp);
 
     for(j = 0; j < size; j++) {
         int c = src->frame_data[j];
@@ -71,17 +71,17 @@ static void
         {
             if (!isprint(c))
                 break;
-            printf("%c", c);
+            TRACE("%c", c);
         }
     }
-    printf("\n");
+    TRACE("\n");
 }
 
 static VOID display1(WORD8 src[], WORD32 size, WORD8 disp[])
 {
     WORD32 j;
 
-    printf("%s", disp);
+    TRACE("%s", disp);
     for(j = 0; j < size ; j++)
     {
         int c = src[j];
@@ -89,10 +89,10 @@ static VOID display1(WORD8 src[], WORD32 size, WORD8 disp[])
         {
             if (!isprint(c))
                 break;
-            printf("%c", c);
+            TRACE("%c", c);
         }
     }
-    printf("\n");
+    TRACE("\n");
 }
 
 /*******************************************************************************
@@ -318,7 +318,7 @@ WORD32 get_v1_info(
     }
     buffer += 1;
     bytes_consumed += 1;
-    printf("genre : %d\n", id3v1->genre[0]);
+    TRACE("genre : %d\n", id3v1->genre[0]);
 
     return bytes_consumed;
 }
