@@ -37,6 +37,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/select.h>
+#include <sys/poll.h>
+#include <poll.h>
 #include <fcntl.h>
 #include "xf-proxy.h"
 #include "mxc_hifi4.h"
@@ -63,21 +65,21 @@ int xf_ipc_send(xf_proxy_ipc_data_t *ipc, xf_proxy_msg_t *msg, void *b)
 int xf_ipc_wait(xf_proxy_ipc_data_t *ipc, u32 timeout)
 {
     int             fd = ipc->fd;
-    fd_set          rfds;
-    struct timespec  tv;
+    struct pollfd   pollfd;
+    int ret;
 
     /* ...specify waiting set */
-    FD_ZERO(&rfds);
-    FD_SET(fd, &rfds);
-
-    /* ...set timeout value if given */
-    (timeout ? tv.tv_sec = timeout / 1000, tv.tv_nsec = (timeout % 1000) * 1000 : 0);
+    pollfd.fd = fd;
+    pollfd.events = POLLIN | POLLRDNORM;
 
     /* ...wait until there is a data in file */
-    XF_CHK_ERR(pselect(fd + 1, &rfds, NULL, NULL, (timeout ? &tv : NULL), NULL) >= 0, -errno);
+    ret = poll(&pollfd, 1, timeout);
+    if(ret < 0)
+        return ret;
+    else if(ret == 0)
+        return -ETIMEDOUT;
 
-    /* ...check if descriptor is set */
-    return (FD_ISSET(fd, &rfds) ? 0 : -ETIMEDOUT);
+    return 0;
 }
 
 /* ...read response from proxy */

@@ -34,6 +34,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <sys/poll.h>
+#include <poll.h>
 #include "xf-types.h"
 #include "xf-ipc.h"
 #include "xf-opcode.h"
@@ -240,9 +242,8 @@ static inline int xf_proxy_response_put(xf_proxy_t *proxy, xf_proxy_msg_t *msg)
 /* ...retrieve asynchronous response message */
 static inline int xf_proxy_response_get(xf_proxy_t *proxy, xf_proxy_msg_t *msg)
 {
-	fd_set          rfds;
-	struct timespec  tv;
 	int fd;
+	struct pollfd   pollfd;
 	u32 timeout = TIMEOUT;
 	int ret = 0;
 
@@ -250,22 +251,17 @@ static inline int xf_proxy_response_get(xf_proxy_t *proxy, xf_proxy_msg_t *msg)
 	fd = proxy->ipc.pipe[0];
 
 	/* ...specify waiting set */
-	FD_ZERO(&rfds);
-	FD_SET(fd, &rfds);
-
-	tv.tv_sec = timeout / 1000;
-	tv.tv_nsec = (timeout % 1000) * 1000;
+	pollfd.fd = fd;
+	pollfd.events = POLLIN | POLLRDNORM;
 
 	/* ...wait until there is a data in file */
-	pselect(fd+1, &rfds, NULL, NULL, &tv, NULL);
-
-	/* ...check if descriptor is set */
-	ret = FD_ISSET(fd, &rfds) ? 0 : -ETIMEDOUT;
-
-	if(!ret)
+	ret = poll(&pollfd, 1, timeout);
+	if(ret > 0)
 	    return xf_proxy_ipc_response_get(&proxy->ipc, msg);
-	else
+	else if(ret < 0)
 	    return ret;
+	else
+	    return -ETIMEDOUT;
 }
 
 /* ...accessor to buffer data */
@@ -335,9 +331,8 @@ static inline int xf_response_put(xf_handle_t *handle, xf_user_msg_t *msg)
 /* ...get asynchronous response from local IPC */
 static inline int xf_response_get(xf_handle_t *handle, xf_user_msg_t *msg)
 {
-	fd_set          rfds;
-	struct timespec  tv;
 	int fd;
+	struct pollfd   pollfd;
 	u32 timeout = TIMEOUT;
 	int ret = 0;
 
@@ -345,22 +340,17 @@ static inline int xf_response_get(xf_handle_t *handle, xf_user_msg_t *msg)
 	fd = handle->ipc.pipe[0];
 
 	/* ...specify waiting set */
-	FD_ZERO(&rfds);
-	FD_SET(fd, &rfds);
-
-	tv.tv_sec = timeout / 1000;
-	tv.tv_nsec = (timeout % 1000) * 1000;
+	pollfd.fd = fd;
+	pollfd.events = POLLIN | POLLRDNORM;
 
 	/* ...wait until there is a data in file */
-	pselect(fd+1, &rfds, NULL, NULL, &tv, NULL);
-
-	/* ...check if descriptor is set */
-	ret = FD_ISSET(fd, &rfds) ? 0 : -ETIMEDOUT;
-
-	if(!ret)
+	ret = poll(&pollfd, 1, timeout);
+	if(ret > 0)
 	    return xf_ipc_response_get(&handle->ipc, msg);
-	else
+	else if(ret < 0)
 	    return ret;
+	else
+	    return -ETIMEDOUT;
 }
 
 /* ...put asynchronous response into local IPC, used for no-timely response message */
@@ -372,9 +362,8 @@ static inline int xf_response_put_ack(xf_handle_t *handle, xf_user_msg_t *msg)
 /* ...get asynchronous response from local IPC, used for no-timely response message */
 static inline int xf_response_get_ack(xf_handle_t *handle, xf_user_msg_t *msg)
 {
-	fd_set          rfds;
-	struct timespec  tv;
 	int fd;
+	struct pollfd   pollfd;
 	u32 timeout = TIMEOUT;
 	int ret = 0;
 
@@ -382,22 +371,17 @@ static inline int xf_response_get_ack(xf_handle_t *handle, xf_user_msg_t *msg)
 	fd = handle->ipc_ack.pipe[0];
 
 	/* ...specify waiting set */
-	FD_ZERO(&rfds);
-	FD_SET(fd, &rfds);
-
-	tv.tv_sec = timeout / 1000;
-	tv.tv_nsec = (timeout % 1000) * 1000;
+	pollfd.fd = fd;
+	pollfd.events = POLLIN | POLLRDNORM;
 
 	/* ...wait until there is a data in file */
-	pselect(fd+1, &rfds, NULL, NULL, &tv, NULL);
-
-	/* ...check if descriptor is set */
-	ret = FD_ISSET(fd, &rfds) ? 0 : -ETIMEDOUT;
-
-	if(!ret)
+	ret = poll(&pollfd, 1, timeout);
+	if(ret > 0)
 	    return xf_ipc_response_get(&handle->ipc_ack, msg);
-	else
+	else if(ret < 0)
 	    return ret;
+	else
+	    return -ETIMEDOUT;
 }
 
 
