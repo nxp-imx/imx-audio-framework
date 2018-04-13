@@ -26,6 +26,7 @@
 
 
 #include "xf-types.h"
+#include "xf-osal.h"
 
 /* ...size of the shared memory pool (in bytes) */
 #define  XF_CFG_REMOTE_IPC_POOL_SIZE  0xFFFFFF
@@ -39,9 +40,53 @@
 /* ...response timeout, 10s */
 #define TIMEOUT   10000
 
+
+/* ...user-message */
+typedef struct xf_user_msg          xf_user_msg_t;
+
+/* ...proxy-message */
+typedef struct xf_proxy_message     xf_proxy_msg_t;
+
 /*******************************************************************************
  * Types definitions
  ******************************************************************************/
+/* ...need that at all? hope no */
+struct xf_user_msg
+{
+    /* ...source component specification */
+    u32             id;
+
+    /* ...message opcode */
+    u32             opcode;
+
+    /* ...buffer length */
+    u32             length;
+
+    /* ...buffer pointer */
+    void           *buffer;
+
+    /* ...return message status */
+    u32            ret;
+};
+
+/* ...command/response message */
+struct xf_proxy_message
+{
+    /* ...session ID */
+    u32                 session_id;
+
+    /* ...proxy API command/reponse code */
+    u32                 opcode;
+
+    /* ...length of attached buffer */
+    u32                 length;
+
+    /* ...physical address of message buffer */
+    u32                 address;
+
+    /* ...return message status */
+    u32                 ret;
+};
 
 /* ...proxy IPC data */
 typedef struct xf_proxy_ipc_data
@@ -110,22 +155,76 @@ typedef struct xf_ipc_data
     /* ...asynchronous response delivery pipe */
     int                 pipe[2];
 
+    /* ...message count in pipe */
+    int                 count;
+
+    /* ...message count lock */
+    xf_lock_t           lock;
+
 }   xf_ipc_data_t;
 
 /*******************************************************************************
  * Helpers for asynchronous response delivery
  ******************************************************************************/
 
-#define xf_ipc_response_put(ipc, msg)       \
-    (write((ipc)->pipe[1], (msg), sizeof(*(msg))) == sizeof(*(msg)) ? 0 : -errno)
+static inline int xf_ipc_response_put(xf_ipc_data_t *ipc, xf_user_msg_t *msg)
+{
+    __xf_lock(&ipc->lock);
+    ipc->count++;
+    __xf_unlock(&ipc->lock);
 
-#define xf_ipc_response_get(ipc, msg)       \
-    (read((ipc)->pipe[0], (msg), sizeof(*(msg))) == sizeof(*(msg)) ? 0 : -errno)
+    if(write(ipc->pipe[1], msg, sizeof(*msg)) == sizeof(*msg))
+        return 0;
+    else
+        return -errno;
+}
 
-#define xf_ipc_data_init(ipc)               \
-    (pipe((ipc)->pipe) == 0 ? 0 : -errno)
+static inline int xf_ipc_response_get(xf_ipc_data_t *ipc, xf_user_msg_t *msg)
+{
+    if(read(ipc->pipe[0], msg, sizeof(*msg)) == sizeof(*msg))
+    {
+        __xf_lock(&ipc->lock);
+        ipc->count--;
+        __xf_unlock(&ipc->lock);
 
-#define xf_ipc_data_destroy(ipc)            \
-    (close((ipc)->pipe[0]), close((ipc)->pipe[1]))
+        return 0;
+    }
+    else
+        return -errno;
+}
+
+static inline int xf_ipc_response_count(xf_ipc_data_t *ipc)
+{
+	int count = 0;
+
+    __xf_lock(&ipc->lock);
+    count = ipc->count;
+    __xf_unlock(&ipc->lock);
+
+    return count;
+}
+
+static inline int xf_ipc_data_init(xf_ipc_data_t *ipc)
+{
+    /* ...initialize pipe */
+    if(pipe(ipc->pipe) == 0)
+        return 0;
+    else
+        return -errno;
+
+    /* ...initialize message count */
+    ipc->count = 0;
+
+    /* ...lock initialization */
+    __xf_lock_init(&ipc->lock);
+}
+
+static inline void xf_ipc_data_destroy(xf_ipc_data_t *ipc)
+{
+    close(ipc->pipe[0]);
+	close(ipc->pipe[1]);
+
+	ipc->count = 0;
+}
 
 #endif

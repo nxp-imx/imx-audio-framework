@@ -106,6 +106,7 @@ int xaf_comp_get_config(xaf_comp_t *p_comp, u32 num_param, void *p_param);
 
 int xaf_comp_process(xaf_comp_t *p_comp, void *p_buf, u32 length, u32 flag);
 int xaf_comp_get_status(xaf_comp_t *p_comp, xaf_info_t *p_info);
+int xaf_comp_get_msg_count(xaf_comp_t *p_comp);
 
 int xaf_connect(xaf_comp_t *p_src, xaf_comp_t *p_dest, u32 num_buf, u32 buf_length);
 int xaf_disconnect(xaf_comp_t *p_comp);

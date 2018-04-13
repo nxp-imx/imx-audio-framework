@@ -287,7 +287,7 @@ int comp_process(UniACodec_Handle pua_handle, uint8 *input, uint32 in_size, uint
 	xaf_comp_t *p_comp = &pDSP_handle->component;
 	xaf_pipeline_t *p_pipe = &pDSP_handle->pipeline;
 	xaf_info_t p_info;
-	int err = 0;
+	int err = 0, count;
 	int ret = XA_SUCCESS;
 
 	if((input == NULL) || (output == NULL))
@@ -340,8 +340,16 @@ int comp_process(UniACodec_Handle pua_handle, uint8 *input, uint32 in_size, uint
 			if((p_info.opcode == XF_EMPTY_THIS_BUFFER) && (p_info.buf == p_comp->inptr))
 			{
 				pDSP_handle->inptr_busy = FALSE;
-				ret = XA_SUCCESS;
-				break;
+
+				/* ...get message count in pipe */
+				count = xaf_comp_get_msg_count(p_comp);
+				if(count > 0)
+					continue;
+				else
+				{
+					ret = XA_SUCCESS;
+					break;
+				}
 			}
 			else
 			{

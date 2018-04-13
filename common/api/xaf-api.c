@@ -370,6 +370,16 @@ int xaf_comp_get_status(xaf_comp_t *p_comp, xaf_info_t *p_info)
 	return ret;
 }
 
+int xaf_comp_get_msg_count(xaf_comp_t *p_comp)
+{
+	xf_handle_t *p_handle;
+
+	p_handle = &p_comp->handle;
+
+	/* ...get message count in pipe */
+	return xf_response_get_ack_count(p_handle);
+}
+
 int xaf_connect(xaf_comp_t *p_src, xaf_comp_t *p_dest, u32 num_buf, u32 buf_length)
 {
 	int ret = 0;

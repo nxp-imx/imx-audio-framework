@@ -58,12 +58,6 @@ typedef struct xf_proxy				xf_proxy_t;
 /* ...handle to component data */
 typedef struct xf_handle			xf_handle_t;
 
-/* ...user-message */
-typedef struct xf_user_msg          xf_user_msg_t;
-
-/* ...proxy-message */
-typedef struct xf_proxy_message     xf_proxy_msg_t;
-
 /* ...buffer pool type */
 typedef u32							xf_pool_type_t;
 
@@ -91,45 +85,6 @@ enum xf_pool_type
 /*******************************************************************************
  * Types definitions
  ******************************************************************************/
-/* ...need that at all? hope no */
-struct xf_user_msg
-{
-	/* ...source component specification */
-	u32             id;
-
-	/* ...message opcode */
-	u32             opcode;
-
-	/* ...buffer length */
-	u32             length;
-
-	/* ...buffer pointer */
-	void           *buffer;
-
-	/* ...return message status */
-	u32            ret;
-};
-
-/* ...command/response message */
-struct xf_proxy_message
-{
-    /* ...session ID */
-    u32                 session_id;
-
-    /* ...proxy API command/reponse code */
-    u32                 opcode;
-
-    /* ...length of attached buffer */
-    u32                 length;
-
-    /* ...physical address of message buffer */
-    u32                 address;
-
-    /* ...return message status */
-    u32                 ret;
-
-};
-
 /* ...buffer link pointer */
 typedef union xf_buffer_link
 {
@@ -384,6 +339,11 @@ static inline int xf_response_get_ack(xf_handle_t *handle, xf_user_msg_t *msg)
 	    return -ETIMEDOUT;
 }
 
+/* ...get asynchronous response message count, used for no-timely response message */
+static inline int xf_response_get_ack_count(xf_handle_t *handle)
+{
+	return xf_ipc_response_count(&handle->ipc_ack);
+}
 
 /*******************************************************************************
  * API functions
