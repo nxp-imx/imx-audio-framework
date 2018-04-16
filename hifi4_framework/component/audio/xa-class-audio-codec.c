@@ -363,6 +363,7 @@ static HIFI_ERROR_TYPE xa_codec_port_unroute(XACodecBase *base, xf_message_t *m)
 static HIFI_ERROR_TYPE xa_codec_flush(XACodecBase *base, xf_message_t *m)
 {
     XAAudioCodec   *codec = (XAAudioCodec *) base;
+    HIFI_ERROR_TYPE ret = XA_SUCCESS;
 
     /* ...command is allowed only in "postinit" state */
     XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, XA_PARA_ERROR);
@@ -383,6 +384,10 @@ static HIFI_ERROR_TYPE xa_codec_flush(XACodecBase *base, xf_message_t *m)
 
         /* ...clear input-ready condition */
         base->state &= ~XA_CODEC_FLAG_INPUT_SETUP;
+
+        /* ...reset audio codec */
+        if(base->WrapFun.Reset)
+            ret = base->WrapFun.Reset(base->pWrpHdl);
 
         /* ...reset produced samples counter */
         codec->produced = 0;
@@ -494,7 +499,7 @@ static HIFI_ERROR_TYPE xa_codec_preprocess(XACodecBase *base)
             else
             {
                 /* ...return non-fatal indication to prevent further processing */
-                return XA_NO_OUTPUT;
+            //    return XA_NO_OUTPUT;
             }
         }
 

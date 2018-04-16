@@ -195,6 +195,40 @@ int xaf_comp_get_config(xaf_comp_t *p_comp, u32 num_param, void *p_param)
 	return 0;
 }
 
+int xaf_comp_flush(xaf_comp_t *p_comp)
+{
+	xf_handle_t            *p_handle;
+	xf_user_msg_t           rmsg;
+	int ret = 0;
+
+	p_handle = &p_comp->handle;
+
+	/* ...pass command to the component */
+	ret = xf_command(p_handle, 0, XF_FLUSH, NULL, 0);
+	if(ret)
+	{
+		TRACE("Error when passing cmd to component in component flush function, err = %d\n", ret);
+		return ret;
+	}
+
+	/* ...wait until result is delivered */
+	ret = xf_response_get(p_handle, &rmsg);
+	if(ret)
+	{
+		TRACE("response timeout when component flush, err = %d\n", ret);
+		return ret;
+	}
+
+	/* ...make sure response is expected */
+	if((rmsg.opcode != (u32) XF_FLUSH) || (rmsg.buffer != NULL))
+	{
+		TRACE("response is not expected when component flush, err = %d\n", -EPIPE);
+		return -EPIPE;
+	}
+
+	return 0;
+}
+
 int xaf_comp_create(xaf_adev_t *p_adev, xaf_comp_t *p_comp, int comp_type)
 {
 	xf_proxy_t *p_proxy;

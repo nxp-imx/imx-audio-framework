@@ -283,23 +283,34 @@ UA_ERROR_TYPE DSPDecDelete(UniACodec_Handle pua_handle) {
 UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle) {
     DSP_Handle * pDSP_handle = (DSP_Handle *)pua_handle;
     int ret = ACODEC_SUCCESS;
+    int count, i;
+    xaf_info_t p_info;
 
-#if 0
     /*
      * The HIFI4_RESET_CODEC command is used to reset codec buffers and its related parameters
      * in dsp firmware. However, the related buffers of dsp core lib have not been allocated
      * before hifi4 open. So don't reset codec before hifi4 open.
      */
     if(pDSP_handle->memory_allocated) {
-        ret = ioctl(pDSP_handle->fd_hifi, HIFI4_RESET_CODEC, &(pDSP_handle->process_id));
+        ret = xaf_comp_flush(&pDSP_handle->component);
         if(ret) {
 #ifdef DEBUG
-            TRACE("Reset HIFI4 Failed, Please Check it, ret = 0x%x\n", ret);
+            TRACE("Reset DSP Failed, Please Check it, ret = 0x%x\n", ret);
 #endif
             goto Fail;
         }
+
+        /* when flush component, empty the message pipe */
+        count = xaf_comp_get_msg_count(&pDSP_handle->component);
+        if(count)
+            for(i = 0; i < count; i++)
+                xaf_comp_get_status(&pDSP_handle->component, &p_info);
+
+        /* set input and output buffer available */
+        pDSP_handle->inptr_busy = FALSE;
+        pDSP_handle->outptr_busy = FALSE;
     }
-#endif
+
     ResetInnerBuf(&(pDSP_handle->inner_buf),pDSP_handle->inner_buf.threshold, pDSP_handle->inner_buf.threshold);
 
 Fail:
