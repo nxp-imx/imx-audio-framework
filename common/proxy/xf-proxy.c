@@ -310,7 +310,7 @@ static void * xf_proxy_thread(void *arg)
 }
 
 /*******************************************************************************
- * HiFi proxy API
+ * DSP proxy API
  ******************************************************************************/
 
 void sighand(int signo)
@@ -319,7 +319,7 @@ void sighand(int signo)
 	return;
 }
 
-/* ...open HiFi proxy */
+/* ...open DSP proxy */
 int xf_proxy_init(xf_proxy_t *proxy, u32 core)
 {
     u32             i;
@@ -381,7 +381,7 @@ void xf_proxy_close(xf_proxy_t *proxy)
 }
 
 /*******************************************************************************
- * HiFi component API
+ * DSP component API
  ******************************************************************************/
 
 /* ...open component handle */

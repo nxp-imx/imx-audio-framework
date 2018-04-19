@@ -1,22 +1,22 @@
 
 1. set up related build toolchain
    Before you build the case, you should set up related build toolchain firstly,
-   you can see the Hifi4 DSP User's Guide to know how to install these toolchians.
+   you can see the DSP User's Guide to know how to install these toolchians.
    This document is placed in the following location:
-      docs/HiFi4_DSP_User_Guide.pdf
+      docs/DSP_User_Guide.pdf
 
-2. Build the hifi4 framework
+2. Build the DSP framework
 
-  1). build hifi4 framework
+  1). build all
       make all
 
-  2). only build hifi4 framework
-      make HIFI4_FRAMEWORK
+  2). only build DSP framework
+      make DSP_FRAMEWORK
 
-  3). only build hifi4 wrapper lib
-      make HIFI4_WRAPPER
+  3). only build DSP wrapper lib
+      make DSP_WRAPPER
 
-  4). only build hifi4 unit test
+  4). only build DSP unit test
       make UNIT_TEST
 
   5). clean the folder

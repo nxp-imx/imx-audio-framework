@@ -5,7 +5,7 @@ Outgoing License:   LA_OPT_BASE_LICENSE
 Release Location:   Moderated download
 
 
-Component:          hifi4_framework
+Component:          dsp_framework
 Outgoing License:   LA_OPT_BASE_LICENSE
 Type of Content:    source
 Description:        The firmware running on the DSP core
@@ -14,7 +14,7 @@ Origin:             NXP (proprietary)
                     Tensilica (MIT)
                     Cadence (MIT)
 
-Component:          hifi4_wrapper
+Component:          dsp_wrapper
 Outgoing License:   LA_OPT_BASE_LICENSE
 Type of Content:    source
 Description:        User space application providing a unified calling interface for GStreamer

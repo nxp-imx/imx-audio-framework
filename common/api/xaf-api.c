@@ -32,7 +32,7 @@
 #ifdef  TGT_OS_ANDROID
 #define CORE_LIB_PATH   "/vendor/lib/"
 #else
-#define CORE_LIB_PATH   "/usr/lib/imx-mm/audio-codec/hifi/"
+#define CORE_LIB_PATH   "/usr/lib/imx-mm/audio-codec/dsp/"
 #endif
 
 
@@ -250,7 +250,7 @@ int xaf_comp_create(xaf_adev_t *p_adev, xaf_comp_t *p_comp, int comp_type)
 	p_comp->codec_lib.filename = lib_path;
 	p_comp->codec_wrap_lib.filename = lib_wrap_path;
 
-	p_comp->codec_lib.lib_type = HIFI_CODEC_LIB;
+	p_comp->codec_lib.lib_type = DSP_CODEC_LIB;
 	if (comp_type == CODEC_MP3_DEC) {
 		p_comp->dec_id = "audio-decoder/mp3";
 		strcat(lib_path, "lib_dsp_mp3_dec.so");
@@ -278,7 +278,7 @@ int xaf_comp_create(xaf_adev_t *p_adev, xaf_comp_t *p_comp, int comp_type)
 	}
 
 	strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
-	p_comp->codec_wrap_lib.lib_type = HIFI_CODEC_WRAP_LIB;
+	p_comp->codec_wrap_lib.lib_type = DSP_CODEC_WRAP_LIB;
 
 	/* ...create decoder component instance (select core-0) */
 	ret = xf_open(p_proxy, p_handle, p_comp->dec_id, 0, my_comp_response);

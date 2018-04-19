@@ -49,8 +49,8 @@ enum {
 };
 
 typedef enum {
-	HIFI_CODEC_LIB =1,
-	HIFI_CODEC_WRAP_LIB
+	DSP_CODEC_LIB =1,
+	DSP_CODEC_WRAP_LIB
 } lib_type;
 
 struct xtlib_loader_globals {

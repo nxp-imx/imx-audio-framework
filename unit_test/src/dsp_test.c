@@ -69,7 +69,7 @@ u32 frame_count;
 void help_info(int ac, char *av[])
 {
 	TRACE("\n\n**************************************************\n");
-	TRACE("* Test aplication for HIFI\n");
+	TRACE("* Test aplication for DSP\n");
 	TRACE("* Options : \n\n");
 	TRACE("          -f AudFormat  Audio Format(1-8)             \n");
 	TRACE("                        MP3        for 1              \n");

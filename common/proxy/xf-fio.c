@@ -41,7 +41,7 @@
 #include <poll.h>
 #include <fcntl.h>
 #include "xf-proxy.h"
-#include "mxc_hifi4.h"
+#include "mxc_dsp.h"
 
 
 /*******************************************************************************

@@ -41,8 +41,8 @@ PKG_LOADLIB = xt-pkg-loadlib
 XTENSA_CORE = hifi4_nxp_v3_3_1_2_dev
 
 TOOL_PATH   := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))imx-audio-toolchain/Xtensa_Tool
-FRAMEWORK_DIR = hifi4_framework
-WRAPPER_DIR   = hifi4_wrapper
+FRAMEWORK_DIR = dsp_framework
+WRAPPER_DIR   = dsp_wrapper
 UNIT_TEST_DIR = unit_test
 RELEASE_DIR = release
 
@@ -58,16 +58,16 @@ endif
 
 export CC CPLUS OBJCOPY XTENSA_CORE PKG_LOADLIB TOOL_PATH CFLAGS
 
-all: HIFI4_WRAPPER HIFI4_FRAMEWORK UNIT_TEST
+all: DSP_WRAPPER DSP_FRAMEWORK UNIT_TEST
 	echo "--- Build all dsp library ---"
 
-HIFI4_FRAMEWORK: $(FRAMEWORK_DIR)
-	echo "--- Build hifi4 framework ---"
+DSP_FRAMEWORK: $(FRAMEWORK_DIR)
+	echo "--- Build DSP framework ---"
 	make -C $(FRAMEWORK_DIR)
 	cp ./$(FRAMEWORK_DIR)/hifi4.bin $(RELEASE_DIR)
 
-HIFI4_WRAPPER: $(WRAPPER_DIR)
-	echo "--- Build hifi4 wrapper ---"
+DSP_WRAPPER: $(WRAPPER_DIR)
+	echo "--- Build DSP wrapper ---"
 	mkdir -p $(RELEASE_DIR)/wrapper
 ifeq ($(ANDROID_BUILD), 1)
 	make -C $(WRAPPER_DIR) BUILD=ARM12ANDROID NEW_ANDROID_NAME=1 clean all
@@ -88,9 +88,9 @@ endif
 
 help:
 	@echo "targets are:"
-	@echo "\tHIFI4_FRAMEWORK\t- build HiFi4 framework"
-	@echo "\tHIFI4_WRAPPER\t- build HiFi4 wrapper"
-	@echo "\tUNIT_TEST\t- build HiFi4 unit test"
+	@echo "\tDSP_FRAMEWORK\t- build DSP framework"
+	@echo "\tDSP_WRAPPER\t- build DSP wrapper"
+	@echo "\tUNIT_TEST\t- build DSP unit test"
 	@echo "\tall\t\t- build the above"
 
 clean:

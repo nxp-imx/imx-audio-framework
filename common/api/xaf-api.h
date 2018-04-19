@@ -42,9 +42,9 @@
 #include <linux/types.h>
 #include "xf-proxy.h"
 #include "library_load.h"
-#include "mxc_hifi4.h"
+#include "mxc_dsp.h"
 
-/* ...size of auxiliary pool for communication with HiFi */
+/* ...size of auxiliary pool for communication with DSP */
 #define XA_AUX_POOL_SIZE                32
 
 /* ...length of auxiliary pool messages */
