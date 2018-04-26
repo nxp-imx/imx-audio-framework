@@ -32,6 +32,5 @@ Component:          include
 Outgoing License:   LA_OPT_BASE_LICENSE
 Type of Content:    source
 Description:        Interface command definitions
-Origin:             NXP (proprietary)
-                    NXP (BSD-2-clause)
+Origin:             NXP (BSD-2-clause)
 
