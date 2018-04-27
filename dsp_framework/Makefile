@@ -24,6 +24,7 @@ CPLUS_FLAGS = -mlsp=$(LINK_DIR) --xtensa-system=$(SYSTEM_DIR) --xtensa-core=$(XT
 INCLUDES    = -I$(INC_DIR)
 
 INCLUDES   += -I$(INC_DIR)/lib                            \
+			  -I$(INC_DIR)/audio                          \
 			  -I$(SRC_DIR)/arch                           \
 			  -I$(SRC_DIR)/arch/libloader/include         \
 			  -I$(SRC_DIR)/component/audio
