@@ -35,6 +35,7 @@
 
 #include "mydefs.h"
 #include "dsp_codec_interface.h"
+#include "xf-audio-apicmd.h"
 
 /*******************************************************************************
  * Tracing tags
@@ -54,10 +55,10 @@ typedef struct xf_component_id
     u32 type;
 
     /* ...class constructor */
-    xf_component_t *  (*factory)(dsp_main_struct *dsp_config, void *process, u32 type);
+    xf_component_t *  (*factory)(dsp_main_struct *dsp_config, xf_codec_func_t *process, u32 type);
 
     /* ...component API function */
-    void    *process;
+    xf_codec_func_t *process;
 
 }   xf_component_id_t;
 
@@ -65,8 +66,11 @@ typedef struct xf_component_id
  * External functions
  ******************************************************************************/
 
+/* ...components API functions */
+extern u32 xf_unia_codec(xf_codec_handle_t handle, u32 i_cmd, u32 i_idx, void *pv_value);
+
 /* ...component class factories */
-extern xf_component_t * xa_audio_codec_factory(dsp_main_struct *dsp_config, void *process, u32 type);
+extern xf_component_t * xa_audio_codec_factory(dsp_main_struct *dsp_config, xf_codec_func_t *process, u32 type);
 
 /*******************************************************************************
  * Local constants definitions
@@ -75,14 +79,14 @@ extern xf_component_t * xa_audio_codec_factory(dsp_main_struct *dsp_config, void
 /* ...component class id */
 static const xf_component_id_t xf_component_id[] =
 {
-    { "audio-decoder/mp3",      CODEC_MP3_DEC,     xa_audio_codec_factory,     NULL },
-    { "audio-decoder/aac",      CODEC_AAC_DEC,     xa_audio_codec_factory,     NULL },
-    { "audio-decoder/bsac",     CODEC_BSAC_DEC,    xa_audio_codec_factory,     NULL },
-    { "audio-decoder/dabplus",  CODEC_DAB_DEC,     xa_audio_codec_factory,     NULL },
-    { "audio-decoder/mp2",      CODEC_MP2_DEC,     xa_audio_codec_factory,     NULL },
-    { "audio-decoder/drm",      CODEC_DRM_DEC,     xa_audio_codec_factory,     NULL },
-    { "audio-decoder/sbc",      CODEC_SBC_DEC,     xa_audio_codec_factory,     NULL },
-    { "audio-encoder/sbc",      CODEC_SBC_ENC,     xa_audio_codec_factory,     NULL },
+    { "audio-decoder/mp3",      CODEC_MP3_DEC,     xa_audio_codec_factory,     xf_unia_codec },
+    { "audio-decoder/aac",      CODEC_AAC_DEC,     xa_audio_codec_factory,     xf_unia_codec },
+    { "audio-decoder/bsac",     CODEC_BSAC_DEC,    xa_audio_codec_factory,     xf_unia_codec },
+    { "audio-decoder/dabplus",  CODEC_DAB_DEC,     xa_audio_codec_factory,     xf_unia_codec },
+    { "audio-decoder/mp2",      CODEC_MP2_DEC,     xa_audio_codec_factory,     xf_unia_codec },
+    { "audio-decoder/drm",      CODEC_DRM_DEC,     xa_audio_codec_factory,     xf_unia_codec },
+    { "audio-decoder/sbc",      CODEC_SBC_DEC,     xa_audio_codec_factory,     xf_unia_codec },
+    { "audio-encoder/sbc",      CODEC_SBC_ENC,     xa_audio_codec_factory,     xf_unia_codec },
 };
 
 /* ...number of items in the map */

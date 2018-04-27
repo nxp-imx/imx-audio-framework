@@ -80,6 +80,12 @@ typedef struct XAAudioCodec
     /* ...indicate input stream is over */
     u32                     input_over;
 
+    /* loading library info of codec wrap */
+    dpu_lib_stat_t lib_codec_wrap_stat;
+
+    /* loading library info of codec */
+    dpu_lib_stat_t lib_codec_stat;
+
 }   XAAudioCodec;
 
 /*******************************************************************************
@@ -103,13 +109,14 @@ typedef struct XAAudioCodec
 /* ...XF_LOAD_LIB command processing */
 static DSP_ERROR_TYPE xa_codec_lib_load(XACodecBase *base, xf_message_t *m)
 {
+    XAAudioCodec   *codec = (XAAudioCodec *) base;
     icm_xtlib_pil_info  *cmd = m->buffer;
     void *lib_interface;
     u32 byteswap = 0;
 
     if(cmd->lib_type == DSP_CODEC_LIB)
     {
-        lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, &base->lib_codec_stat, byteswap);
+        lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, &codec->lib_codec_stat, byteswap);
         if(lib_interface == NULL)
         {
             LOG2("load codec lib failed: lib_type = %d, ret = 0x%x\n", cmd->lib_type, lib_interface);
@@ -117,12 +124,14 @@ static DSP_ERROR_TYPE xa_codec_lib_load(XACodecBase *base, xf_message_t *m)
             xf_response(m);
 
             return XA_INIT_ERR;
-		}
-        base->codecinterface = lib_interface;
+        }
+
+        /* ...set codec lib handle if codec is loaded as library*/
+        XA_API(base, XF_API_CMD_SET_LIB_ENTRY, DSP_CODEC_LIB, lib_interface);
     }
     else if(cmd->lib_type == DSP_CODEC_WRAP_LIB)
     {
-        lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, &base->lib_codec_wrap_stat, byteswap);
+        lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, &codec->lib_codec_wrap_stat, byteswap);
         if(lib_interface == NULL)
         {
             LOG2("load codec wrap lib failed: lib_type = %d, ret = 0x%x\n", cmd->lib_type, lib_interface);
@@ -131,7 +140,9 @@ static DSP_ERROR_TYPE xa_codec_lib_load(XACodecBase *base, xf_message_t *m)
 
             return XA_INIT_ERR;
         }
-        base->codecwrapinterface = (tUniACodecQueryInterface)lib_interface;
+
+        /* ...set codec wrapper lib handle if codec wrapper is loaded as library*/
+        XA_API(base, XF_API_CMD_SET_LIB_ENTRY, DSP_CODEC_WRAP_LIB, lib_interface);
     }
     else
     {
@@ -151,24 +162,25 @@ static DSP_ERROR_TYPE xa_codec_lib_load(XACodecBase *base, xf_message_t *m)
 /* ...XF_UNLOAD_LIB command processing */
 static DSP_ERROR_TYPE xa_codec_lib_unload(XACodecBase *base, xf_message_t *m)
 {
+    XAAudioCodec   *codec = (XAAudioCodec *) base;
     icm_xtlib_pil_info  *cmd = m->buffer;
     int ret = 0;
 
     if(cmd->lib_type == DSP_CODEC_WRAP_LIB)
     {
-        if(base->lib_codec_wrap_stat.stat == lib_loaded)
+        if(codec->lib_codec_wrap_stat.stat == lib_loaded)
         {
             /* ...destory codec resources */
-            if(base->WrapFun.Delete)
-                ret = base->WrapFun.Delete(base->pWrpHdl);
-            dpu_process_unload_pi_lib(&base->lib_codec_wrap_stat);
+            ret = XA_API(base, XF_API_CMD_CLEANUP, 0, NULL);
+
+            dpu_process_unload_pi_lib(&codec->lib_codec_wrap_stat);
         }
     }
     else if(cmd->lib_type == DSP_CODEC_LIB)
     {
-        if(base->lib_codec_stat.stat == lib_loaded)
+        if(codec->lib_codec_stat.stat == lib_loaded)
         {
-            dpu_process_unload_pi_lib(&base->lib_codec_stat);
+            dpu_process_unload_pi_lib(&codec->lib_codec_stat);
         }
     }
     else
@@ -286,7 +298,7 @@ static DSP_ERROR_TYPE xa_codec_fill_this_buffer(XACodecBase *base, xf_message_t 
 /* ...output port routing */
 static DSP_ERROR_TYPE xa_codec_port_route(XACodecBase *base, xf_message_t *m)
 {
-	dsp_main_struct *dsp_config = base->dsp_config;
+    dsp_main_struct *dsp_config = (dsp_main_struct *)base->component.private_data;
     XAAudioCodec           *codec = (XAAudioCodec *) base;
     xf_route_port_msg_t    *cmd = m->buffer;
     xf_output_port_t       *port = &codec->output;
@@ -322,7 +334,7 @@ static DSP_ERROR_TYPE xa_codec_port_route(XACodecBase *base, xf_message_t *m)
 /* ...port unroute command */
 static DSP_ERROR_TYPE xa_codec_port_unroute(XACodecBase *base, xf_message_t *m)
 {
-    dsp_main_struct *dsp_config = base->dsp_config;
+    dsp_main_struct *dsp_config = (dsp_main_struct *)base->component.private_data;
     XAAudioCodec           *codec = (XAAudioCodec *) base;
 
     /* ...command is allowed only in "postinit" state */
@@ -385,9 +397,8 @@ static DSP_ERROR_TYPE xa_codec_flush(XACodecBase *base, xf_message_t *m)
         /* ...clear input-ready condition */
         base->state &= ~XA_CODEC_FLAG_INPUT_SETUP;
 
-        /* ...reset audio codec */
-        if(base->WrapFun.Reset)
-            ret = base->WrapFun.Reset(base->pWrpHdl);
+        /* ...reset execution runtime */
+        XA_API(base, XF_API_CMD_RUNTIME_INIT, 0, NULL);
 
         /* ...reset produced samples counter */
         codec->produced = 0;
@@ -449,7 +460,7 @@ static DSP_ERROR_TYPE xa_codec_flush(XACodecBase *base, xf_message_t *m)
 static DSP_ERROR_TYPE xa_codec_memtab(XACodecBase *base, u32 size, u32 align)
 {
 	XAAudioCodec   *codec = (XAAudioCodec *) base;
-	dsp_main_struct *dsp_config = base->dsp_config;
+	dsp_main_struct *dsp_config = (dsp_main_struct *)base->component.private_data;
 	DSP_ERROR_TYPE ret = XA_SUCCESS;
 
 	/* ...input port specification; allocate internal buffer */
@@ -476,6 +487,9 @@ static DSP_ERROR_TYPE xa_codec_preprocess(XACodecBase *base)
         }
 
         LOG("set output ptr ok\n");
+
+        /* ...set the output buffer pointer */
+        XA_API(base, XF_API_CMD_SET_OUTPUT_PTR, 0, codec->output.buffer);
 
         /* ...mark output port is setup */
         base->state ^= XA_CODEC_FLAG_OUTPUT_SETUP;
@@ -505,6 +519,20 @@ static DSP_ERROR_TYPE xa_codec_preprocess(XACodecBase *base)
 
         LOG1("input-buffer fill-level: %u bytes\n", filled);
 
+        /* ...check if input stream is over */
+        if (xf_input_port_done(&codec->input))
+        {
+            /* ...pass input-over command to the codec to indicate the final buffer */
+            XA_API(base, XF_API_CMD_INPUT_OVER, 0, NULL);
+            LOG1("Codec[%d] signal input-over\n", base->codec_id);
+        }
+
+        /* ...set input buffer pointer as needed */
+        XA_API(base, XF_API_CMD_SET_INPUT_PTR, 0, codec->input.buffer);
+
+        /* ...specify number of bytes available in the input buffer */
+        XA_API(base, XF_API_CMD_SET_INPUT_BYTES, 0, &codec->input.filled);
+
         /* ...mark input port is setup */
         base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
     }
@@ -513,46 +541,18 @@ static DSP_ERROR_TYPE xa_codec_preprocess(XACodecBase *base)
     return XA_SUCCESS;
 }
 
-/* ...processing operation; input/output ports maintenance */
-static DSP_ERROR_TYPE xa_codec_process(XACodecBase *base, u32 *consumed, u32 *produced)
-{
-	XAAudioCodec   *codec = (XAAudioCodec *) base;
-	DSP_ERROR_TYPE    ret;
-	xf_input_port_t  *input_port;
-	xf_output_port_t *output_port;
-	u32 offset = 0;
-
-	input_port = &codec->input;
-	output_port = &codec->output;
-
-	if(base->WrapFun.Process == NULL)
-	{
-		LOG("WrapFun.Process Pointer is NULL\n");
-		return XA_INIT_ERR;
-	}
-
-	if(input_port->flags & XF_INPUT_FLAG_DONE)
-		codec->input_over = 1;
-
-	LOG4("in_buf = %x, in_size = %x, offset = %d, out_buf = %x\n", input_port->buffer, input_port->filled, offset, output_port->buffer);
-	ret = base->WrapFun.Process(base->pWrpHdl,
-	                            input_port->buffer,
-	                            input_port->filled,
-	                            &offset,
-	                            (u8 **)&output_port->buffer,
-	                            produced,
-	                            codec->input_over);
-	*consumed = offset;
-
-	LOG3("xa_codec_process successfully: consumed = %d, produced = %d, ret = %d\n", *consumed, *produced, ret);
-	return ret;
-}
-
 /* ...post-processing operation; input/output ports maintenance */
-static DSP_ERROR_TYPE xa_codec_postprocess(XACodecBase *base, u32 consumed, u32 produced, u32 ret)
+static DSP_ERROR_TYPE xa_codec_postprocess(XACodecBase *base, u32 ret)
 {
     XAAudioCodec   *codec = (XAAudioCodec *) base;
     xf_input_port_t  *input_port = &codec->input;
+    u32 consumed, produced;
+
+    /* ...get number of consumed / produced bytes */
+    XA_API(base, XF_API_CMD_GET_CONSUMED_BYTES, 0, &consumed);
+
+    /* ...get number of produced bytes */
+    XA_API(base, XF_API_CMD_GET_OUTPUT_BYTES, 0, &produced);
 
     LOG3("codec[%d]::postprocess(c=%d, p=%d)\n", base->codec_id, consumed, produced);
 
@@ -577,7 +577,7 @@ static DSP_ERROR_TYPE xa_codec_postprocess(XACodecBase *base, u32 consumed, u32 
     }
 
     /* ...process execution stage transition */
-    if ((input_port->flags & XF_INPUT_FLAG_DONE) &&
+    if (xf_input_port_done(&codec->input) &&
         !produced &&
         !ret
        )
@@ -680,7 +680,7 @@ static int xa_audio_codec_destroy(xf_component_t *component, xf_message_t *m)
 {
     XACodecBase    *base = (XACodecBase *) component;
     XAAudioCodec   *codec = (XAAudioCodec *) component;
-    dsp_main_struct *dsp_config = base->dsp_config;
+    dsp_main_struct *dsp_config = (dsp_main_struct *)base->component.private_data;
 
     /* ...destroy input port */
     xf_input_port_destroy(&codec->input, &dsp_config->scratch_mem_info);
@@ -734,21 +734,17 @@ static int xa_audio_codec_cleanup(xf_component_t *component, xf_message_t *m)
  * Audio codec component factory
  ******************************************************************************/
 
-xf_component_t * xa_audio_codec_factory(dsp_main_struct *dsp_config, void *process, u32 type)
+xf_component_t * xa_audio_codec_factory(dsp_main_struct *dsp_config, xf_codec_func_t *process, u32 type)
 {
     XAAudioCodec   *codec;
 
     /* ...allocate local memory for codec structure */
-    XF_CHK_ERR(codec = (XAAudioCodec *) xa_base_factory(dsp_config, sizeof(*codec), process), NULL);
+    XF_CHK_ERR(codec = (XAAudioCodec *) xa_base_factory(dsp_config, sizeof(*codec), process, type), NULL);
 
     /* ...set base codec API methods */
     codec->base.memtab = xa_codec_memtab;
     codec->base.preprocess = xa_codec_preprocess;
-    codec->base.process = xa_codec_process;
     codec->base.postprocess = xa_codec_postprocess;
-
-    /* ...set codec id */
-    codec->base.codec_id = type;
 
     /* ...set message commands processing table */
     codec->base.command = xa_codec_cmd;

@@ -45,44 +45,23 @@
 /* ...codec pre-initialization */
 static DSP_ERROR_TYPE xa_base_preinit(XACodecBase *base)
 {
-	dsp_main_struct *dsp_config = base->dsp_config;
-	DSPCodecMemoryOps memops;
+	dsp_main_struct *dsp_config = (dsp_main_struct *)base->component.private_data;
+	u32 size;
 	DSP_ERROR_TYPE ret = XA_SUCCESS;
 
-	if(base->codecwrapinterface == NULL)
+	/* ...get API structure size */
+	XA_API(base, XF_API_CMD_GET_API_SIZE, 0, &size);
+
+	/* ...allocate memory for codec API structure (8-bytes aligned) */
+	base->api = MEM_scratch_malloc(&dsp_config->scratch_mem_info, size);
+	memset(base->api, 0, size);
+
+	/* ...codec pre-initialization */
+	ret = XA_API(base, XF_API_CMD_PRE_INIT, base->codec_id, (void *)dsp_config);
+	if(ret != XA_SUCCESS)
 	{
-		LOG("base->codecwrapinterface Pointer is NULL\n");
-		return XA_INIT_ERR;
-	}
-
-	base->codecwrapinterface(ACODEC_API_CREATE_CODEC, (void **)&base->WrapFun.Create);
-	base->codecwrapinterface(ACODEC_API_DELETE_CODEC, (void **)&base->WrapFun.Delete);
-	base->codecwrapinterface(ACODEC_API_INIT_CODEC, (void **)&base->WrapFun.Init);
-	base->codecwrapinterface(ACODEC_API_RESET_CODEC, (void **)&base->WrapFun.Reset);
-	base->codecwrapinterface(ACODEC_API_SET_PARAMETER, (void **)&base->WrapFun.SetPara);
-	base->codecwrapinterface(ACODEC_API_GET_PARAMETER, (void **)&base->WrapFun.GetPara);
-	base->codecwrapinterface(ACODEC_API_DECODE_FRAME, (void **)&base->WrapFun.Process);
-	base->codecwrapinterface(ACODEC_API_GET_LAST_ERROR, (void **)&base->WrapFun.GetLastError);
-
-	memops.Malloc = (void *)MEM_scratch_malloc;
-	memops.Free = (void *)MEM_scratch_mfree;
-#ifdef DEBUG
-	memops.dsp_printf = NULL;
-#endif
-
-	memops.p_xa_process_api = base->codecinterface;
-	memops.dsp_config = &dsp_config->scratch_mem_info;
-
-	if(base->WrapFun.Create == NULL)
-	{
-		LOG("WrapFun.Create Pointer is NULL\n");
-		return XA_INIT_ERR;
-	}
-
-	base->pWrpHdl = base->WrapFun.Create(&memops, base->codec_id);
-	if(base->pWrpHdl == NULL) {
-		LOG("Create codec error in codec wrapper\n");
-		return XA_INIT_ERR;
+		LOG2("Codec[%d] pre-initialization error, error = %d\n", base->codec_id, ret);
+		return ret;
 	}
 
 	LOG1("Codec[%d] pre-initialization completed\n", base->codec_id);
@@ -90,20 +69,26 @@ static DSP_ERROR_TYPE xa_base_preinit(XACodecBase *base)
     return ret;
 }
 
+/* ...initialization setup */
+static DSP_ERROR_TYPE xa_base_init(XACodecBase *base)
+{
+	DSP_ERROR_TYPE ret;
+
+	/* ...codec initialization */
+	ret = XA_API(base, XF_API_CMD_INIT, 0, NULL);
+
+	LOG2("Codec[%d] initialization completed, ret = %d\n", base->codec_id, ret);
+
+	return ret;
+}
+
 /* ...post-initialization setup */
 static DSP_ERROR_TYPE xa_base_postinit(XACodecBase *base)
 {
-	dsp_main_struct *dsp_config = base->dsp_config;
 	DSP_ERROR_TYPE ret;
 
-	if(base->WrapFun.Init == NULL)
-	{
-		LOG("WrapFun.Init Pointer is NULL\n");
-		return XA_INIT_ERR;
-	}
-
-	/* ...initialize codec memory */
-	ret = base->WrapFun.Init(base->pWrpHdl);
+	/* ...codec post-initialization */
+	ret = XA_API(base, XF_API_CMD_POST_INIT, 0, NULL);
 
 	LOG2("Codec[%d] post-initialization completed, ret = %d\n", base->codec_id, ret);
 
@@ -118,36 +103,21 @@ static DSP_ERROR_TYPE xa_base_postinit(XACodecBase *base)
 DSP_ERROR_TYPE xa_base_set_param(XACodecBase *base, xf_message_t *m)
 {
 	xf_set_param_msg_t     *cmd = m->buffer;
-	DSPCodecSetParameter param;
+	s32 command, value;
 	u32 n, i;
 	DSP_ERROR_TYPE ret;
 
-	/* ...check if we need to do pre-initialization */
-	if ((base->state & XA_BASE_FLAG_PREINIT) == 0)
+	/* ...check if we need to do initialization */
+	if ((base->state & XA_BASE_FLAG_INIT) == 0)
 	{
 		/* ...do basic initialization */
-		if (xa_base_preinit(base) != XA_SUCCESS)
+		if (xa_base_init(base) != XA_SUCCESS)
 		{
-		//	m->ret = XA_INIT_ERR;
-		//	xf_response(m);
-
-			/* ...initialization failed for some reason; do cleanup */
-			xa_base_destroy(base);
-
 			return XA_INIT_ERR;
 		}
 
 		/* ...mark the codec static configuration is set */
-		base->state ^= XA_BASE_FLAG_PREINIT;
-	}
-
-	if(base->WrapFun.SetPara == NULL)
-	{
-		LOG("WrapFun.SetPara Pointer is NULL\n");
-		m->ret = XA_INIT_ERR;
-		xf_response(m);
-
-		return XA_INIT_ERR;
+		base->state ^= XA_BASE_FLAG_INIT;
 	}
 
 	/* ...calculate amount of parameters */
@@ -156,13 +126,13 @@ DSP_ERROR_TYPE xa_base_set_param(XACodecBase *base, xf_message_t *m)
 	/* ...send the collection of codec  parameters */
 	for (i = 0; i < n; i++)
 	{
-		param.cmd = cmd[i].id;
-		param.val = cmd[i].value;
+		command = cmd[i].id;
+		value = cmd[i].value;
 
 		/* ...apply parameter; pass to codec-specific function */
-		LOG2("set-param: [%d], %d\n", param.cmd, param.val);
+		LOG2("set-param: [%d], %d\n", command, value);
 
-		ret = base->WrapFun.SetPara(base->pWrpHdl, &param);
+		ret = XA_API(base, XF_API_CMD_SET_PARAM, command, &value);
 		if(ret != XA_SUCCESS)
 		{
 			m->ret = ret;
@@ -180,56 +150,25 @@ DSP_ERROR_TYPE xa_base_set_param(XACodecBase *base, xf_message_t *m)
 /* ...GET-PARAM message processing (enabled in all states) */
 DSP_ERROR_TYPE xa_base_get_param(XACodecBase *base, xf_message_t *m)
 {
-	DSPCodecGetParameter param;
 	xf_get_param_msg_t *cmd = m->buffer;
+	u32 command, value;
 	u32 n, i;
 	DSP_ERROR_TYPE ret = 0;
-
-	if(base->WrapFun.GetPara == NULL)
-	{
-		m->ret = XA_INIT_ERR;
-		xf_response(m);
-
-		return XA_INIT_ERR;
-	}
 
 	/* ...calculate amount of parameters */
 	n = m->length / sizeof(*cmd);
 
-    /* ...retrieve the collection of codec  parameters */
-	ret = base->WrapFun.GetPara(base->pWrpHdl, &param);
-	if(ret)
-	{
-		m->ret = XA_PARA_ERROR;
-		xf_response(m);
-
-		return XA_PARA_ERROR;
-	}
-
 	/* ...retrieve the collection of codec  parameters */
 	for (i = 0; i < n; i++)
 	{
-		switch(cmd[i].id)
+		command = cmd[i].id;
+		ret = XA_API(base, XF_API_CMD_GET_PARAM, command, &value);
+		if(ret != XA_SUCCESS)
 		{
-			case XA_SAMPLERATE:
-				cmd[i].value = param.sfreq;
-				break;
-			case XA_CHANNEL:
-				cmd[i].value = param.channels;
-				break;
-			case XA_DEPTH:
-				cmd[i].value = param.bits;
-				break;
-			case XA_CONSUMED_LENGTH:
-				cmd[i].value = param.consumed_bytes;
-				break;
-			case XA_CONSUMED_CYCLES:
-				cmd[i].value = param.cycles;
-				break;
-			default:
-				cmd[i].value = 0;
-				break;
+			m->ret = ret;
+			break;
 		}
+		cmd[i].value = value;
 	}
 
 	LOG1("Codec get parameter completed, ret = %d\n", ret);
@@ -248,26 +187,19 @@ DSP_ERROR_TYPE xa_base_get_param(XACodecBase *base, xf_message_t *m)
 static DSP_ERROR_TYPE xa_base_process(XACodecBase *base)
 {
 	DSP_ERROR_TYPE    ret;
-	u32 consumed, produced;
 
 	/* ...check if we need to do post-initialization */
 	if ((base->state & XA_BASE_FLAG_POSTINIT) == 0)
 	{
-		/* ...check if we need to do pre-initialization */
-		if ((base->state & XA_BASE_FLAG_PREINIT) == 0)
+		/* ...check if we need to do initialization */
+		if ((base->state & XA_BASE_FLAG_INIT) == 0)
 		{
 			/* ...do basic initialization */
-			if (xa_base_preinit(base) != XA_SUCCESS)
-			{
-				/* ...initialization failed for some reason; do cleanup */
-				xa_base_destroy(base);
-				LOG("Preinit failed\n");
-
+			if (xa_base_init(base) != XA_SUCCESS)
 				return XA_INIT_ERR;
-			}
 
 			/* ...mark the codec static configuration is set */
-			base->state ^= XA_BASE_FLAG_PREINIT;
+			base->state ^= XA_BASE_FLAG_INIT;
 		}
 
 		/* ...do post-initialization step */
@@ -292,15 +224,12 @@ static DSP_ERROR_TYPE xa_base_process(XACodecBase *base)
 	/* ...execution step */
 	if (base->state & XA_BASE_FLAG_EXECUTION)
 	{
-		if ((ret = CODEC_API(base, process, &consumed, &produced)) != XA_SUCCESS)
-		{
-			/* ...return non-fatal codec error */
-		//	return ret;
-		}
+		/* ...execute decoding process */
+		ret = XA_API(base, XF_API_CMD_EXECUTE, 0, NULL);
 	}
 
 	/* ...codec-specific buffer post-processing */
-	return CODEC_API(base, postprocess, consumed, produced, ret);
+	return CODEC_API(base, postprocess, ret);
 }
 
 /* ...message-processing function (component entry point) */
@@ -346,7 +275,7 @@ static int xa_base_command(xf_component_t *component, xf_message_t *m)
 /* ...data processing scheduling */
 void xa_base_schedule(XACodecBase *base, u32 dts)
 {
-    dsp_main_struct *dsp_config = base->dsp_config;
+    dsp_main_struct *dsp_config = (dsp_main_struct *)base->component.private_data;
 
     if ((base->state & XA_BASE_FLAG_SCHEDULE) == 0)
     {
@@ -365,7 +294,7 @@ void xa_base_schedule(XACodecBase *base, u32 dts)
 /* ...cancel data processing */
 void xa_base_cancel(XACodecBase *base)
 {
-    dsp_main_struct *dsp_config = base->dsp_config;
+    dsp_main_struct *dsp_config = (dsp_main_struct *)base->component.private_data;
 
     if (base->state & XA_BASE_FLAG_SCHEDULE)
     {
@@ -382,8 +311,11 @@ void xa_base_cancel(XACodecBase *base)
 /* ...base codec destructor */
 void xa_base_destroy(XACodecBase *base)
 {
-    dsp_main_struct *dsp_config = base->dsp_config;
+    dsp_main_struct *dsp_config = (dsp_main_struct *)base->component.private_data;
     DSP_ERROR_TYPE    ret;
+
+    /* ...deallocate all resources */
+    MEM_scratch_mfree(&dsp_config->scratch_mem_info, base->api);
 
     /* ...destroy codec structure (and task) itself */
     MEM_scratch_mfree(&dsp_config->scratch_mem_info, base);
@@ -392,7 +324,7 @@ void xa_base_destroy(XACodecBase *base)
 }
 
 /* ...generic codec initialization routine */
-XACodecBase * xa_base_factory(dsp_main_struct *dsp_config, u32 size, void *process)
+XACodecBase * xa_base_factory(dsp_main_struct *dsp_config, u32 size, xf_codec_func_t *process, u32 type)
 {
     XACodecBase    *base;
 
@@ -405,11 +337,26 @@ XACodecBase * xa_base_factory(dsp_main_struct *dsp_config, u32 size, void *proce
     /* ...reset codec memory */
     memset(base, 0, size);
 
-	/* ...set global structure pointer */
-	base->dsp_config = dsp_config;
+    /* ...set low-level codec API function */
+    base->process = process;
+
+    /* ...set codec id */
+    base->codec_id = type;
 
     /* ...set message processing function */
     base->component.entry = xa_base_command;
+
+    /* ...set component private data pointer */
+    base->component.private_data = (void *)dsp_config;
+
+    /* ...do basic initialization */
+    if (xa_base_preinit(base) != XA_SUCCESS)
+    {
+        /* ...initialization failed for some reason; do cleanup */
+        xa_base_destroy(base);
+
+        return NULL;
+    }
 
     return base;
 }

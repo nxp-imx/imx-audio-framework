@@ -37,6 +37,7 @@
 
 /* ...audio-specific API */
 #include "dsp_codec_interface.h"
+#include "xf-audio-apicmd.h"
 #include "xf-component.h"
 #include "mydefs.h"
 #include "dpu_lib_load.h"
@@ -53,11 +54,8 @@ typedef DSP_ERROR_TYPE  (*xa_codec_memtab_f)(XACodecBase *codec, u32 size, u32 a
 /* ...preprocessing operation */
 typedef DSP_ERROR_TYPE  (*xa_codec_preprocess_f)(XACodecBase *);
 
-/* ...processing operation */
-typedef DSP_ERROR_TYPE  (*xa_codec_process_f)(XACodecBase *, u32 *, u32 *);
-
 /* ...postprocessing operation */
-typedef DSP_ERROR_TYPE  (*xa_codec_postprocess_f)(XACodecBase *, u32, u32, u32);
+typedef DSP_ERROR_TYPE  (*xa_codec_postprocess_f)(XACodecBase *, u32);
 
 /* ...parameter setting function */
 typedef DSP_ERROR_TYPE  (*xa_codec_setparam_f)(XACodecBase *, s32, void *p);
@@ -65,17 +63,6 @@ typedef DSP_ERROR_TYPE  (*xa_codec_setparam_f)(XACodecBase *, s32, void *p);
 /* ...parameter retrival function */
 typedef DSP_ERROR_TYPE  (*xa_codec_getparam_f)(XACodecBase *, s32, void *p);
 
-typedef struct {
-	UniACodecVersionInfo    VersionInfo;
-	UniACodecCreate         Create;
-	UniACodecDelete         Delete;
-	UniACodecInit           Init;
-	UniACodecReset          Reset;
-	UniACodecSetParameter   SetPara;
-	UniACodecGetParameter   GetPara;
-	UniACodec_decode_frame  Process;
-	UniACodec_get_last_error    GetLastError;
-}sCodecFun;
 
 /*******************************************************************************
  * Codec instance structure
@@ -90,29 +77,14 @@ struct XACodecBase
     /* ...generic component handle */
     xf_component_t          component;
 
-    /* ...global structure pointer */
-    dsp_main_struct *dsp_config;
-
     /* ...codec API entry point (function) */
-    tUniACodecQueryInterface codecwrapinterface;
+    xf_codec_func_t         *process;
 
     /* ...codec API handle, passed to *process */
-    void *codecinterface;
-
-    /* ...dsp codec wrapper handle */
-    DSPCodec_Handle pWrpHdl;
-
-    /* ...dsp codec wrapper api */
-    sCodecFun WrapFun;
+    xf_codec_handle_t       api;
 
     /* codec identifier */
     u32 codec_id;
-
-    /* loading library info of codec wrap */
-    dpu_lib_stat_t lib_codec_wrap_stat;
-
-    /* loading library info of codec */
-    dpu_lib_stat_t lib_codec_stat;
 
     /* ...codec control state */
     u32                     state;
@@ -126,9 +98,6 @@ struct XACodecBase
 
     /* ...preprocessing function */
     xa_codec_preprocess_f   preprocess;
-
-    /* ...preprocessing function */
-    xa_codec_process_f   process;
 
     /* ...postprocessing function */
     xa_codec_postprocess_f  postprocess;
@@ -153,39 +122,55 @@ struct XACodecBase
 /* ...codec pre-initialize completed */
 #define XA_BASE_FLAG_PREINIT            (1 << 0)
 
+/* ...codec initialize completed */
+#define XA_BASE_FLAG_INIT               (1 << 1)
+
 /* ...codec static initialization completed */
-#define XA_BASE_FLAG_POSTINIT           (1 << 1)
+#define XA_BASE_FLAG_POSTINIT           (1 << 2)
 
 /* ...codec runtime initialization sequence */
-#define XA_BASE_FLAG_RUNTIME_INIT       (1 << 2)
+#define XA_BASE_FLAG_RUNTIME_INIT       (1 << 3)
 
 /* ...codec steady execution state */
-#define XA_BASE_FLAG_EXECUTION          (1 << 3)
+#define XA_BASE_FLAG_EXECUTION          (1 << 4)
 
 /* ...execution stage completed */
-#define XA_BASE_FLAG_COMPLETED          (1 << 4)
+#define XA_BASE_FLAG_COMPLETED          (1 << 5)
 
 /* ...data processing scheduling flag */
-#define XA_BASE_FLAG_SCHEDULE           (1 << 5)
+#define XA_BASE_FLAG_SCHEDULE           (1 << 6)
 
 /* ...base codec flags accessor */
-#define __XA_BASE_FLAGS(flags)          ((flags) & ((1 << 6) - 1))
+#define __XA_BASE_FLAGS(flags)          ((flags) & ((1 << 7) - 1))
 
 /* ...custom execution flag */
-#define __XA_BASE_FLAG(f)               ((f) << 6)
+#define __XA_BASE_FLAG(f)               ((f) << 7)
 
 
 /*******************************************************************************
  * Public API
  ******************************************************************************/
+
+/* ...low-level codec API function execution */
+#define XA_API(codec, cmd, idx, pv)                                                         \
+({                                                                                          \
+    DSP_ERROR_TYPE  __e;                                                                    \
+    __e = (codec)->process((xf_codec_handle_t)((codec)->api), (cmd), (idx), (pv));          \
+    if (__e != XA_SUCCESS)                                                                  \
+    {                                                                                       \
+        LOG1("XA_API error: %x\n", __e);                                                    \
+    }                                                                                       \
+    __e;                                                                                    \
+})
+
 /* ...codec hook invocation */
 #define CODEC_API(codec, func, ...)                                 \
 ({                                                                  \
-    DSP_ERROR_TYPE __e = (codec)->func((codec), ##__VA_ARGS__);    \
+    DSP_ERROR_TYPE __e = (codec)->func((codec), ##__VA_ARGS__);     \
                                                                     \
     if (__e != XA_SUCCESS)                                          \
     {                                                               \
-		LOG1("warning: %x\n", __e);                                 \
+		LOG1(" CODEC_API error: %x\n", __e);                        \
     }                                                               \
     __e;                                                            \
 })
@@ -203,7 +188,7 @@ extern void xa_base_schedule(XACodecBase *base, u32 dts);
 extern void xa_base_cancel(XACodecBase *base);
 
 /* ...base codec factory */
-extern XACodecBase * xa_base_factory(dsp_main_struct *dsp_config, u32 size, void *process);
+extern XACodecBase * xa_base_factory(dsp_main_struct *dsp_config, u32 size, xf_codec_func_t *process, u32 type);
 
 /* ...base codec destructor */
 extern void xa_base_destroy(XACodecBase *base);

@@ -56,6 +56,9 @@ typedef struct xf_component
     /* ...component destructor function */
     int                   (*exit)(struct xf_component *, xf_message_t *);
 
+    /* ...private data pointer */
+    void                  *private_data;
+
 }   xf_component_t;
 
 /* ...component map entry */
