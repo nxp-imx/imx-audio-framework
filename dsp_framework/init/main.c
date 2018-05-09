@@ -41,13 +41,16 @@ dsp_main_struct *dsp_global_data;
 /* ...wake on when interrupt happens */
 void wake_on_ints(dsp_main_struct *dsp_config)
 {
-	/* ...if interrupt happens, don't enter low power mode */
+	_xtos_ints_on(1 << INT_NUM_MU);
+
+	_xtos_set_intlevel(15);
 	if(!dsp_config->is_interrupt)
 		XT_WAITI(0);
+	_xtos_set_intlevel(0);
+
+	_xtos_ints_off(1 << INT_NUM_MU);
 
 	dsp_config->is_interrupt = 0;
-
-	return;
 }
 
 int main()
@@ -65,7 +68,6 @@ int main()
 	/* set the interrupt */
 	xthal_set_intclear(-1);
 	_xtos_set_interrupt_handler_arg(INT_NUM_MU, interrupt_handler_icm, &dsp_config);
-	_xtos_ints_on(1 << INT_NUM_MU);
 
 #ifdef DEBUG
 	enable_log();
