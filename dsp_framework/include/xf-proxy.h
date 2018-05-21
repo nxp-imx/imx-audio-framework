@@ -1,32 +1,32 @@
 /*******************************************************************************
-* Copyright (C) 2017 Cadence Design Systems, Inc.
-* Copyright 2018 NXP
-*
-* Permission is hereby granted, free of charge, to any person obtaining
-* a copy of this software and associated documentation files (the
-* "Software"), to use this Software with Cadence processor cores only and
-* not with any other processors and platforms, subject to
-* the following conditions:
-*
-* The above copyright notice and this permission notice shall be included
-* in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Copyright (C) 2017 Cadence Design Systems, Inc.
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to use this Software with Cadence processor cores only and
+ * not with any other processors and platforms, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-******************************************************************************/
+ *****************************************************************************/
 
 /*******************************************************************************
  * xf-proxy.h
  *
  * Proxy commmand/response messages
  *
- *******************************************************************************/
+ ******************************************************************************/
 
 #ifndef __XF_PROXY_H
 #define __XF_PROXY_H
@@ -37,24 +37,23 @@
  * Types definitions
  ******************************************************************************/
 /* ...command/response message */
-typedef struct xf_proxy_message
-{
-    /* ...session ID */
-    u32                 session_id;
+struct __attribute__((__packed__)) xf_proxy_message {
+	/* ...session ID */
+	u32                 session_id;
 
-    /* ...proxy API command/reponse code */
-    u32                 opcode;
+	/* ...proxy API command/reponse code */
+	u32                 opcode;
 
-    /* ...length of attached buffer */
-    u32                 length;
+	/* ...length of attached buffer */
+	u32                 length;
 
-    /* ...physical address of message buffer */
-    u32                 address;
+	/* ...physical address of message buffer */
+	u32                 address;
 
-    /* ...return message status */
-    u32                 ret;
+	/* ...return message status */
+	u32                 ret;
 
-}   __attribute__((__packed__)) xf_proxy_message_t;
+};
 
 /*******************************************************************************
  * Ring buffer support

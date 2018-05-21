@@ -1,27 +1,26 @@
-//*****************************************************************
-// Copyright 2018 NXP
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-//*****************************************************************
-
+/*****************************************************************
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************/
 
 #include <string.h>
 #include <xtensa/hal.h>
@@ -33,18 +32,18 @@
 
 #define I_CACHE_ATTRIBUTE  0x2224224F     //write back mode
 #define D_CACHE_ATTRIBUTE  0x2221224F     //write through mode
-#define INT_NUM_MU 	 7
+#define INT_NUM_MU	7
 
 /* ...define a global pointer, used in xf-msg.c */
-dsp_main_struct *dsp_global_data;
+struct dsp_main_struct *dsp_global_data;
 
 /* ...wake on when interrupt happens */
-void wake_on_ints(dsp_main_struct *dsp_config)
+void wake_on_ints(struct dsp_main_struct *dsp_config)
 {
 	_xtos_ints_on(1 << INT_NUM_MU);
 
 	_xtos_set_intlevel(15);
-	if(!dsp_config->is_interrupt)
+	if (!dsp_config->is_interrupt)
 		XT_WAITI(0);
 	_xtos_set_intlevel(0);
 
@@ -53,10 +52,10 @@ void wake_on_ints(dsp_main_struct *dsp_config)
 	dsp_config->is_interrupt = 0;
 }
 
-int main()
+int main(void)
 {
 	int ret;
-	dsp_main_struct dsp_config;
+	struct dsp_main_struct dsp_config;
 
 	/* set the cache attribute */
 	xthal_set_icacheattr(I_CACHE_ATTRIBUTE);
@@ -67,7 +66,9 @@ int main()
 
 	/* set the interrupt */
 	xthal_set_intclear(-1);
-	_xtos_set_interrupt_handler_arg(INT_NUM_MU, interrupt_handler_icm, &dsp_config);
+	_xtos_set_interrupt_handler_arg(INT_NUM_MU,
+					interrupt_handler_icm,
+					&dsp_config);
 
 #ifdef DEBUG
 	enable_log();
@@ -78,8 +79,7 @@ int main()
 
 	LOG("DSP Start.....\n");
 
-	for(;;)
-	{
+	for ( ; ; ) {
 		/* ...dsp enter low power mode when no messages */
 		wake_on_ints(&dsp_config);
 

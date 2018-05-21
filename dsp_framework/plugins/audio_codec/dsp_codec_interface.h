@@ -1,26 +1,26 @@
-//*****************************************************************
-// Copyright 2018 NXP
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-//*****************************************************************
+/*****************************************************************
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************/
 
 /*
  * In order to avoid license problem of Cadence header files, this
@@ -56,111 +56,104 @@ typedef char int8;
 	#define NULL  (void *)0
 #endif
 
-
 typedef void * DSPCodec_Handle;
 
+typedef enum {
+	XA_SUCCESS = 0,
 
-typedef enum
-{
-    XA_SUCCESS = 0,
+	XA_ERROR_STREAM,
+	XA_PARA_ERROR,
+	XA_INSUFFICIENT_MEM,
+	XA_ERR_UNKNOWN,
+	XA_PROFILE_NOT_SUPPORT,
+	XA_INIT_ERR,
+	XA_NO_OUTPUT,
 
-    XA_ERROR_STREAM,
-    XA_PARA_ERROR,
-    XA_INSUFFICIENT_MEM,
-    XA_ERR_UNKNOWN,
-    XA_PROFILE_NOT_SUPPORT,
-    XA_INIT_ERR,
-    XA_NO_OUTPUT,
-
-    XA_NOT_ENOUGH_DATA = 0x100,
-    XA_CAPIBILITY_CHANGE = 0x200, /* output format changes, caller should reget format from getparameter API */
-    XA_END_OF_STREAM = 0x300, /* no output */
+	XA_NOT_ENOUGH_DATA = 0x100,
+	XA_CAPIBILITY_CHANGE = 0x200,
+	XA_END_OF_STREAM = 0x300, /* no output */
 } DSP_ERROR_TYPE;
 
 /* Parameter type to Set /Get */
-typedef enum
-{
+typedef enum {
 /* Set parmameters */
 /* common  */
-    XA_SAMPLERATE= 0,
-    XA_CHANNEL,
-    XA_FRAMED,        /* one whole frame input */
-    XA_DEPTH,
-    XA_CODEC_DATA,
-    XA_BITRATE,
-    XA_DOWNMIX_STEREO,
-    XA_STREAM_TYPE,
-    XA_CHAN_MAP_TABLE,
-    //UNIA_CHANNEL_MASK,
-    XA_TO_STEREO,
+	XA_SAMPLERATE = 0,
+	XA_CHANNEL,
+	XA_FRAMED,        /* one whole frame input */
+	XA_DEPTH,
+	XA_CODEC_DATA,
+	XA_BITRATE,
+	XA_DOWNMIX_STEREO,
+	XA_STREAM_TYPE,
+	XA_CHAN_MAP_TABLE,
+	//UNIA_CHANNEL_MASK,
+	XA_TO_STEREO,
 
 /* dedicate for mp3 dec */
-    XA_MP3_DEC_CRC_CHECK = 0x120,
-    XA_MP3_DEC_MCH_ENABLE,
-    XA_MP3_DEC_NONSTD_STRM_SUPPORT,
+	XA_MP3_DEC_CRC_CHECK = 0x120,
+	XA_MP3_DEC_MCH_ENABLE,
+	XA_MP3_DEC_NONSTD_STRM_SUPPORT,
 
 /* dedicate for bsac dec */
-    XA_BSAC_DEC_DECODELAYERS = 0x130,
+	XA_BSAC_DEC_DECODELAYERS = 0x130,
 
 /* dedicate for aacplus dec */
-    XA_AACPLUS_DEC_BDOWNSAMPLE = 0x140,
-    XA_AACPLUS_DEC_BBITSTREAMDOWNMIX,
-    XA_AACPLUS_DEC_CHANROUTING,
+	XA_AACPLUS_DEC_BDOWNSAMPLE = 0x140,
+	XA_AACPLUS_DEC_BBITSTREAMDOWNMIX,
+	XA_AACPLUS_DEC_CHANROUTING,
 
 /* dedicate for dabplus dec */
-    XA_DABPLUS_DEC_BDOWNSAMPLE = 0x150,
-    XA_DABPLUS_DEC_BBITSTREAMDOWNMIX,
-    XA_DABPLUS_DEC_CHANROUTING,
+	XA_DABPLUS_DEC_BDOWNSAMPLE = 0x150,
+	XA_DABPLUS_DEC_BBITSTREAMDOWNMIX,
+	XA_DABPLUS_DEC_CHANROUTING,
 
 /* dedicate for sbc enc */
-    XA_SBC_ENC_SUBBANDS = 0x160,
-    XA_SBC_ENC_BLOCKS,
-    XA_SBC_ENC_SNR,
-    XA_SBC_ENC_BITPOOL,
-    XA_SBC_ENC_CHMODE,
+	XA_SBC_ENC_SUBBANDS = 0x160,
+	XA_SBC_ENC_BLOCKS,
+	XA_SBC_ENC_SNR,
+	XA_SBC_ENC_BITPOOL,
+	XA_SBC_ENC_CHMODE,
 
 /* Get parmameters */
-    XA_CODEC_DESCRIPTION = 0x200,
-    XA_OUTPUT_PCM_FORMAT,
-    XA_CONSUMED_LENGTH,
-    XA_OUTBUF_ALLOC_SIZE,
-    XA_CONSUMED_CYCLES,
+	XA_CODEC_DESCRIPTION = 0x200,
+	XA_OUTPUT_PCM_FORMAT,
+	XA_CONSUMED_LENGTH,
+	XA_OUTBUF_ALLOC_SIZE,
+	XA_CONSUMED_CYCLES,
 
 } DSP_ParaType;
 
-
 #define XA_STREAM_DABPLUS_BASE  0x30
-typedef enum
-{
-    /* AAC/AACPLUS file format */
-    XA_STREAM_UNKNOWN = 0,
-    XA_STREAM_ADTS,
-    XA_STREAM_ADIF,
-    XA_STREAM_RAW,
+typedef enum {
+	/* AAC/AACPLUS file format */
+	XA_STREAM_UNKNOWN = 0,
+	XA_STREAM_ADTS,
+	XA_STREAM_ADIF,
+	XA_STREAM_RAW,
 
-    XA_STREAM_LATM,
-    XA_STREAM_LATM_OUTOFBAND_CONFIG,
-    XA_STREAM_LOAS,
+	XA_STREAM_LATM,
+	XA_STREAM_LATM_OUTOFBAND_CONFIG,
+	XA_STREAM_LOAS,
 
-    /* DABPLUS file format */
-    XA_STREAM_DABPLUS_RAW_SIDEINFO = XA_STREAM_DABPLUS_BASE,
-    XA_STREAM_DABPLUS,
+	/* DABPLUS file format */
+	XA_STREAM_DABPLUS_RAW_SIDEINFO = XA_STREAM_DABPLUS_BASE,
+	XA_STREAM_DABPLUS,
 
-    /* BSAC file raw format */
-    XA_STREAM_BSAC_RAW
+	/* BSAC file raw format */
+	XA_STREAM_BSAC_RAW
 
 } DSP_StreamType;
 
 /* sbc_enc-specific channel modes */
 typedef enum {
-    XA_CHMODE_MONO =   0,
-    XA_CHMODE_DUAL =   1,
-    XA_CHMODE_STEREO = 2,
-    XA_CHMODE_JOINT =  3
-}DSP_SbcEncChmode;
+	XA_CHMODE_MONO =   0,
+	XA_CHMODE_DUAL =   1,
+	XA_CHMODE_STEREO = 2,
+	XA_CHMODE_JOINT =  3
+} DSP_SbcEncChmode;
 
-typedef enum
-{
+typedef enum {
 	CODEC_MP3_DEC = 1,
 	CODEC_AAC_DEC,
 	CODEC_DAB_DEC,
@@ -171,90 +164,83 @@ typedef enum
 	CODEC_SBC_ENC,
 	CODEC_DEMO_DEC,
 
-}AUDIOFORMAT;
+} AUDIOFORMAT;
 
 /*********************************************************************
  * Uni Audio memory callback funtion pointer table.
  *********************************************************************/
-typedef struct
-{
-    void* (*Malloc) (void *dsp_config, uint32 size);
-    void  (*Free) (void *dsp_config, void * ptr);
+typedef struct {
+	void* (*Malloc)(void *dsp_config, uint32 size);
+	void  (*Free)(void *dsp_config, void *ptr);
 
-    int   (*dsp_printf)(const char *fmt, ...);
+	int   (*dsp_printf)(const char *fmt, ...);
 
-    void *p_xa_process_api;
-    void *dsp_config;
+	void *p_xa_process_api;
+	void *dsp_config;
 } DSPCodecMemoryOps; /* callback operation callback table */
 
-
-typedef struct
-{
-    int32 cmd;
-    int32 val;
+typedef struct {
+	int32 cmd;
+	int32 val;
 } DSPCodecSetParameter;
 
-
-typedef struct
-{
-    uint32 pcmbytes;
-    uint32 sfreq;
-    uint32 channels;
-    uint32 bits;
-    uint32 consumed_bytes;
-    uint32 cycles;
+typedef struct {
+	uint32 pcmbytes;
+	uint32 sfreq;
+	uint32 channels;
+	uint32 bits;
+	uint32 consumed_bytes;
+	uint32 cycles;
 } DSPCodecGetParameter;
 
+int32 UniACodecQueryInterface(uint32 id, void **func);
 
-int32 UniACodecQueryInterface(uint32 id, void ** func);
-
-
-typedef int32 (*tUniACodecQueryInterface)(uint32 id, void ** func);
+typedef int32 (*tUniACodecQueryInterface)(uint32 id, void **func);
 
 typedef const char * (*UniACodecVersionInfo)();
-typedef DSPCodec_Handle (*UniACodecCreate)(DSPCodecMemoryOps * memOps, AUDIOFORMAT type);
+typedef DSPCodec_Handle (*UniACodecCreate)(DSPCodecMemoryOps * memOps,
+					AUDIOFORMAT type);
 typedef int32 (*UniACodecInit)(DSPCodec_Handle pua_handle);
 typedef int32 (*UniACodecDelete)(DSPCodec_Handle pua_handle);
-typedef int32 (*UniACodecReset) (DSPCodec_Handle pua_handle);
-typedef int32 (*UniACodecSetParameter) (DSPCodec_Handle pua_handle, DSPCodecSetParameter * parameter);
-typedef int32 (*UniACodecGetParameter) (DSPCodec_Handle pua_handle, DSPCodecGetParameter * parameter);
-typedef int32 (*UniACodec_decode_frame) (DSPCodec_Handle pua_handle,
-                                         uint8 * InputBuf,
-                                         uint32 InputSize,
-                                         uint32 * offset,
-                                         uint8 ** OutputBuf,
-                                         uint32 *OutputSize,
-                                         uint32 input_over);
+typedef int32 (*UniACodecReset)(DSPCodec_Handle pua_handle);
+typedef int32 (*UniACodecSetParameter)(DSPCodec_Handle pua_handle,
+					DSPCodecSetParameter *parameter);
+typedef int32 (*UniACodecGetParameter)(DSPCodec_Handle pua_handle,
+					DSPCodecGetParameter *parameter);
+typedef int32 (*UniACodec_decode_frame)(DSPCodec_Handle pua_handle,
+					uint8 *InputBuf,
+					uint32 InputSize,
+					uint32 *offset,
+					uint8 **OutputBuf,
+					uint32 *OutputSize,
+					uint32 input_over);
 
-typedef char * (*UniACodec_get_last_error) (DSPCodec_Handle pua_handle);
-
+typedef char * (*UniACodec_get_last_error)(DSPCodec_Handle pua_handle);
 
 /*******************************************************************
  *
 API function ID
 *******************************************************************/
 
-enum /* API function ID */
-{
-    ACODEC_API_GET_VERSION_INFO  = 0x0,
-    /* creation & open */
-    ACODEC_API_CREATE_CODEC     = 0x1,
-    ACODEC_API_INIT_CODEC     = 0x2,
-    /* reset */
-    ACODEC_API_RESET_CODEC = 0x3,
+enum /* API function ID */ {
+	ACODEC_API_GET_VERSION_INFO  = 0x0,
+	/* creation & open */
+	ACODEC_API_CREATE_CODEC     = 0x1,
+	ACODEC_API_INIT_CODEC     = 0x2,
+	/* reset */
+	ACODEC_API_RESET_CODEC = 0x3,
 	/* delete */
-    ACODEC_API_DELETE_CODEC = 0x4,
+	ACODEC_API_DELETE_CODEC = 0x4,
 
-    /* set parameter */
-    ACODEC_API_SET_PARAMETER  = 0x10,
-    ACODEC_API_GET_PARAMETER  = 0x11,
+	/* set parameter */
+	ACODEC_API_SET_PARAMETER  = 0x10,
+	ACODEC_API_GET_PARAMETER  = 0x11,
 
-    /* process frame */
-    ACODEC_API_DECODE_FRAME  = 0x20,
+	/* process frame */
+	ACODEC_API_DECODE_FRAME  = 0x20,
 
-    ACODEC_API_GET_LAST_ERROR = 0x1000,
+	ACODEC_API_GET_LAST_ERROR = 0x1000,
 
 };
 
 #endif /* _DSP_CODEC_INTERFACE_H_ */
-

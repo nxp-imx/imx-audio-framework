@@ -57,7 +57,6 @@
  * function should also be reentrant.
  */
 
-
 #ifndef __SIMPLE_PRINTF__
 #define __SIMPLE_PRINTF__
 

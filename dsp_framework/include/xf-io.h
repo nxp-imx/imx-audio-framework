@@ -1,32 +1,32 @@
 /*******************************************************************************
-* Copyright (C) 2017 Cadence Design Systems, Inc.
-* Copyright 2018 NXP
-*
-* Permission is hereby granted, free of charge, to any person obtaining
-* a copy of this software and associated documentation files (the
-* "Software"), to use this Software with Cadence processor cores only and
-* not with any other processors and platforms, subject to
-* the following conditions:
-*
-* The above copyright notice and this permission notice shall be included
-* in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Copyright (C) 2017 Cadence Design Systems, Inc.
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to use this Software with Cadence processor cores only and
+ * not with any other processors and platforms, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-******************************************************************************/
+ *****************************************************************************/
 
 /*******************************************************************************
  * xf-io.h
  *
  * Input/output data ports
  *
- *******************************************************************************/
+ ******************************************************************************/
 
 #ifndef __XF_IO_H
 #define __XF_IO_H
@@ -42,30 +42,29 @@
  ******************************************************************************/
 
 /* ...input port with interim buffer */
-typedef struct xf_input_port
-{
-    /* ...message queue */
-    xf_msg_queue_t          queue;
+struct xf_input_port {
+	/* ...message queue */
+	struct  xf_msg_queue    queue;
 
-    /* ...internal contiguous buffer to store incoming data */
-    void                   *buffer;
+	/* ...internal contiguous buffer to store incoming data */
+	void                   *buffer;
 
-    /* ...size of internal buffer */
-    u32                     length;
+	/* ...size of internal buffer */
+	u32                     length;
 
-    /* ...current writing position in the buffer */
-    u32                     filled;
+	/* ...current writing position in the buffer */
+	u32                     filled;
 
-    /* ...interim pointer to input message buffer */
-    void                   *access;
+	/* ...interim pointer to input message buffer */
+	void                   *access;
 
-    /* ...remaining length of current input message */
-    u32                     remaining;
+	/* ...remaining length of current input message */
+	u32                     remaining;
 
-    /* ...execution flags */
-    u32                     flags;
+	/* ...execution flags */
+	u32                     flags;
 
-}   xf_input_port_t;
+};
 
 /*******************************************************************************
  * Input port flags
@@ -97,72 +96,71 @@ typedef struct xf_input_port
  ******************************************************************************/
 
 /* ...test if input port is created */
-static inline int xf_input_port_created(xf_input_port_t *port)
+static inline int xf_input_port_created(struct xf_input_port *port)
 {
-    return (port->flags & XF_INPUT_FLAG_CREATED);
+	return (port->flags & XF_INPUT_FLAG_CREATED);
 }
 
 /* ...check if input port is ready (has pending message) */
-static inline int xf_input_port_ready(xf_input_port_t *port)
+static inline int xf_input_port_ready(struct xf_input_port *port)
 {
-    return (xf_msg_queue_head(&port->queue) != NULL);
+	return (xf_msg_queue_head(&port->queue) != NULL);
 }
 
 /* ...test if input port entered end-of-stream condition */
-static inline int xf_input_port_done(xf_input_port_t *port)
+static inline int xf_input_port_done(struct xf_input_port *port)
 {
-    return (port->flags & XF_INPUT_FLAG_DONE);
+	return (port->flags & XF_INPUT_FLAG_DONE);
 }
 
 /* ...check if port is in bypass mode */
-static inline int xf_input_port_bypass(xf_input_port_t *port)
+static inline int xf_input_port_bypass(struct xf_input_port *port)
 {
-    return port->buffer == NULL;
+	return port->buffer == NULL;
 }
 
 /* ...bypass port only: check if there is a data available */
-static inline void * xf_input_port_data(xf_input_port_t *port)
+static inline void *xf_input_port_data(struct xf_input_port *port)
 {
-    return port->access;
+	return port->access;
 }
 
 /* ...bypass port only: get remaining length of current message */
-static inline u32 xf_input_port_length(xf_input_port_t *port)
+static inline u32 xf_input_port_length(struct xf_input_port *port)
 {
-    return port->remaining;
+	return port->remaining;
 }
 
 /* ...non-bypass port only: get current fill level */
-static inline u32 xf_input_port_level(xf_input_port_t *port)
+static inline u32 xf_input_port_level(struct xf_input_port *port)
 {
-    return port->filled;
+	return port->filled;
 }
 
 /*******************************************************************************
  * Output port data
  ******************************************************************************/
 
-typedef struct xf_output_port
-{
-    /* ...pending message queue */
-    xf_msg_queue_t          queue;
+struct xf_output_port {
+	/* ...pending message queue */
+	struct  xf_msg_queue    queue;
 
-    /* ...message pool */
-    xf_msg_pool_t           pool;
+	/* ...message pool */
+	struct xf_msg_pool      pool;
 
-    /* ...saved port unrouting message */
-    xf_message_t           *unroute;
+	/* ...saved port unrouting message */
+	struct xf_message       *unroute;
 
-    /* ...internal buffer pointer to store incoming data */
-    void                   *buffer;
+	/* ...internal buffer pointer to store incoming data */
+	void                   *buffer;
 
-    /* ...length of output buffer */
-    u32                     length;
+	/* ...length of output buffer */
+	u32                     length;
 
-    /* ...output port flags */
-    u32                     flags;
+	/* ...output port flags */
+	u32                     flags;
 
-}   xf_output_port_t;
+};
 
 /*******************************************************************************
  * Output port flags
@@ -199,43 +197,45 @@ typedef struct xf_output_port
  ******************************************************************************/
 
 /* ...test if input port is created */
-static inline int xf_output_port_created(xf_output_port_t *port)
+static inline int xf_output_port_created(struct xf_output_port *port)
 {
-    return (port->flags & XF_OUTPUT_FLAG_CREATED);
+	return (port->flags & XF_OUTPUT_FLAG_CREATED);
 }
 
 /* ...check if port is routed */
-static inline int xf_output_port_routed(xf_output_port_t *port)
+static inline int xf_output_port_routed(struct xf_output_port *port)
 {
-    return ((port->flags & XF_OUTPUT_FLAG_ROUTED) != 0);
+	return ((port->flags & XF_OUTPUT_FLAG_ROUTED) != 0);
 }
 
 /* ...check if port unrouting sequence is ongoing */
-static inline int xf_output_port_unrouting(xf_output_port_t *port)
+static inline int xf_output_port_unrouting(struct xf_output_port *port)
 {
-    return ((port->flags & XF_OUTPUT_FLAG_UNROUTING) != 0);
+	return ((port->flags & XF_OUTPUT_FLAG_UNROUTING) != 0);
 }
 
 /* ...check if port is idle (owns all data buffers) */
-static inline int xf_output_port_idle(xf_output_port_t *port)
+static inline int xf_output_port_idle(struct xf_output_port *port)
 {
-    return ((port->flags & XF_OUTPUT_FLAG_IDLE) != 0);
+	return ((port->flags & XF_OUTPUT_FLAG_IDLE) != 0);
 }
 
 /* ...check if port is ready (has output buffers - better use flags - tbd) */
-static inline int xf_output_port_ready(xf_output_port_t *port)
+static inline int xf_output_port_ready(struct xf_output_port *port)
 {
 #ifdef XAF_ENABLE_NON_HIKEY
-    return (xf_msg_queue_head(&port->queue) != NULL && !xf_output_port_unrouting(port));
+	return (xf_msg_queue_head(&port->queue) &&
+		!xf_output_port_unrouting(port));
 #else
-    return (xf_msg_queue_head(&port->queue) != NULL);
+	return (xf_msg_queue_head(&port->queue) != NULL);
 #endif
 }
 
 /* ...output port flow-control message accessor */
-static inline xf_message_t * xf_output_port_control_msg(xf_output_port_t *port)
+static inline struct xf_message *xf_output_port_control_msg(
+					struct xf_output_port *port)
 {
-    return xf_msg_pool_item(&port->pool, 0);
+	return xf_msg_pool_item(&port->pool, 0);
 }
 
 /*******************************************************************************
@@ -243,76 +243,87 @@ static inline xf_message_t * xf_output_port_control_msg(xf_output_port_t *port)
  ******************************************************************************/
 
 /* ...initialize input port structure */
-extern int  xf_input_port_init(xf_input_port_t *port, u32 size, u32 align, dsp_mem_info *mem_info);
+int  xf_input_port_init(struct xf_input_port *port,
+			u32 size,
+			u32 align,
+			struct dsp_mem_info *mem_info);
 
 /* ...put message into input port queue */
-extern int  xf_input_port_put(xf_input_port_t *port, xf_message_t *m);
+int  xf_input_port_put(struct xf_input_port *port, struct xf_message *m);
 #ifndef XAF_ENABLE_NON_HIKEY
 /* ...initiate eos */
-extern int xf_input_port_eos(xf_input_port_t *port);
+int xf_input_port_eos(struct xf_input_port *port);
 #endif
 /* ...fill-in required amount of data into input port buffer */
-extern int  xf_input_port_fill(xf_input_port_t *port);
+int  xf_input_port_fill(struct xf_input_port *port);
 
 /* ...pad input buffer with given value */
-extern void xf_input_port_pad(xf_input_port_t *port, u8 pad);
+void xf_input_port_pad(struct xf_input_port *port, u8 pad);
 
 /* ...consume bytes from input buffer */
-extern void xf_input_port_consume(xf_input_port_t *port, u32 n);
+void xf_input_port_consume(struct xf_input_port *port, u32 n);
 
 /* ...purge input port queue */
-extern void xf_input_port_purge(xf_input_port_t *port);
+void xf_input_port_purge(struct xf_input_port *port);
 
 /* ...save flow-control message for propagated input port purging sequence */
-extern void xf_input_port_control_save(xf_input_port_t *port, xf_message_t *m);
+void xf_input_port_control_save(struct xf_input_port *port, struct xf_message *m);
 
 /* ...complete input port purging sequence */
-extern void xf_input_port_purge_done(xf_input_port_t *port);
+void xf_input_port_purge_done(struct xf_input_port *port);
 
 /* ...destroy input port data */
-extern void xf_input_port_destroy(xf_input_port_t *port, dsp_mem_info *mem_info);
+void xf_input_port_destroy(struct xf_input_port *port,
+			   struct dsp_mem_info *mem_info);
 
 /*******************************************************************************
  * Output port API
  ******************************************************************************/
 
 /* ...initialize output port structure */
-extern int  xf_output_port_init(xf_output_port_t *port, u32 size);
+int  xf_output_port_init(struct xf_output_port *port, u32 size);
 
 /* ...put next message to the output port */
-extern int  xf_output_port_put(xf_output_port_t *port, xf_message_t *m);
+int  xf_output_port_put(struct xf_output_port *port, struct xf_message *m);
 
 /* ...get data buffer of output message */
-extern void * xf_output_port_data(xf_output_port_t *port);
+void *xf_output_port_data(struct xf_output_port *port);
 
 /* ...route output port */
-extern int xf_output_port_route(xf_output_port_t *port, u32 id, u32 n, u32 length, u32 align, dsp_mem_info *mem_info);
+int xf_output_port_route(struct xf_output_port *port,
+			 u32 id,
+			 u32 n,
+			 u32 length,
+			 u32 align,
+			 struct dsp_mem_info *mem_info);
 
 /* ...unroute output port */
-extern void xf_output_port_unroute(xf_output_port_t *port, dsp_mem_info *mem_info);
+void xf_output_port_unroute(struct xf_output_port *port,
+			    struct dsp_mem_info *mem_info);
 #ifdef XAF_ENABLE_NON_HIKEY
 /* ...start output port unrouting sequence */
-extern void xf_output_port_unroute_start(xf_output_port_t *port, xf_message_t *m);
+void xf_output_port_unroute_start(struct xf_output_port *port, struct xf_message *m);
 
 /* ...complete port unrouting sequence */
-extern void xf_output_port_unroute_done(xf_output_port_t *port);
+void xf_output_port_unroute_done(struct xf_output_port *port);
 #endif
 /* ...produce output message marking amount of bytes produced */
-extern int  xf_output_port_produce(xf_output_port_t *port, u32 n, u32 ret);
+int  xf_output_port_produce(struct xf_output_port *port, u32 n, u32 ret);
 
 /* ...purge output port */
-extern void xf_output_port_purge(xf_output_port_t *port);
+void xf_output_port_purge(struct xf_output_port *port);
 
 /* ...flush output port and return non-zero result if sequence is over */
-extern int xf_output_port_flush(xf_output_port_t *port, u32 opcode);
+int xf_output_port_flush(struct xf_output_port *port, u32 opcode);
 
 /* ...fill-in required amount of data into output port buffer */
-int xf_output_port_fill(xf_output_port_t *port);
+int xf_output_port_fill(struct xf_output_port *port);
 
 /* ...complete flushing sequence */
-extern void xf_output_port_flush_done(xf_output_port_t *port);
+void xf_output_port_flush_done(struct xf_output_port *port);
 
 /* ...destroy output port data */
-extern void xf_output_port_destroy(xf_output_port_t *port, dsp_mem_info *mem_info);
+void xf_output_port_destroy(struct xf_output_port *port,
+			    struct dsp_mem_info *mem_info);
 
 #endif

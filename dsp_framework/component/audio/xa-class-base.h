@@ -1,25 +1,25 @@
 /*******************************************************************************
-* Copyright (C) 2017 Cadence Design Systems, Inc.
-* Copyright 2018 NXP
-*
-* Permission is hereby granted, free of charge, to any person obtaining
-* a copy of this software and associated documentation files (the
-* "Software"), to use this Software with Cadence processor cores only and
-* not with any other processors and platforms, subject to
-* the following conditions:
-*
-* The above copyright notice and this permission notice shall be included
-* in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Copyright (C) 2017 Cadence Design Systems, Inc.
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to use this Software with Cadence processor cores only and
+ * not with any other processors and platforms, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-******************************************************************************/
+ ******************************************************************************/
 
 /*******************************************************************************
  * xa-class-base.h
@@ -45,74 +45,78 @@
 /*******************************************************************************
  * Generic codec structure
  ******************************************************************************/
-
-typedef struct XACodecBase XACodecBase;
+struct XACodecBase;
 
 /* ...memory buffer initialization */
-typedef DSP_ERROR_TYPE  (*xa_codec_memtab_f)(XACodecBase *codec, u32 size, u32 align);
+typedef DSP_ERROR_TYPE (*xa_codec_memtab_f)(struct XACodecBase *codec,
+							u32 size,
+							u32 align);
 
 /* ...preprocessing operation */
-typedef DSP_ERROR_TYPE  (*xa_codec_preprocess_f)(XACodecBase *);
+typedef DSP_ERROR_TYPE  (*xa_codec_preprocess_f)(struct XACodecBase *);
 
 /* ...postprocessing operation */
-typedef DSP_ERROR_TYPE  (*xa_codec_postprocess_f)(XACodecBase *, u32);
+typedef DSP_ERROR_TYPE  (*xa_codec_postprocess_f)(struct XACodecBase *, u32);
 
 /* ...parameter setting function */
-typedef DSP_ERROR_TYPE  (*xa_codec_setparam_f)(XACodecBase *, s32, void *p);
+typedef DSP_ERROR_TYPE  (*xa_codec_setparam_f)(struct XACodecBase *,
+								s32,
+								void *p);
 
 /* ...parameter retrival function */
-typedef DSP_ERROR_TYPE  (*xa_codec_getparam_f)(XACodecBase *, s32, void *p);
-
+typedef DSP_ERROR_TYPE  (*xa_codec_getparam_f)(struct XACodecBase *,
+								s32,
+								void *p);
 
 /*******************************************************************************
  * Codec instance structure
  ******************************************************************************/
 
-struct XACodecBase
-{
-    /***************************************************************************
-     * Control data
-     **************************************************************************/
+struct XACodecBase {
+	/*************************************************
+	 * Control data
+	 ************************************************/
 
-    /* ...generic component handle */
-    xf_component_t          component;
+	/* ...generic component handle */
+	struct xf_component     component;
 
-    /* ...codec API entry point (function) */
-    xf_codec_func_t         *process;
+	/* ...codec API entry point (function) */
+	xf_codec_func_t         *process;
 
-    /* ...codec API handle, passed to *process */
-    xf_codec_handle_t       api;
+	/* ...codec API handle, passed to *process */
+	xf_codec_handle_t       api;
 
-    /* codec identifier */
-    u32 codec_id;
+	/* codec identifier */
+	u32 codec_id;
 
-    /* ...codec control state */
-    u32                     state;
+	/* ...codec control state */
+	u32                     state;
 
-    /***************************************************************************
-     * Codec-specific methods
-     **************************************************************************/
+	/***********************************************
+	 * Codec-specific methods
+	 **********************************************/
 
-    /* ...memory buffer initialization */
-    xa_codec_memtab_f       memtab;
+	/* ...memory buffer initialization */
+	xa_codec_memtab_f       memtab;
 
-    /* ...preprocessing function */
-    xa_codec_preprocess_f   preprocess;
+	/* ...preprocessing function */
+	xa_codec_preprocess_f   preprocess;
 
-    /* ...postprocessing function */
-    xa_codec_postprocess_f  postprocess;
+	/* ...postprocessing function */
+	xa_codec_postprocess_f  postprocess;
 
-    /* ...configuration parameter setting function */
-    xa_codec_setparam_f     setparam;
+	/* ...configuration parameter setting function */
+	xa_codec_setparam_f     setparam;
 
-    /* ...configuration parameter retrieval function */
-    xa_codec_getparam_f     getparam;
+	/* ...configuration parameter retrieval function */
+	xa_codec_getparam_f     getparam;
 
-    /* ...command-processing table */
-    DSP_ERROR_TYPE (* const * command)(XACodecBase *, xf_message_t *);
+	/* ...command-processing table */
+	DSP_ERROR_TYPE (* const *command)(struct XACodecBase *,
+					  struct xf_message *);
 
-    /* ...command-processing table size */
-    u32                     command_num;
+	/* ...command-processing table size */
+	u32                     command_num;
 };
 
 /*******************************************************************************
@@ -146,51 +150,51 @@ struct XACodecBase
 /* ...custom execution flag */
 #define __XA_BASE_FLAG(f)               ((f) << 7)
 
-
 /*******************************************************************************
  * Public API
  ******************************************************************************/
 
 /* ...low-level codec API function execution */
-#define XA_API(codec, cmd, idx, pv)                                                         \
-({                                                                                          \
-    DSP_ERROR_TYPE  __e;                                                                    \
-    __e = (codec)->process((xf_codec_handle_t)((codec)->api), (cmd), (idx), (pv));          \
-    if (__e != XA_SUCCESS)                                                                  \
-    {                                                                                       \
-        LOG1("XA_API error: %x\n", __e);                                                    \
-    }                                                                                       \
-    __e;                                                                                    \
+#define XA_API(codec, cmd, idx, pv)                                               \
+({                                                                                \
+	DSP_ERROR_TYPE  __e;                                                          \
+	__e = (codec)->process((xf_codec_handle_t)((codec)->api), (cmd), (idx), (pv));\
+	if (__e != XA_SUCCESS) {                                                      \
+		LOG1("XA_API error: %x\n", __e);                                          \
+	}                                                                             \
+	__e;                                                                          \
 })
 
 /* ...codec hook invocation */
 #define CODEC_API(codec, func, ...)                                 \
 ({                                                                  \
-    DSP_ERROR_TYPE __e = (codec)->func((codec), ##__VA_ARGS__);     \
-                                                                    \
-    if (__e != XA_SUCCESS)                                          \
-    {                                                               \
+	DSP_ERROR_TYPE __e;                                             \
+	__e = (codec)->func((codec), ##__VA_ARGS__);                    \
+	if (__e != XA_SUCCESS) {                                        \
 		LOG1(" CODEC_API error: %x\n", __e);                        \
-    }                                                               \
-    __e;                                                            \
+	}                                                               \
+	__e;                                                            \
 })
 
 /* ...SET-PARAM processing */
-extern DSP_ERROR_TYPE xa_base_set_param(XACodecBase *base, xf_message_t *m);
+DSP_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m);
 
 /* ...GET-PARAM message processing */
-extern DSP_ERROR_TYPE xa_base_get_param(XACodecBase *base, xf_message_t *m);
+DSP_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m);
 
 /* ...data processing scheduling */
-extern void xa_base_schedule(XACodecBase *base, u32 dts);
+void xa_base_schedule(struct XACodecBase *base, u32 dts);
 
 /* ...cancel internal scheduling message */
-extern void xa_base_cancel(XACodecBase *base);
+void xa_base_cancel(struct XACodecBase *base);
 
 /* ...base codec factory */
-extern XACodecBase * xa_base_factory(dsp_main_struct *dsp_config, u32 size, xf_codec_func_t *process, u32 type);
+struct XACodecBase *xa_base_factory(struct dsp_main_struct *dsp_config,
+				    u32 size,
+				    xf_codec_func_t *process,
+				    u32 type);
 
 /* ...base codec destructor */
-extern void xa_base_destroy(XACodecBase *base);
+void xa_base_destroy(struct XACodecBase *base);
 
 #endif  /* __XA_CLASS_BASE_H */

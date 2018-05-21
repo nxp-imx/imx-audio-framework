@@ -19,8 +19,7 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-******************************************************************************/
-
+ *****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +30,7 @@
 #include "dpu_lib_load.h"
 #include <xtensa/config/system.h>
 
-extern int xf_core_init(dsp_main_struct *dsp_config);
+extern int xf_core_init(struct dsp_main_struct *dsp_config);
 
 /* ...NULL-address specification */
 #define XF_PROXY_NULL           (~0U)
@@ -45,13 +44,12 @@ extern int xf_core_init(dsp_main_struct *dsp_config);
 /* ...remote status change notification flag */
 #define XF_PROXY_STATUS_REMOTE          (1 << 1)
 
-
 /* ...translate buffer address to shared proxy address */
-static inline u32 xf_ipc_b2a(dsp_main_struct *dsp_config, void *b)
+static inline u32 xf_ipc_b2a(struct dsp_main_struct *dsp_config, void *b)
 {
 	void *start = (void *)dsp_config->dpu_ext_msg.scratch_buf_phys;
 
-	if (b == NULL)
+	if (!b)
 		return XF_PROXY_NULL;
 	else if ((s32)(b - start) < dsp_config->dpu_ext_msg.scratch_buf_size)
 		return (u32)(b - start);
@@ -60,7 +58,7 @@ static inline u32 xf_ipc_b2a(dsp_main_struct *dsp_config, void *b)
 }
 
 /* ...translate shared proxy address to local pointer */
-static inline void * xf_ipc_a2b(dsp_main_struct *dsp_config, u32 address)
+static inline void *xf_ipc_a2b(struct dsp_main_struct *dsp_config, u32 address)
 {
 	void *start = (void *)dsp_config->dpu_ext_msg.scratch_buf_phys;
 
@@ -74,25 +72,25 @@ static inline void * xf_ipc_a2b(dsp_main_struct *dsp_config, u32 address)
 
 u32 icm_intr_send(u32 msg)
 {
-	mu_regs *base = (mu_regs*)MU_PADDR;
+	struct mu_regs *base = (struct mu_regs *)MU_PADDR;
 
 	mu_msg_send(base, 0, msg);
 
 	return 0;
 }
 
-void xf_mu_init(dsp_main_struct *dsp_config)
+void xf_mu_init(struct dsp_main_struct *dsp_config)
 {
 	int i = 0;
+
 	volatile int *mu = (volatile int *)MU_PADDR;
-	mu_regs *base = (mu_regs*)MU_PADDR;
-	icm_header_t icm_msg;
-	xf_msg_pool_t *pool = &dsp_config->pool;
+	struct mu_regs *base = (struct mu_regs *)MU_PADDR;
+	union icm_header_t icm_msg;
+	struct xf_msg_pool *pool = &dsp_config->pool;
 
 	/* ...initialize global message pool */
 	pool->p = &dsp_config->icm_msg_que[0];
-	for(pool->head = &pool->p[i = 0]; i < XF_CFG_MESSAGE_POOL_SIZE - 1; i++)
-	{
+	for (pool->head = &pool->p[i = 0]; i < XF_CFG_MESSAGE_POOL_SIZE - 1; i++) {
 		/* ...set message pointer to next message in the pool */
 		xf_msg_pool_item(pool, i)->next = xf_msg_pool_item(pool, i + 1);
 	}
@@ -107,16 +105,14 @@ void xf_mu_init(dsp_main_struct *dsp_config)
 	icm_msg.intr = 1;
 	icm_msg.msg  = ICM_CORE_READY;
 	icm_intr_send(icm_msg.allbits);
-
-	return;
 }
 
 void interrupt_handler_icm(void *arg)
 {
-	mu_regs *base = (mu_regs*)MU_PADDR;
-	volatile icm_header_t recd_msg;
-	dsp_main_struct *dsp_config = (dsp_main_struct *)arg;
-	xf_message_t *m;
+	struct mu_regs *base = (struct mu_regs *)MU_PADDR;
+	volatile union icm_header_t recd_msg;
+	struct dsp_main_struct *dsp_config = (struct dsp_main_struct *)arg;
+	struct xf_message *m;
 	u32 ext_msg_addr;
 	u32 ext_msg_size = 0;
 	u32 msg;
@@ -124,27 +120,23 @@ void interrupt_handler_icm(void *arg)
 	mu_msg_receive(base, 0, &msg);
 	recd_msg.allbits = msg;
 
-	if (recd_msg.size == 8)
-	{
+	if (recd_msg.size == 8) {
 		mu_msg_receive(base, 1, &ext_msg_addr);
 		mu_msg_receive(base, 2, &ext_msg_size);
 	}
 
-	if (ICM_CORE_INIT == recd_msg.msg)
-	{
-		if(ext_msg_addr)
-		{
-			memcpy((u8 *)&dsp_config->dpu_ext_msg, (u8 *)ext_msg_addr, ext_msg_size);
+	if (recd_msg.msg == ICM_CORE_INIT) {
+		if (ext_msg_addr) {
+			memcpy((u8 *)&dsp_config->dpu_ext_msg,
+			       (u8 *)ext_msg_addr,
+			       ext_msg_size);
 			xf_core_init(dsp_config);
 		}
-	}
-	else if(XF_SUSPEND == recd_msg.msg)
-	{
+	} else if (recd_msg.msg == XF_SUSPEND) {
 		/* ...allocate message; the call should not fail */
-		if((m = xf_msg_pool_get(&dsp_config->pool)) == NULL)
-		{
+		m = xf_msg_pool_get(&dsp_config->pool);
+		if (!m)
 			LOG("Error: ICM Queue full\n");
-		}
 
 		/* ...fill message parameters */
 		m->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
@@ -155,14 +147,11 @@ void interrupt_handler_icm(void *arg)
 
 		/* ...and schedule message execution on proper core */
 		xf_msg_submit(&dsp_config->queue, m);
-	}
-	else if(XF_RESUME == recd_msg.msg)
-	{
+	} else if (recd_msg.msg == XF_RESUME) {
 		/* ...allocate message; the call should not fail */
-		if((m = xf_msg_pool_get(&dsp_config->pool)) == NULL)
-		{
+		m = xf_msg_pool_get(&dsp_config->pool);
+		if (!m)
 			LOG("Error: ICM Queue full\n");
-		}
 
 		/* ...fill message parameters */
 		m->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
@@ -173,22 +162,18 @@ void interrupt_handler_icm(void *arg)
 
 		/* ...and schedule message execution on proper core */
 		xf_msg_submit(&dsp_config->queue, m);
-	}
-	else
-	{
+	} else {
 		;
 	}
 
 	dsp_config->is_interrupt = 1;
-
-	return;
 }
 
 /* ...retrieve all incoming commands from shared memory ring-buffer */
-static u32 xf_shmem_process_input(dsp_main_struct *dsp_config)
+static u32 xf_shmem_process_input(struct dsp_main_struct *dsp_config)
 {
-	dsp_main_struct *core = dsp_config;
-	xf_message_t *m;
+	struct dsp_main_struct *core = dsp_config;
+	struct xf_message *m;
 	volatile u32 read_idx, write_idx;
 	u32 invalid;
 	u32 status = 0;
@@ -203,8 +188,7 @@ static u32 xf_shmem_process_input(dsp_main_struct *dsp_config)
 
 	/* ...judge incoming command queue is valid or not */
 	invalid = XF_PROXY_READ(core, cmd_invalid);
-	if(invalid)
-	{
+	if (invalid) {
 		LOG("incoming command queue is invalid\n");
 		return status;
 	}
@@ -213,23 +197,24 @@ static u32 xf_shmem_process_input(dsp_main_struct *dsp_config)
 	read_idx = XF_PROXY_READ(core, cmd_read_idx);
 	write_idx = XF_PROXY_READ(core, cmd_write_idx);
 
-	LOG2("Command queue: write = 0x%x / read = 0x%x\n", write_idx, read_idx);
+	LOG2("Command queue: write = 0x%x / read = 0x%x\n",
+	     write_idx, read_idx);
 
 	/* ...process all committed commands */
-	while (!XF_QUEUE_EMPTY(read_idx, write_idx))
-	{
-		volatile xf_proxy_message_t* volatile command;
+	while (!XF_QUEUE_EMPTY(read_idx, write_idx)) {
+		volatile struct xf_proxy_message * volatile command;
 
 		/* ...allocate message; the call should not fail */
-		if((m = xf_msg_pool_get(&dsp_config->pool)) == NULL)
-		{
+		m = xf_msg_pool_get(&dsp_config->pool);
+		if (!m) {
 			LOG("Error: ICM Queue full\n");
 			break;
 		}
 
 		/* ...if queue was full, set global proxy update flag */
 		if (XF_QUEUE_FULL(read_idx, write_idx))
-			status |= XF_PROXY_STATUS_REMOTE | XF_PROXY_STATUS_LOCAL;
+			status |= XF_PROXY_STATUS_REMOTE |
+				XF_PROXY_STATUS_LOCAL;
 		else
 			status |= XF_PROXY_STATUS_LOCAL;
 
@@ -245,9 +230,12 @@ static u32 xf_shmem_process_input(dsp_main_struct *dsp_config)
 		m->length = command->length;
 		m->buffer = xf_ipc_a2b(core, command->address);
 		m->ret = command->ret;
-		LOG4("ext_msg: [client: %x]:(%x,%x,%x)\n", XF_MSG_DST_CLIENT(m->id), m->id, m->opcode, m->length);
+		LOG4("ext_msg: [client: %x]:(%x,%x,%x)\n",
+		     XF_MSG_DST_CLIENT(m->id), m->id, m->opcode, m->length);
 
-		/* ...invalidate message buffer contents as required - not here - tbd */
+		/* ...invalidate message buffer contents
+		 * as required - not here - tbd
+		 */
 		(XF_OPCODE_CDATA(m->opcode) ? XF_PROXY_INVALIDATE(m->buffer, m->length) : 0);
 
 		/* ...advance local reading index copy */
@@ -263,13 +251,15 @@ static u32 xf_shmem_process_input(dsp_main_struct *dsp_config)
 	return status;
 }
 
-/* ...send out all pending outgoing responses to the shared memory ring-buffer */
-static u32 xf_shmem_process_output(dsp_main_struct *dsp_config)
+/* ...send out all pending outgoing responses
+ * to the shared memory ring-buffer
+ */
+static u32 xf_shmem_process_output(struct dsp_main_struct *dsp_config)
 {
-	dsp_main_struct *core = dsp_config;
-	mu_regs *base = (mu_regs*)MU_PADDR;
-	icm_header_t dpu_icm;
-	xf_message_t *m;
+	struct dsp_main_struct *core = dsp_config;
+	struct mu_regs *base = (struct mu_regs *)MU_PADDR;
+	union icm_header_t dpu_icm;
+	struct xf_message *m;
 	volatile u32 read_idx, write_idx;
 	u32 invalid;
 	u32 status = 0;
@@ -280,8 +270,7 @@ static u32 xf_shmem_process_output(dsp_main_struct *dsp_config)
 
 	/* ...judge response queue is valid or not */
 	invalid = XF_PROXY_READ(core, rsp_invalid);
-	if(invalid)
-	{
+	if (invalid) {
 		LOG("response  queue is invalid\n");
 		return status;
 	}
@@ -290,21 +279,28 @@ static u32 xf_shmem_process_output(dsp_main_struct *dsp_config)
 	write_idx = XF_PROXY_READ(core, rsp_write_idx);
 	read_idx = XF_PROXY_READ(core, rsp_read_idx);
 
-	LOG2("Response queue: write = 0x%x / read = 0x%x\n", write_idx, read_idx);
+	LOG2("Response queue: write = 0x%x / read = 0x%x\n",
+	     write_idx, read_idx);
 
-	/* ...while we have response messages and there's space to write out one */
-	while (!XF_QUEUE_FULL(read_idx, write_idx))
-	{
-		volatile xf_proxy_message_t* volatile response;
+	/* ...while we have response messages and
+	 * there's space to write out one
+	 */
+	while (!XF_QUEUE_FULL(read_idx, write_idx)) {
+		volatile struct xf_proxy_message * volatile response;
 
 		/* ...remove message from internal queue */
-		if ((m = xf_msg_proxy_get(&dsp_config->response)) == NULL)
+		m = xf_msg_proxy_get(&dsp_config->response);
+		if (!m)
 			break;
 
-		/* ...notify remote interface each time we send it a message (only if it was empty?) */
+		/* ...notify remote interface each time we send
+		 * it a message (only if it was empty?)
+		 */
 		status = XF_PROXY_STATUS_REMOTE | XF_PROXY_STATUS_LOCAL;
 
-		/* ...flush message buffer contents to main memory as required - too late - different core - tbd */
+		/* ...flush message buffer contents to main memory
+		 * as required - too late - different core - tbd
+		 */
 		(XF_OPCODE_RDATA(m->opcode) ? XF_PROXY_FLUSH(m->buffer, m->length) : 0);
 
 		/* ...find place in a queue for next response */
@@ -319,7 +315,8 @@ static u32 xf_shmem_process_output(dsp_main_struct *dsp_config)
 		/* ...flush the content of the caches to main memory */
 		XF_PROXY_FLUSH(response, sizeof(*response));
 
-		LOG4("Response[client: %x]:(%x,%x,%x)\n", XF_MSG_SRC_CLIENT(m->id), m->id, m->opcode, m->length);
+		LOG4("Response[client: %x]:(%x,%x,%x)\n",
+		     XF_MSG_SRC_CLIENT(m->id), m->id, m->opcode, m->length);
 
 		/* ...return message back to the pool */
 		xf_msg_pool_put(&dsp_config->pool, m);
@@ -329,12 +326,10 @@ static u32 xf_shmem_process_output(dsp_main_struct *dsp_config)
 
 		/* ...update shared copy of queue write pointer */
 		XF_PROXY_WRITE(core, rsp_write_idx, write_idx);
-
 	}
 
 	/* triger the mu interrupt when has responding message */
-	if(status)
-	{
+	if (status) {
 		/* ...flush icache */
 		xthal_icache_all_unlock();
 		xthal_icache_all_invalidate();
@@ -347,25 +342,29 @@ static u32 xf_shmem_process_output(dsp_main_struct *dsp_config)
 }
 
 /* ...process local/remote shared memory interface status change */
-void xf_shmem_process_queues(dsp_main_struct *dsp_config)
+void xf_shmem_process_queues(struct dsp_main_struct *dsp_config)
 {
 	u32     status;
 
-	do
-	{
-		/* ...send out pending response messages (frees message buffers, so do it first) */
+	do {
+		/* ...send out pending response messages
+		 * (frees message buffers, so do it first)
+		 */
 		status = xf_shmem_process_output(dsp_config);
 
-		/* ...receive and forward incoming command messages (allocates message buffers) */
+		/* ...receive and forward incoming command messages
+		 * (allocates message buffers)
+		 */
 		status |= xf_shmem_process_input(dsp_config);
 
-	}while(status);
+	} while (status);
 }
 
 /* ...initialize shared memory interface (DSP side) */
-void xf_shmem_init(dsp_main_struct *dsp_config)
+void xf_shmem_init(struct dsp_main_struct *dsp_config)
 {
-	xf_shmem_data_t *shmem = (xf_shmem_data_t *)dsp_config->dpu_ext_msg.ext_msg_addr;
+	struct xf_shmem_data *shmem =
+		(struct xf_shmem_data *)dsp_config->dpu_ext_msg.ext_msg_addr;
 
 	dsp_config->shmem = (void *)shmem;
 }
