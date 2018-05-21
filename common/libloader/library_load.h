@@ -1,27 +1,26 @@
-//*****************************************************************
-// Copyright 2018 NXP
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
+/*****************************************************************
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
 
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-//*****************************************************************
-
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************/
 
 #ifndef __LIBRARY_LOAD_H
 #define __LIBRARY_LOAD_H
@@ -48,10 +47,10 @@ enum {
 	XTLIB_RELOCATION_ERR = 8
 };
 
-typedef enum {
-	DSP_CODEC_LIB =1,
+enum lib_type {
+	DSP_CODEC_LIB = 1,
 	DSP_CODEC_WRAP_LIB
-} lib_type;
+};
 
 struct xtlib_loader_globals {
 	int err;
@@ -93,8 +92,8 @@ struct lib_info {
 	struct xtlib_pil_info  pil_info;
 	struct xtlib_loader_globals	xtlib_globals;
 
-	xf_pool_t	 *code_section_pool;
-	xf_pool_t	 *data_section_pool;
+	struct xf_pool	 *code_section_pool;
+	struct xf_pool	 *data_section_pool;
 
 	void		 *code_buf_virt;
 	unsigned int code_buf_phys;
@@ -107,13 +106,7 @@ struct lib_info {
 	unsigned int lib_type;
 };
 
-typedef struct {
-	struct xtlib_pil_info pil_info;
-	unsigned int lib_type;
-} icm_xtlib_pil_info;
-
-
-long xf_load_lib(xf_handle_t *handle, struct lib_info *lib_info);
-long xf_unload_lib(xf_handle_t *handle, struct lib_info *lib_info);
+long xf_load_lib(struct xf_handle *handle, struct lib_info *lib_info);
+long xf_unload_lib(struct xf_handle *handle, struct lib_info *lib_info);
 
 #endif

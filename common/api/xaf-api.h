@@ -1,26 +1,25 @@
 /*******************************************************************************
-* Copyright (C) 2017 Cadence Design Systems, Inc.
-* Copyright 2018 NXP
-*
-* Permission is hereby granted, free of charge, to any person obtaining
-* a copy of this software and associated documentation files (the
-* "Software"), to use this Software with Cadence processor cores only and
-* not with any other processors and platforms, subject to
-* the following conditions:
-*
-* The above copyright notice and this permission notice shall be included
-* in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*
-******************************************************************************/
-
+ * Copyright (C) 2017 Cadence Design Systems, Inc.
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to use this Software with Cadence processor cores only and
+ * not with any other processors and platforms, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ ******************************************************************************/
 
 #ifndef _XAF_API_H
 #define _XAF_API_H
@@ -54,13 +53,11 @@
 #define INBUF_SIZE                      4096
 #define OUTBUF_SIZE                     16384
 
-typedef struct xaf_adev_s   xaf_adev_t;
-typedef struct xaf_info_s   xaf_info_t;
-typedef struct xaf_comp     xaf_comp_t;
-typedef struct xaf_pipeline xaf_pipeline_t;
+/* ...pre-declaration of struct */
+struct xaf_pipeline;
 
 struct xaf_adev_s {
-	xf_proxy_t      proxy;
+	struct xf_proxy  proxy;
 };
 
 struct xaf_info_s {
@@ -71,16 +68,16 @@ struct xaf_info_s {
 };
 
 struct xaf_comp {
-	xaf_comp_t      *next;
+	struct xaf_comp      *next;
 
-	xaf_pipeline_t  *pipeline;
-	xf_handle_t     handle;
+	struct xaf_pipeline  *pipeline;
+	struct xf_handle     handle;
 
-	xf_id_t         dec_id;
+	const char      *dec_id;
 	int             comp_type;
 
-	xf_pool_t       *inpool;
-	xf_pool_t       *outpool;
+	struct xf_pool  *inpool;
+	struct xf_pool  *outpool;
 	void            *inptr;
 	void            *outptr;
 
@@ -89,35 +86,43 @@ struct xaf_comp {
 };
 
 struct xaf_pipeline {
-	xaf_comp_t      *comp_chain;
+	struct xaf_comp      *comp_chain;
 
 	u32 input_eos;
 	u32 output_eos;
 };
 
-int xaf_adev_open(xaf_adev_t *p_adev);
-int xaf_adev_close(xaf_adev_t *p_adev);
+int xaf_adev_open(struct xaf_adev_s *p_adev);
+int xaf_adev_close(struct xaf_adev_s *p_adev);
 
-int xaf_comp_create(xaf_adev_t *p_adev, xaf_comp_t *p_comp, int comp_type);
-int xaf_comp_delete(xaf_comp_t *p_comp);
+int xaf_comp_create(struct xaf_adev_s *p_adev,
+		    struct xaf_comp *p_comp,
+		    int comp_type);
+int xaf_comp_delete(struct xaf_comp *p_comp);
 
-int xaf_comp_set_config(xaf_comp_t *p_comp, u32 num_param, void *p_param);
-int xaf_comp_get_config(xaf_comp_t *p_comp, u32 num_param, void *p_param);
+int xaf_comp_set_config(struct xaf_comp *p_comp, u32 num_param, void *p_param);
+int xaf_comp_get_config(struct xaf_comp *p_comp, u32 num_param, void *p_param);
 
-int xaf_comp_flush(xaf_comp_t *p_comp);
+int xaf_comp_flush(struct xaf_comp *p_comp);
 
-int xaf_comp_process(xaf_comp_t *p_comp, void *p_buf, u32 length, u32 flag);
-int xaf_comp_get_status(xaf_comp_t *p_comp, xaf_info_t *p_info);
-int xaf_comp_get_msg_count(xaf_comp_t *p_comp);
+int xaf_comp_process(struct xaf_comp *p_comp,
+		     void *p_buf,
+		     u32 length,
+		     u32 flag);
+int xaf_comp_get_status(struct xaf_comp *p_comp, struct xaf_info_s *p_info);
+int xaf_comp_get_msg_count(struct xaf_comp *p_comp);
 
-int xaf_connect(xaf_comp_t *p_src, xaf_comp_t *p_dest, u32 num_buf, u32 buf_length);
-int xaf_disconnect(xaf_comp_t *p_comp);
+int xaf_connect(struct xaf_comp *p_src,
+		struct xaf_comp *p_dest,
+		u32 num_buf,
+		u32 buf_length);
+int xaf_disconnect(struct xaf_comp *p_comp);
 
-int xaf_comp_add(xaf_pipeline_t *p_pipe, xaf_comp_t *p_comp);
+int xaf_comp_add(struct xaf_pipeline *p_pipe, struct xaf_comp *p_comp);
 
-int xaf_pipeline_create(xaf_adev_t *p_adev, xaf_pipeline_t *p_pipe);
-int xaf_pipeline_delete(xaf_pipeline_t *p_pipe);
+int xaf_pipeline_create(struct xaf_adev_s *p_adev, struct xaf_pipeline *p_pipe);
+int xaf_pipeline_delete(struct xaf_pipeline *p_pipe);
 
-int xaf_pipeline_send_eos(xaf_pipeline_t *p_pipe);
+int xaf_pipeline_send_eos(struct xaf_pipeline *p_pipe);
 
 #endif

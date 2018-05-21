@@ -1,33 +1,32 @@
-//*****************************************************************
-// Copyright 2018 NXP
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
+/*****************************************************************
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
 
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-//*****************************************************************
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************/
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <elf.h>
 #include "library_load.h"
-
 
 static Elf32_Half xtlib_host_half(Elf32_Half v, int byteswap)
 {
@@ -44,7 +43,7 @@ static Elf32_Word xtlib_host_word(Elf32_Word v, int byteswap)
 }
 
 static int xtlib_verify_magic(Elf32_Ehdr *header,
-				    struct lib_info *lib_info)
+			      struct lib_info *lib_info)
 {
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
@@ -90,7 +89,7 @@ static int xtlib_verify_magic(Elf32_Ehdr *header,
 }
 
 static void xtlib_load_seg(Elf32_Phdr *pheader, void *src_addr, xt_ptr dst_addr,
-			struct lib_info *lib_info)
+			   struct lib_info *lib_info)
 {
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
@@ -104,20 +103,18 @@ static void xtlib_load_seg(Elf32_Phdr *pheader, void *src_addr, xt_ptr dst_addr,
 
 	void *zero_addr = (void *)dst_addr + bytes_to_copy;
 
-	if (bytes_to_copy > 0)
-	{
+	if (bytes_to_copy > 0) {
 	//	memcpy((void *)(dst_addr), src_addr, bytes_to_copy);
 		src_back = (char *)src_addr;
 		dst_back = (char *)dst_addr;
-		for(i = 0; i < bytes_to_copy; i++)
+		for (i = 0; i < bytes_to_copy; i++)
 			*dst_back++ = *src_back++;
 	}
 
-	if (bytes_to_zero > 0)
-	{
+	if (bytes_to_zero > 0) {
 	//	memset(zero_addr, 0, bytes_to_zero);
 		dst_back = (char *)zero_addr;
-		for(i = 0; i < bytes_to_zero; i++)
+		for (i = 0; i < bytes_to_zero; i++)
 			*dst_back++ = 0;
 	}
 }
@@ -131,12 +128,12 @@ static xt_ptr align_ptr(xt_ptr ptr, xt_uint align)
 }
 
 static xt_ptr xt_ptr_offs(xt_ptr base, Elf32_Word offs,
-				    struct lib_info *lib_info)
+			  struct lib_info *lib_info)
 {
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
 
-	return (xt_ptr) xtlib_xt_word((xt_uint)base +
+	return (xt_ptr)xtlib_xt_word((xt_uint)base +
 		xtlib_host_word(offs, xtlib_globals->byteswap),
 			xtlib_globals->byteswap);
 }
@@ -156,8 +153,8 @@ static Elf32_Dyn *find_dynamic_info(Elf32_Ehdr *eheader,
 
 	while (seg < num) {
 		if (xtlib_host_word(pheader[seg].p_type,
-				xtlib_globals->byteswap) == PT_DYNAMIC) {
-			return (Elf32_Dyn *) (base_addr +
+				    xtlib_globals->byteswap) == PT_DYNAMIC) {
+			return (Elf32_Dyn *)(base_addr +
 				xtlib_host_word(pheader[seg].p_offset,
 						xtlib_globals->byteswap));
 		}
@@ -167,7 +164,7 @@ static Elf32_Dyn *find_dynamic_info(Elf32_Ehdr *eheader,
 }
 
 static int find_align(Elf32_Ehdr *header,
-				    struct lib_info *lib_info)
+		      struct lib_info *lib_info)
 {
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
@@ -181,8 +178,8 @@ static int find_align(Elf32_Ehdr *header,
 
 	while (sec < num) {
 		if (sheader[sec].sh_type != SHT_NULL &&
-			xtlib_host_word(sheader[sec].sh_size,
-						xtlib_globals->byteswap) > 0) {
+		    xtlib_host_word(sheader[sec].sh_size,
+				    xtlib_globals->byteswap) > 0) {
 			int sec_align =
 				xtlib_host_word(sheader[sec].sh_addralign,
 						xtlib_globals->byteswap);
@@ -196,7 +193,7 @@ static int find_align(Elf32_Ehdr *header,
 }
 
 static int validate_dynamic(Elf32_Ehdr *header,
-				    struct lib_info *lib_info)
+			    struct lib_info *lib_info)
 {
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
@@ -205,14 +202,14 @@ static int validate_dynamic(Elf32_Ehdr *header,
 		return XTLIB_NOT_ELF;
 
 	if (xtlib_host_half(header->e_type,
-				xtlib_globals->byteswap) != ET_DYN)
+			    xtlib_globals->byteswap) != ET_DYN)
 		return XTLIB_NOT_DYNAMIC;
 
 	return XTLIB_NO_ERR;
 }
 
 static int validate_dynamic_splitload(Elf32_Ehdr *header,
-				    struct lib_info *lib_info)
+				      struct lib_info *lib_info)
 {
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
@@ -236,36 +233,35 @@ static int validate_dynamic_splitload(Elf32_Ehdr *header,
 	if (xtlib_host_half(header->e_phnum, xtlib_globals->byteswap) != 3)
 		return XTLIB_NOT_SPLITLOAD;
 
-	pheader = (Elf32_Phdr *) ((char *)header +
+	pheader = (Elf32_Phdr *)((char *)header +
 		xtlib_host_word(header->e_phoff, xtlib_globals->byteswap));
 
 	/* LOAD R-X */
 	if (xtlib_host_word(pheader[0].p_type,
-				xtlib_globals->byteswap) != PT_LOAD
-	    || (xtlib_host_word(pheader[0].p_flags, xtlib_globals->byteswap)
+			    xtlib_globals->byteswap) != PT_LOAD ||
+				(xtlib_host_word(pheader[0].p_flags,
+						xtlib_globals->byteswap)
 				& (PF_R | PF_W | PF_X)) != (PF_R | PF_X))
 		return XTLIB_NOT_SPLITLOAD;
 
 	/* LOAD RWX */
 	if (xtlib_host_word(pheader[1].p_type,
-				xtlib_globals->byteswap) != PT_LOAD
-		|| (xtlib_host_word(pheader[1].p_flags,
-				xtlib_globals->byteswap)
+			    xtlib_globals->byteswap) != PT_LOAD ||
+			(xtlib_host_word(pheader[1].p_flags,
+			xtlib_globals->byteswap)
 			& (PF_R | PF_W | PF_X)) != (PF_R | PF_W | PF_X))
 		return XTLIB_NOT_SPLITLOAD;
 
 	/* DYNAMIC RW- */
 	if (xtlib_host_word(pheader[2].p_type,
-				xtlib_globals->byteswap) != PT_DYNAMIC
-		|| (xtlib_host_word(pheader[2].p_flags,
-					xtlib_globals->byteswap)
-				& (PF_R | PF_W | PF_X)) != (PF_R | PF_W))
+			    xtlib_globals->byteswap) != PT_DYNAMIC ||
+			(xtlib_host_word(pheader[2].p_flags,
+			xtlib_globals->byteswap)
+			& (PF_R | PF_W | PF_X)) != (PF_R | PF_W))
 		return XTLIB_NOT_SPLITLOAD;
 
 	return XTLIB_NO_ERR;
 }
-
-
 
 static unsigned int xtlib_split_pi_library_size(
 				struct xtlib_packaged_library *library,
@@ -276,7 +272,7 @@ static unsigned int xtlib_split_pi_library_size(
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
 	Elf32_Phdr *pheader;
-	Elf32_Ehdr *header = (Elf32_Ehdr *) library;
+	Elf32_Ehdr *header = (Elf32_Ehdr *)library;
 	int align;
 	int err = validate_dynamic_splitload(header, lib_info);
 
@@ -287,7 +283,7 @@ static unsigned int xtlib_split_pi_library_size(
 
 	align = find_align(header, lib_info);
 
-	pheader = (Elf32_Phdr *) ((char *)library +
+	pheader = (Elf32_Phdr *)((char *)library +
 		xtlib_host_word(header->e_phoff, xtlib_globals->byteswap));
 
 	*code_size = xtlib_host_word(pheader[0].p_memsz,
@@ -298,15 +294,13 @@ static unsigned int xtlib_split_pi_library_size(
 	return XTLIB_NO_ERR;
 }
 
-
-
 static int get_dyn_info(Elf32_Ehdr *eheader,
-				xt_ptr dst_addr,
-				xt_uint src_offs,
-				xt_ptr dst_data_addr,
-				xt_uint src_data_offs,
-				struct xtlib_pil_info *info,
-				struct lib_info *lib_info)
+			xt_ptr dst_addr,
+			xt_uint src_offs,
+			xt_ptr dst_data_addr,
+			xt_uint src_data_offs,
+			struct xtlib_pil_info *info,
+			struct lib_info *lib_info)
 {
 	unsigned int jmprel = 0;
 	unsigned int pltrelsz = 0;
@@ -317,11 +311,11 @@ static int get_dyn_info(Elf32_Ehdr *eheader,
 	if (dyn_entry == 0)
 		return XTLIB_NO_DYNAMIC_SEGMENT;
 
-	info->dst_addr = (xt_uint) xtlib_xt_word((Elf32_Word) dst_addr,
+	info->dst_addr = (xt_uint)xtlib_xt_word((Elf32_Word)dst_addr,
 						xtlib_globals->byteswap);
 	info->src_offs = xtlib_xt_word(src_offs, xtlib_globals->byteswap);
-	info->dst_data_addr = (xt_uint) xtlib_xt_word(
-			(Elf32_Word) dst_data_addr + src_data_offs,
+	info->dst_data_addr = (xt_uint)xtlib_xt_word(
+			(Elf32_Word)dst_data_addr + src_data_offs,
 			xtlib_globals->byteswap);
 	info->src_data_offs = xtlib_xt_word(src_data_offs,
 				xtlib_globals->byteswap);
@@ -347,7 +341,8 @@ static int get_dyn_info(Elf32_Ehdr *eheader,
 		case DT_RELASZ:
 			info->rela_count = xtlib_xt_word(
 				xtlib_host_word(dyn_entry->d_un.d_val,
-				xtlib_globals->byteswap) / sizeof(Elf32_Rela),
+						xtlib_globals->byteswap) /
+				sizeof(Elf32_Rela),
 				xtlib_globals->byteswap);
 			break;
 		case DT_INIT:
@@ -391,7 +386,6 @@ static int get_dyn_info(Elf32_Ehdr *eheader,
 	return XTLIB_NO_ERR;
 }
 
-
 static xt_ptr xtlib_load_split_pi_library_common(
 				struct xtlib_packaged_library *library,
 				xt_ptr destination_code_address,
@@ -401,7 +395,7 @@ static xt_ptr xtlib_load_split_pi_library_common(
 {
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
-	Elf32_Ehdr *header = (Elf32_Ehdr *) library;
+	Elf32_Ehdr *header = (Elf32_Ehdr *)library;
 	Elf32_Phdr *pheader;
 	unsigned int align;
 	int err = validate_dynamic_splitload(header, lib_info);
@@ -425,19 +419,19 @@ static xt_ptr xtlib_load_split_pi_library_common(
 	lib_info->data_buf_virt += (destination_data_address -
 				destination_data_address_back);
 
-	pheader = (Elf32_Phdr *) ((char *)library +
+	pheader = (Elf32_Phdr *)((char *)library +
 			xtlib_host_word(header->e_phoff,
-				xtlib_globals->byteswap));
+					xtlib_globals->byteswap));
 
 	err = get_dyn_info(header,
-			destination_code_address,
-			xtlib_host_word(pheader[0].p_paddr,
-					xtlib_globals->byteswap),
-			destination_data_address,
-			xtlib_host_word(pheader[1].p_paddr,
-					xtlib_globals->byteswap),
-			info,
-			lib_info);
+			   destination_code_address,
+			   xtlib_host_word(pheader[0].p_paddr,
+					   xtlib_globals->byteswap),
+			   destination_data_address,
+			   xtlib_host_word(pheader[1].p_paddr,
+					   xtlib_globals->byteswap),
+			   info,
+			   lib_info);
 
 	if (err != XTLIB_NO_ERR) {
 		xtlib_globals->err = err;
@@ -446,23 +440,23 @@ static xt_ptr xtlib_load_split_pi_library_common(
 
 	/* loading code */
 	xtlib_load_seg(&pheader[0],
-		(char *)library + xtlib_host_word(pheader[0].p_offset,
+		       (char *)library + xtlib_host_word(pheader[0].p_offset,
 			xtlib_globals->byteswap),
 			(xt_ptr)lib_info->code_buf_virt,
 			lib_info);
 
 	if (info->text_addr == 0)
 		info->text_addr =
-		(xt_ptr) xtlib_xt_word((Elf32_Word) destination_code_address,
+		(xt_ptr)xtlib_xt_word((Elf32_Word)destination_code_address,
 						xtlib_globals->byteswap);
 
 	/* loading data */
 	xtlib_load_seg(&pheader[1],
-		  (char *)library + xtlib_host_word(pheader[1].p_offset,
+		       (char *)library + xtlib_host_word(pheader[1].p_offset,
 						xtlib_globals->byteswap),
 		  (xt_ptr)lib_info->data_buf_virt +
 		  xtlib_host_word(pheader[1].p_paddr,
-						xtlib_globals->byteswap),
+				  xtlib_globals->byteswap),
 		  lib_info);
 
 	if (err != XTLIB_NO_ERR) {
@@ -470,11 +464,12 @@ static xt_ptr xtlib_load_split_pi_library_common(
 		return 0;
 	}
 
-	return (xt_ptr) xtlib_host_word((Elf32_Word) info->start_sym,
-						xtlib_globals->byteswap);
+	return (xt_ptr)xtlib_host_word((Elf32_Word)info->start_sym,
+				       xtlib_globals->byteswap);
 }
 
-static xt_ptr xtlib_host_load_split_pi_library(struct xtlib_packaged_library *library,
+static xt_ptr xtlib_host_load_split_pi_library(
+				  struct xtlib_packaged_library *library,
 				  xt_ptr destination_code_address,
 				  xt_ptr destination_data_address,
 				  struct xtlib_pil_info *info,
@@ -487,13 +482,13 @@ static xt_ptr xtlib_host_load_split_pi_library(struct xtlib_packaged_library *li
 					      lib_info);
 }
 
-
-static long load_dpu_with_library(xf_proxy_t *proxy, struct lib_info *lib_info)
+static long load_dpu_with_library(struct xf_proxy *proxy,
+				  struct lib_info *lib_info)
 {
 	FILE *fpInfile = NULL;
 	unsigned char *srambuf = NULL;
 	struct lib_dnld_info_t dpulib;
-	xf_buffer_t *buf;
+	struct xf_buffer *buf;
 	Elf32_Phdr *pheader;
 	Elf32_Ehdr *header;
 	unsigned int align;
@@ -502,9 +497,8 @@ static long load_dpu_with_library(xf_proxy_t *proxy, struct lib_info *lib_info)
 
 	/* Load DPU's main program to System memory */
 	fpInfile = fopen(lib_info->filename, "r");
-	if (fpInfile == NULL)
-	{
-		printf("Error: %s not exist, please check it\n", lib_info->filename);
+	if (!fpInfile) {
+		printf("Error: %s not exist\n", lib_info->filename);
 		return -ENOENT;
 	}
 
@@ -519,8 +513,8 @@ static long load_dpu_with_library(xf_proxy_t *proxy, struct lib_info *lib_info)
 
 	ret_val = xtlib_split_pi_library_size(
 			(struct xtlib_packaged_library *)(srambuf),
-			(unsigned int *)&(dpulib.size_code),
-			(unsigned int *)&(dpulib.size_data),
+			(unsigned int *)&dpulib.size_code,
+			(unsigned int *)&dpulib.size_data,
 			lib_info);
 	if (ret_val != XTLIB_NO_ERR)
 		return -EINVAL;
@@ -529,32 +523,42 @@ static long load_dpu_with_library(xf_proxy_t *proxy, struct lib_info *lib_info)
 	lib_info->data_buf_size = dpulib.size_data;
 
 	header = (Elf32_Ehdr *)srambuf;
-	pheader = (Elf32_Phdr *) ((char *)srambuf +
+	pheader = (Elf32_Phdr *)((char *)srambuf +
 				xtlib_host_word(header->e_phoff,
-				lib_info->xtlib_globals.byteswap));
+						lib_info->xtlib_globals.byteswap));
 
 	align = find_align(header, lib_info);
 
-	ret_val = xf_pool_alloc(proxy, 1, dpulib.size_code + align, XF_POOL_AUX, &lib_info->code_section_pool);
-	if(ret_val) {
+	ret_val = xf_pool_alloc(proxy,
+				1,
+				dpulib.size_code + align,
+				XF_POOL_AUX,
+				&lib_info->code_section_pool);
+	if (ret_val) {
 		free(srambuf);
-		printf("not enough buffer when loading codec lib's code section\n");
+		printf("not enough buffer when loading code section\n");
 		return -ENOMEM;
 	}
 
-	ret_val = xf_pool_alloc(proxy, 1, dpulib.size_data + pheader[1].p_paddr + align, XF_POOL_AUX, &lib_info->data_section_pool);
-	if(ret_val) {
+	ret_val = xf_pool_alloc(proxy,
+				1,
+				dpulib.size_data + pheader[1].p_paddr + align,
+				XF_POOL_AUX,
+				&lib_info->data_section_pool);
+	if (ret_val) {
 		free(srambuf);
-		printf("not enough buffer when loading codec lib's data section\n");
+		printf("not enough buffer when loading data section\n");
 		return -ENOMEM;
 	}
 
 	buf = xf_buffer_get(lib_info->code_section_pool);
-	lib_info->code_buf_phys = proxy->ipc.shmem_phys + (xf_buffer_data(buf) - proxy->ipc.shmem);
+	lib_info->code_buf_phys = proxy->ipc.shmem_phys +
+		(xf_buffer_data(buf) - proxy->ipc.shmem);
 	lib_info->code_buf_virt = xf_buffer_data(buf);
 
 	buf = xf_buffer_get(lib_info->data_section_pool);
-	lib_info->data_buf_phys = proxy->ipc.shmem_phys + (xf_buffer_data(buf) - proxy->ipc.shmem);
+	lib_info->data_buf_phys = proxy->ipc.shmem_phys +
+		(xf_buffer_data(buf) - proxy->ipc.shmem);
 	lib_info->data_buf_virt = xf_buffer_data(buf);
 
 	xf_buffer_put(buf);
@@ -564,9 +568,9 @@ static long load_dpu_with_library(xf_proxy_t *proxy, struct lib_info *lib_info)
 
 	dpulib.ppil_inf = &lib_info->pil_info;
 	xtlib_host_load_split_pi_library(
-			(struct xtlib_packaged_library *) (srambuf),
-			(xt_ptr) (dpulib.pbuf_code),
-			(xt_ptr) (dpulib.pbuf_data),
+			(struct xtlib_packaged_library *)(srambuf),
+			(xt_ptr)(dpulib.pbuf_code),
+			(xt_ptr)(dpulib.pbuf_data),
 			(struct xtlib_pil_info *)dpulib.ppil_inf,
 			(void *)lib_info);
 
@@ -575,7 +579,8 @@ static long load_dpu_with_library(xf_proxy_t *proxy, struct lib_info *lib_info)
 	return ret_val;
 }
 
-static long unload_dpu_with_library(xf_proxy_t *proxy, struct lib_info *lib_info)
+static long unload_dpu_with_library(struct xf_proxy *proxy,
+				    struct lib_info *lib_info)
 {
 	xf_pool_free(lib_info->code_section_pool);
 	xf_pool_free(lib_info->data_section_pool);
@@ -583,29 +588,30 @@ static long unload_dpu_with_library(xf_proxy_t *proxy, struct lib_info *lib_info
 	return 0;
 }
 
-long xf_load_lib(xf_handle_t *handle, struct lib_info *lib_info)
+long xf_load_lib(struct xf_handle *handle, struct lib_info *lib_info)
 {
 	void *b = xf_handle_aux(handle);
-	xf_proxy_t *proxy = handle->proxy;
-	xf_user_msg_t msg, rmsg;
-	icm_xtlib_pil_info icm_info;
+	struct xf_proxy *proxy = handle->proxy;
+	struct xf_user_msg msg, rmsg;
+	struct icm_xtlib_pil_info icm_info;
 	long ret_val = 0;
 
 	ret_val = load_dpu_with_library(proxy, lib_info);
-	if(ret_val)
-	{
+	if (ret_val) {
 		TRACE("load dpu library error: ret = %d\n", ret_val);
 		return ret_val;
 	}
 
-	memcpy((void *)(&icm_info.pil_info), (void *)(&lib_info->pil_info), sizeof(struct xtlib_pil_info));
+	memcpy((void *)(&icm_info.pil_info),
+	       (void *)(&lib_info->pil_info),
+	       sizeof(struct xtlib_pil_info));
 	icm_info.lib_type = lib_info->lib_type;
 
 	/* ...set message parameters */
 	msg.id = __XF_PORT_SPEC2(handle->id, 0);
 	msg.opcode = XF_LOAD_LIB;
 	msg.buffer = b;
-	msg.length = sizeof(icm_xtlib_pil_info);
+	msg.length = sizeof(struct icm_xtlib_pil_info);
 	msg.ret = 0;
 
 	/* ...copy lib info */
@@ -614,9 +620,8 @@ long xf_load_lib(xf_handle_t *handle, struct lib_info *lib_info)
 	/* ...synchronously execute command on remote proxy */
 	XF_CHK_API(xf_proxy_cmd(proxy, handle, &msg));
 	xf_response_get(handle, &rmsg);
-	if(rmsg.opcode != XF_LOAD_LIB)
-	{
-		TRACE("send lib info to remote proxy error: ret = %d\n", ret_val);
+	if (rmsg.opcode != XF_LOAD_LIB) {
+		TRACE("send lib info to remote proxy error: %d\n", ret_val);
 		return -EINVAL;
 	}
 
@@ -625,22 +630,22 @@ long xf_load_lib(xf_handle_t *handle, struct lib_info *lib_info)
 	return 0;
 }
 
-long xf_unload_lib(xf_handle_t *handle, struct lib_info *lib_info)
+long xf_unload_lib(struct xf_handle *handle, struct lib_info *lib_info)
 {
 	void *b = xf_handle_aux(handle);
-	xf_proxy_t *proxy = handle->proxy;
-	xf_user_msg_t msg, rmsg;
-	icm_xtlib_pil_info icm_info;
+	struct xf_proxy *proxy = handle->proxy;
+	struct xf_user_msg msg, rmsg;
+	struct icm_xtlib_pil_info icm_info;
 	long ret_val = 0;
 
-	memset((void *)&icm_info, 0, sizeof(icm_xtlib_pil_info));
+	memset((void *)&icm_info, 0, sizeof(struct icm_xtlib_pil_info));
 	icm_info.lib_type = lib_info->lib_type;
 
 	/* ...set message parameters */
 	msg.id = __XF_PORT_SPEC2(handle->id, 0);
 	msg.opcode = XF_UNLOAD_LIB;
 	msg.buffer = b;
-	msg.length = sizeof(icm_xtlib_pil_info);
+	msg.length = sizeof(struct icm_xtlib_pil_info);
 	msg.ret = 0;
 
 	/* ...copy lib info */
@@ -649,9 +654,8 @@ long xf_unload_lib(xf_handle_t *handle, struct lib_info *lib_info)
 	/* ...synchronously execute command on remote proxy */
 	XF_CHK_API(xf_proxy_cmd(proxy, handle, &msg));
 	xf_response_get(handle, &rmsg);
-	if(rmsg.opcode != XF_UNLOAD_LIB)
-	{
-		TRACE("unload loadable lib error, lib_type = %d\n", lib_info->lib_type);
+	if (rmsg.opcode != XF_UNLOAD_LIB) {
+		TRACE("unload loadable lib error\n");
 		return -EINVAL;
 	}
 

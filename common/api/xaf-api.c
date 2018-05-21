@@ -1,26 +1,25 @@
 /*******************************************************************************
-* Copyright (C) 2017 Cadence Design Systems, Inc.
-* Copyright 2018 NXP
-*
-* Permission is hereby granted, free of charge, to any person obtaining
-* a copy of this software and associated documentation files (the
-* "Software"), to use this Software with Cadence processor cores only and
-* not with any other processors and platforms, subject to
-* the following conditions:
-*
-* The above copyright notice and this permission notice shall be included
-* in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*
-******************************************************************************/
-
+ * Copyright (C) 2017 Cadence Design Systems, Inc.
+ * Copyright 2018 NXP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to use this Software with Cadence processor cores only and
+ * not with any other processors and platforms, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *****************************************************************************/
 
 #include <stdio.h>
 #include <unistd.h>
@@ -28,83 +27,76 @@
 #include <inttypes.h>
 #include "xaf-api.h"
 
-
-#ifdef  TGT_OS_ANDROID
+#ifdef TGT_OS_ANDROID
 #define CORE_LIB_PATH   "/vendor/lib/"
 #else
 #define CORE_LIB_PATH   "/usr/lib/imx-mm/audio-codec/dsp/"
 #endif
 
-
-int xaf_adev_open(xaf_adev_t *p_adev)
+int xaf_adev_open(struct xaf_adev_s *p_adev)
 {
-	xf_proxy_t *p_proxy;
+	struct xf_proxy *p_proxy;
 	int ret = 0;
 
-	memset(p_adev, 0, sizeof(xaf_adev_t));
+	memset(p_adev, 0, sizeof(struct xaf_adev_s));
 
 	p_proxy = &p_adev->proxy;
 
 	/* ...open DSP proxy - specify "DSP#0" */
 	ret = xf_proxy_init(p_proxy, 0);
-	if(ret)
-	{
+	if (ret) {
 		TRACE("Error in proxy init, err = %d\n", ret);
 		return ret;
 	}
 
 	/* ...create auxiliary buffers pool for control commands */
-	ret = xf_pool_alloc(p_proxy, XA_AUX_POOL_SIZE, XA_AUX_POOL_MSG_LENGTH, XF_POOL_AUX, &p_proxy->aux);
-	if(ret)
-	{
-		TRACE("Error when creating auxiliary buffers pool, err = %d\n", ret);
-	}
+	ret = xf_pool_alloc(p_proxy,
+			    XA_AUX_POOL_SIZE,
+			    XA_AUX_POOL_MSG_LENGTH,
+			    XF_POOL_AUX,
+			    &p_proxy->aux);
+	if (ret)
+		TRACE("Error when creating auxiliary buffers pool\n");
 
 	return ret;
 }
 
-int xaf_adev_close(xaf_adev_t *p_adev)
+int xaf_adev_close(struct xaf_adev_s *p_adev)
 {
-	xf_proxy_t *p_proxy;
+	struct xf_proxy *p_proxy;
 	int ret = 0;
 
 	p_proxy = &p_adev->proxy;
 	ret = xf_pool_free(p_proxy->aux);
-	if(ret)
-	{
+	if (ret)
 		return ret;
-	}
 
 	xf_proxy_close(p_proxy);
 
 	return ret;
 }
 
-static void my_comp_response(xf_handle_t *h, xf_user_msg_t *msg)
+static void my_comp_response(struct xf_handle *h, struct xf_user_msg *msg)
 {
-	if (msg->opcode == XF_UNREGISTER)
-	{
+	if (msg->opcode == XF_UNREGISTER) {
 		/* ...component execution failed unexpectedly; die */
-		BUG(1, _x("[%p] Abnormal termination"), h);
-	}
-	else if ((msg->opcode == XF_EMPTY_THIS_BUFFER) || (msg->opcode == XF_FILL_THIS_BUFFER))
-	{
+		TRACE("[0x%x] Abnormal termination\n", h);
+	} else if ((msg->opcode == XF_EMPTY_THIS_BUFFER) ||
+			 (msg->opcode == XF_FILL_THIS_BUFFER)) {
 		/* ...submit response to no-timely delivery queue */
 		xf_response_put_ack(h, msg);
-	}
-	else
-	{
+	} else {
 		/* ...submit response to asynchronous delivery queue */
 		xf_response_put(h, msg);
 	}
 }
 
-int xaf_comp_set_config(xaf_comp_t *p_comp, u32 num_param, void *p_param)
+int xaf_comp_set_config(struct xaf_comp *p_comp, u32 num_param, void *p_param)
 {
-	xf_handle_t            *p_handle;
-	xf_user_msg_t           rmsg;
-	xf_set_param_msg_t     *smsg;
-	xf_set_param_msg_t     *param = (xf_set_param_msg_t *)p_param;
+	struct xf_handle       *p_handle;
+	struct xf_user_msg     rmsg;
+	struct xf_set_param_msg     *smsg;
+	struct xf_set_param_msg     *param = (struct xf_set_param_msg *)p_param;
 	u32 i;
 	int ret = 0;
 
@@ -113,44 +105,44 @@ int xaf_comp_set_config(xaf_comp_t *p_comp, u32 num_param, void *p_param)
 	/* ...set persistent stream characteristics */
 	smsg = xf_buffer_data(p_handle->aux);
 
-	for(i = 0; i < num_param; i++)
-	{
+	for (i = 0; i < num_param; i++) {
 		smsg[i].id = param[i].id;
 		smsg[i].value = param[i].value;
 	}
 
 	/* ...pass command to the component */
-	ret = xf_command(p_handle, 0, XF_SET_PARAM, smsg, sizeof(*smsg) * num_param);
-	if(ret)
-	{
-		TRACE("Error when passing cmd to component in set parameter function, err = %d\n", ret);
+	ret = xf_command(p_handle,
+			 0,
+			 XF_SET_PARAM,
+			 smsg,
+			 sizeof(*smsg) * num_param);
+	if (ret) {
+		TRACE("Set parameter error: %d\n", ret);
 		return ret;
 	}
 
 	/* ...wait until result is delivered */
 	ret = xf_response_get(p_handle, &rmsg);
-	if(ret)
-	{
-		TRACE("response timeout when setting parameter, err = %d\n", ret);
+	if (ret) {
+		TRACE("Setting parameter timeout: %d\n", ret);
 		return ret;
 	}
 
 	/* ...make sure response is expected */
-	if((rmsg.opcode != XF_SET_PARAM) || (rmsg.buffer != smsg))
-	{
-		TRACE("response is not expected when setting parameter, err = %d\n", -EPIPE);
+	if ((rmsg.opcode != XF_SET_PARAM) || (rmsg.buffer != smsg)) {
+		TRACE("Not expected response when setting parameter\n");
 		return -EPIPE;
 	}
 
 	return 0;
 }
 
-int xaf_comp_get_config(xaf_comp_t *p_comp, u32 num_param, void *p_param)
+int xaf_comp_get_config(struct xaf_comp *p_comp, u32 num_param, void *p_param)
 {
-	xf_handle_t            *p_handle;
-	xf_user_msg_t           rmsg;
-	xf_get_param_msg_t     *smsg;
-	xf_get_param_msg_t     *param = (xf_get_param_msg_t *)p_param;
+	struct xf_handle       *p_handle;
+	struct xf_user_msg     rmsg;
+	struct xf_get_param_msg     *smsg;
+	struct xf_get_param_msg     *param = (struct xf_get_param_msg *)p_param;
 	u32 i;
 	int ret = 0;
 
@@ -159,86 +151,82 @@ int xaf_comp_get_config(xaf_comp_t *p_comp, u32 num_param, void *p_param)
 	/* ...set persistent stream characteristics */
 	smsg = xf_buffer_data(p_handle->aux);
 
-	for(i = 0; i < num_param; i++)
-	{
+	for (i = 0; i < num_param; i++)
 		smsg[i].id = param[i].id;
-	}
 
 	/* ...pass command to the component */
-	ret = xf_command(p_handle, 0, XF_GET_PARAM, smsg, num_param * sizeof(*smsg));
-	if(ret)
-	{
-		TRACE("Error when passing cmd to component in get parameter function, err = %d\n", ret);
+	ret = xf_command(p_handle,
+			 0,
+			 XF_GET_PARAM,
+			 smsg,
+			 num_param * sizeof(*smsg));
+	if (ret) {
+		TRACE("Get parameter error: %d\n", ret);
 		return ret;
 	}
 
 	/* ...wait until result is delivered */
 	ret = xf_response_get(p_handle, &rmsg);
-	if(ret)
-	{
-		TRACE("response timeout when getting parameter, err = %d\n", ret);
+	if (ret) {
+		TRACE("Getting parameter timeout: %d\n", ret);
 		return ret;
 	}
 
 	/* ...make sure response is expected */
-	if((rmsg.opcode != (u32) XF_GET_PARAM) || (rmsg.buffer != smsg))
-	{
-		TRACE("response is not expected when getting parameter, err = %d\n", -EPIPE);
+	if ((rmsg.opcode != (u32)XF_GET_PARAM) || (rmsg.buffer != smsg)) {
+		TRACE("Not expected response when setting parameter\n");
 		return -EPIPE;
 	}
 
-	for (i=0; i<num_param; i++)
-	{
+	for (i = 0; i < num_param; i++)
 		param[i].value = smsg[i].value;
-	}
 
 	return 0;
 }
 
-int xaf_comp_flush(xaf_comp_t *p_comp)
+int xaf_comp_flush(struct xaf_comp *p_comp)
 {
-	xf_handle_t            *p_handle;
-	xf_user_msg_t           rmsg;
+	struct xf_handle       *p_handle;
+	struct xf_user_msg     rmsg;
 	int ret = 0;
 
 	p_handle = &p_comp->handle;
 
 	/* ...pass command to the component */
 	ret = xf_command(p_handle, 0, XF_FLUSH, NULL, 0);
-	if(ret)
-	{
-		TRACE("Error when passing cmd to component in component flush function, err = %d\n", ret);
+	if (ret) {
+		TRACE("Component flush error: %d\n", ret);
 		return ret;
 	}
 
 	/* ...wait until result is delivered */
 	ret = xf_response_get(p_handle, &rmsg);
-	if(ret)
-	{
-		TRACE("response timeout when component flush, err = %d\n", ret);
+	if (ret) {
+		TRACE("Component flush timeout: %d\n", ret);
 		return ret;
 	}
 
 	/* ...make sure response is expected */
-	if((rmsg.opcode != (u32) XF_FLUSH) || (rmsg.buffer != NULL))
-	{
-		TRACE("response is not expected when component flush, err = %d\n", -EPIPE);
+	if ((rmsg.opcode != (u32)XF_FLUSH) || rmsg.buffer) {
+		TRACE("Not expected response when component flush\n");
 		return -EPIPE;
 	}
 
 	return 0;
 }
 
-int xaf_comp_create(xaf_adev_t *p_adev, xaf_comp_t *p_comp, int comp_type)
+int xaf_comp_create(struct xaf_adev_s *p_adev,
+		    struct xaf_comp *p_comp,
+		    int comp_type)
 {
-	xf_proxy_t *p_proxy;
-	xf_handle_t *p_handle;
-	xf_buffer_t *buf;
+	struct xf_proxy *p_proxy;
+	struct xf_handle *p_handle;
+	struct xf_buffer *buf;
 	char lib_path[200];
 	char lib_wrap_path[200];
 	int ret = 0;
 
-	memset((void *)p_comp, 0, sizeof(xaf_comp_t));
+	memset((void *)p_comp, 0, sizeof(struct xaf_comp));
 
 	p_proxy = &p_adev->proxy;
 	p_handle = &p_comp->handle;
@@ -282,41 +270,44 @@ int xaf_comp_create(xaf_adev_t *p_adev, xaf_comp_t *p_comp, int comp_type)
 
 	/* ...create decoder component instance (select core-0) */
 	ret = xf_open(p_proxy, p_handle, p_comp->dec_id, 0, my_comp_response);
-	if(ret)
-	{
-		TRACE("create (%s) component failed, err = %d\n", p_comp->dec_id, ret);
+	if (ret) {
+		TRACE("create (%s) component error: %d\n", p_comp->dec_id, ret);
 		return ret;
 	}
 
 	/* ...load codec wrapper lib */
 	ret = xf_load_lib(p_handle, &p_comp->codec_wrap_lib);
-	if(ret)
-	{
-		TRACE("load codec wrapper lib failed, err = %d\n", ret);
+	if (ret) {
+		TRACE("load codec wrapper lib error: %d\n", ret);
 		return ret;
 	}
 
 	/* ...load codec lib */
 	ret = xf_load_lib(p_handle, &p_comp->codec_lib);
-	if(ret)
-	{
-		TRACE("load codec lib failed, err = %d\n", ret);
+	if (ret) {
+		TRACE("load codec lib error: %d\n", ret);
 		return ret;
 	}
 
 	/* ...allocate input buffer */
-	ret = xf_pool_alloc(p_proxy, 1, INBUF_SIZE, XF_POOL_INPUT, &p_comp->inpool);
-	if(ret)
-	{
-		TRACE("allocate component input buffer failed, err = %d\n", ret);
+	ret = xf_pool_alloc(p_proxy,
+			    1,
+			    INBUF_SIZE,
+			    XF_POOL_INPUT,
+			    &p_comp->inpool);
+	if (ret) {
+		TRACE("allocate component input buffer error: %d\n", ret);
 		return ret;
 	}
 
 	/* ...allocate output buffer */
-	ret = xf_pool_alloc(p_proxy, 1, OUTBUF_SIZE, XF_POOL_OUTPUT, &p_comp->outpool);
-	if(ret)
-	{
-		TRACE("allocate component output buffer failed, err = %d\n", ret);
+	ret = xf_pool_alloc(p_proxy,
+			    1,
+			    OUTBUF_SIZE,
+			    XF_POOL_OUTPUT,
+			    &p_comp->outpool);
+	if (ret) {
+		TRACE("allocate component output buffer error: %d\n", ret);
 		return ret;
 	}
 
@@ -331,9 +322,9 @@ int xaf_comp_create(xaf_adev_t *p_adev, xaf_comp_t *p_comp, int comp_type)
 	return ret;
 }
 
-int xaf_comp_delete(xaf_comp_t *p_comp)
+int xaf_comp_delete(struct xaf_comp *p_comp)
 {
-	xf_handle_t *p_handle;
+	struct xf_handle *p_handle;
 	u32 ret = 0;
 
 	p_handle = &p_comp->handle;
@@ -356,34 +347,41 @@ int xaf_comp_delete(xaf_comp_t *p_comp)
 	return ret;
 }
 
-int xaf_comp_process(xaf_comp_t *p_comp, void *p_buf, u32 length, u32 flag)
+int xaf_comp_process(struct xaf_comp *p_comp, void *p_buf, u32 length, u32 flag)
 {
-	xf_handle_t *p_handle;
+	struct xf_handle *p_handle;
 	u32 ret = 0;
 
 	p_handle = &p_comp->handle;
 
-	switch(flag)
-	{
-		case XF_FILL_THIS_BUFFER:
-			/* ...issue asynchronous zero-length buffer to output port (port-id=1) */
-			ret = xf_command(p_handle, 1, XF_FILL_THIS_BUFFER, p_buf, length);
-			break;
-		case XF_EMPTY_THIS_BUFFER:
-			/* ...issue asynchronous zero-length buffer to input port (port-id=1) */
-			ret = xf_command(p_handle, 0, XF_EMPTY_THIS_BUFFER, p_buf, length);
-			break;
-		default:
-			break;
+	switch (flag) {
+	case XF_FILL_THIS_BUFFER:
+		/* ...send message to component output port (port-id=1) */
+		ret = xf_command(p_handle,
+				 1,
+				 XF_FILL_THIS_BUFFER,
+				 p_buf,
+				 length);
+		break;
+	case XF_EMPTY_THIS_BUFFER:
+		/* ...send message to component input port (port-id=0) */
+		ret = xf_command(p_handle,
+				 0,
+				 XF_EMPTY_THIS_BUFFER,
+				 p_buf,
+				 length);
+		break;
+	default:
+		break;
 	}
 
 	return ret;
 }
 
-int xaf_comp_get_status(xaf_comp_t *p_comp, xaf_info_t *p_info)
+int xaf_comp_get_status(struct xaf_comp *p_comp, struct xaf_info_s *p_info)
 {
-	xf_handle_t *p_handle;
-	xf_user_msg_t msg;
+	struct xf_handle *p_handle;
+	struct xf_user_msg msg;
 	u32 ret = 0;
 
 	p_handle = &p_comp->handle;
@@ -391,10 +389,8 @@ int xaf_comp_get_status(xaf_comp_t *p_comp, xaf_info_t *p_info)
 	TRACE("Waiting ...\n");
 	/* ...wait until result is delivered */
 	ret = xf_response_get_ack(p_handle, &msg);
-	if(ret)
-	{
+	if (ret)
 		return ret;
-	}
 
 	p_info->opcode = msg.opcode;
 	p_info->buf = msg.buffer;
@@ -404,9 +400,9 @@ int xaf_comp_get_status(xaf_comp_t *p_comp, xaf_info_t *p_info)
 	return ret;
 }
 
-int xaf_comp_get_msg_count(xaf_comp_t *p_comp)
+int xaf_comp_get_msg_count(struct xaf_comp *p_comp)
 {
-	xf_handle_t *p_handle;
+	struct xf_handle *p_handle;
 
 	p_handle = &p_comp->handle;
 
@@ -414,17 +410,26 @@ int xaf_comp_get_msg_count(xaf_comp_t *p_comp)
 	return xf_response_get_ack_count(p_handle);
 }
 
-int xaf_connect(xaf_comp_t *p_src, xaf_comp_t *p_dest, u32 num_buf, u32 buf_length)
+int xaf_connect(struct xaf_comp *p_src,
+		struct xaf_comp *p_dest,
+		u32 num_buf,
+		u32 buf_length)
 {
 	int ret = 0;
 
 	/* ...connect p_src output port with p_dest input port */
-	ret = xf_route(&p_src->handle, 0, &p_dest->handle, 0, num_buf, buf_length, 8);
+	ret = xf_route(&p_src->handle,
+		       0,
+		       &p_dest->handle,
+		       0,
+		       num_buf,
+		       buf_length,
+		       8);
 
 	return ret;
 }
 
-int xaf_disconnect(xaf_comp_t *p_comp)
+int xaf_disconnect(struct xaf_comp *p_comp)
 {
 	int ret = 0;
 
@@ -434,7 +439,7 @@ int xaf_disconnect(xaf_comp_t *p_comp)
 	return ret;
 }
 
-int xaf_comp_add(xaf_pipeline_t *p_pipe, xaf_comp_t *p_comp)
+int xaf_comp_add(struct xaf_pipeline *p_pipe, struct xaf_comp *p_comp)
 {
 	int ret = 0;
 
@@ -442,31 +447,31 @@ int xaf_comp_add(xaf_pipeline_t *p_pipe, xaf_comp_t *p_comp)
 	p_comp->pipeline = p_pipe;
 	p_pipe->comp_chain = p_comp;
 
-    return ret;
+	return ret;
 }
 
-int xaf_pipeline_create(xaf_adev_t *p_adev, xaf_pipeline_t *p_pipe)
+int xaf_pipeline_create(struct xaf_adev_s *p_adev, struct xaf_pipeline *p_pipe)
 {
 	int ret = 0;
 
-	memset(p_pipe, 0, sizeof(xaf_pipeline_t));
+	memset(p_pipe, 0, sizeof(struct xaf_pipeline));
 
 	return ret;
 }
 
-int xaf_pipeline_delete(xaf_pipeline_t *p_pipe)
+int xaf_pipeline_delete(struct xaf_pipeline *p_pipe)
 {
 	int ret = 0;
 
-	memset(p_pipe, 0, sizeof(xaf_pipeline_t));
+	memset(p_pipe, 0, sizeof(struct xaf_pipeline));
 
 	return ret;
 }
 
-int xaf_pipeline_send_eos(xaf_pipeline_t *p_pipe)
+int xaf_pipeline_send_eos(struct xaf_pipeline *p_pipe)
 {
-	xaf_comp_t *p;
-	xf_user_msg_t msg;
+	struct xaf_comp *p;
+	struct xf_user_msg msg;
 	int ret = 0;
 
 	msg.id = 0;
@@ -475,11 +480,9 @@ int xaf_pipeline_send_eos(xaf_pipeline_t *p_pipe)
 	msg.buffer = NULL;
 	msg.ret = 0;
 
-	for(p = p_pipe->comp_chain; p != NULL; p = p->next)
-	{
+	for (p = p_pipe->comp_chain; p; p = p->next)
 		/* ...submit response to no-timely delivery queue */
 		xf_response_put_ack(&p->handle, &msg);
-	}
 
 	return ret;
 }
