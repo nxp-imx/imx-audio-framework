@@ -821,10 +821,12 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			ret = ACODEC_NOT_ENOUGH_DATA;
 		} else if (err == XA_CAPIBILITY_CHANGE) {
 			ret = ACODEC_CAPIBILITY_CHANGE;
-		} else {
-			if (err == XA_ERROR_STREAM)
-				ret = ACODEC_ERROR_STREAM;
+		} else if (err == XA_ERROR_STREAM) {
+			ret = ACODEC_ERROR_STREAM;
+		} else if (err == XA_ERR_UNKNOWN) {
+			ret = ACODEC_ERR_UNKNOWN;
 		}
+
 		pDSP_handle->last_err = err;
 		break;
 	case MP2:
