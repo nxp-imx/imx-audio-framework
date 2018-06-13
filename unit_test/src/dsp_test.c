@@ -205,7 +205,8 @@ void *comp_process_entry(void *arg)
 						ret = p_info.ret;
 						goto Fail;
 					} else if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
-							(p_info.ret != XA_ERROR_STREAM)) {
+							(p_info.ret != XA_ERROR_STREAM) &&
+							(p_info.ret != XA_ERR_UNKNOWN)) {
 						/* ...issue asynchronous zero-length buffer
 						 * to output port (port-id=1)
 						 */
