@@ -290,8 +290,8 @@ static void *xf_proxy_thread(void *arg)
 		struct xf_proxy_message  m;
 		struct xf_user_msg   msg;
 
-		r = xf_ipc_wait(&proxy->ipc, TIMEOUT);
-		/* ...wait for response from remote proxy (5s timeout) */
+		/* wait for response from remote proxy */
+		r = xf_ipc_wait(&proxy->ipc, -1);
 		if (r < 0)
 			break;
 
