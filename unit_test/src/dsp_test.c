@@ -222,85 +222,10 @@ void *comp_process_entry(void *arg)
 					break;
 				case CODEC_MP2_DEC:
 				case CODEC_MP3_DEC:
-					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
-					    (p_info.ret != XA_ERROR_STREAM)) {
-						/* ...issue asynchronous zero-length
-						 * buffer to output port (port-id=1)
-						 */
-						ret = xaf_comp_process(p_comp,
-								       p_comp->outptr,
-								       OUTBUF_SIZE,
-								       XF_FILL_THIS_BUFFER);
-						continue;
-					} else {
-						ret = p_info.ret;
-						goto Fail;
-					}
-					break;
 				case CODEC_BSAC_DEC:
-					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
-					    (p_info.ret != XA_ERROR_STREAM)) {
-						/* ...issue asynchronous zero-length
-						 * buffer to output port (port-id=1)
-						 */
-						ret = xaf_comp_process(p_comp,
-								       p_comp->outptr,
-								       OUTBUF_SIZE,
-								       XF_FILL_THIS_BUFFER);
-						continue;
-					} else {
-						ret = p_info.ret;
-						goto Fail;
-					}
-					break;
 				case CODEC_DRM_DEC:
-					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
-					    (p_info.ret != XA_ERROR_STREAM)) {
-						/* ...issue asynchronous zero-length
-						 * buffer to output port (port-id=1)
-						 */
-						ret = xaf_comp_process(p_comp,
-								       p_comp->outptr,
-								       OUTBUF_SIZE,
-								       XF_FILL_THIS_BUFFER);
-						continue;
-					} else {
-						ret = p_info.ret;
-						goto Fail;
-					}
-					break;
 				case CODEC_DAB_DEC:
-					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
-					    (p_info.ret != XA_ERROR_STREAM)) {
-						/* ...issue asynchronous zero-length
-						 * buffer to output port (port-id=1)
-						 */
-						ret = xaf_comp_process(p_comp,
-								       p_comp->outptr,
-								       OUTBUF_SIZE,
-								       XF_FILL_THIS_BUFFER);
-						continue;
-					} else {
-						ret = p_info.ret;
-						goto Fail;
-					}
-					break;
 				case CODEC_SBC_DEC:
-					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
-					    (p_info.ret != XA_ERROR_STREAM)) {
-						/* ...issue asynchronous zero-length
-						 * buffer to output port (port-id=1)
-						 */
-						ret = xaf_comp_process(p_comp,
-								       p_comp->outptr,
-								       OUTBUF_SIZE,
-								       XF_FILL_THIS_BUFFER);
-						continue;
-					} else {
-						ret = p_info.ret;
-						goto Fail;
-					}
-					break;
 				case CODEC_SBC_ENC:
 					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
 					    (p_info.ret != XA_ERROR_STREAM)) {
