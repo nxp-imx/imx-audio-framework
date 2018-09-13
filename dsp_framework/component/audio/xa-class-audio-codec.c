@@ -159,7 +159,7 @@ static DSP_ERROR_TYPE xa_codec_lib_unload(struct XACodecBase *base,
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 	struct icm_xtlib_pil_info  *cmd = m->buffer;
 	struct dpu_lib_stat_t *lib_stat;
-	int ret = 0, do_cleanup = 0;
+	int do_cleanup = 0;
 
 	switch(cmd->lib_type) {
 	case DSP_CODEC_LIB:
@@ -178,7 +178,7 @@ static DSP_ERROR_TYPE xa_codec_lib_unload(struct XACodecBase *base,
 	if (lib_stat && lib_stat->stat == lib_loaded) {
 		/* ...destory codec resources */
 		if (do_cleanup)
-			ret = XA_API(base, XF_API_CMD_CLEANUP, 0, NULL);
+			XA_API(base, XF_API_CMD_CLEANUP, 0, NULL);
 
 		dpu_process_unload_pi_lib(lib_stat);
 	}
