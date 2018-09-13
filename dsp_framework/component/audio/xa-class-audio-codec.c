@@ -111,53 +111,40 @@ static DSP_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 	struct icm_xtlib_pil_info  *cmd = m->buffer;
+	struct dpu_lib_stat_t *lib_stat;
 	void *lib_interface;
 	u32 byteswap = 0;
 
-	if (cmd->lib_type == DSP_CODEC_LIB) {
-		lib_interface = dpu_process_init_pi_lib(&cmd->pil_info,
-							&codec->lib_codec_stat,
-							byteswap);
-		if (!lib_interface) {
-			LOG1("codec lib load error: 0x%x\n", lib_interface);
-			m->ret = XA_INIT_ERR;
-			xf_response(m);
-
-			return XA_INIT_ERR;
-		}
-
-		/* ...set codec lib handle if codec is loaded as library*/
-		XA_API(base,
-		       XF_API_CMD_SET_LIB_ENTRY,
-		       DSP_CODEC_LIB,
-		       lib_interface);
-	} else if (cmd->lib_type == DSP_CODEC_WRAP_LIB) {
-		lib_interface = dpu_process_init_pi_lib(&cmd->pil_info,
-							&codec->lib_codec_wrap_stat,
-							byteswap);
-		if (!lib_interface) {
-			LOG1("codec wrap lib load error: 0x%x\n",
-			     lib_interface);
-			m->ret = XA_INIT_ERR;
-			xf_response(m);
-
-			return XA_INIT_ERR;
-		}
-
-		/* ...set codec wrapper lib handle if codec wrapper
-		 * is loaded as library
-		 */
-		XA_API(base,
-		       XF_API_CMD_SET_LIB_ENTRY,
-			   DSP_CODEC_WRAP_LIB,
-			   lib_interface);
-	} else {
+	switch(cmd->lib_type) {
+	case DSP_CODEC_LIB:
+		lib_stat = &codec->lib_codec_stat;
+		break;
+	case DSP_CODEC_WRAP_LIB:
+		lib_stat = &codec->lib_codec_wrap_stat;
+		break;
+	default:
 		LOG("Unknown lib type\n");
 		m->ret = XA_INIT_ERR;
 		xf_response(m);
 
 		return XA_INIT_ERR;
 	}
+
+	lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, lib_stat,
+						byteswap);
+	if (!lib_interface) {
+		LOG2("lib load error: lib_type = %d, lib_entry = 0x%x\n",
+		     cmd->lib_type, lib_interface);
+		m->ret = XA_INIT_ERR;
+		xf_response(m);
+		return XA_INIT_ERR;
+	}
+
+	/* ...set codec lib handle if codec is loaded as library*/
+	XA_API(base,
+	       XF_API_CMD_SET_LIB_ENTRY,
+	       cmd->lib_type,
+	       lib_interface);
 
 	LOG2("load lib success: lib_type = %d, lib_entry = %x\n",
 	     cmd->lib_type,
