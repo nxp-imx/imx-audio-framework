@@ -113,7 +113,6 @@ static DSP_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 	struct icm_xtlib_pil_info  *cmd = m->buffer;
 	struct dpu_lib_stat_t *lib_stat;
 	void *lib_interface;
-	u32 byteswap = 0;
 
 	switch(cmd->lib_type) {
 	case DSP_CODEC_LIB:
@@ -130,8 +129,7 @@ static DSP_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 		return XA_INIT_ERR;
 	}
 
-	lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, lib_stat,
-						byteswap);
+	lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, lib_stat, 0);
 	if (!lib_interface) {
 		LOG2("lib load error: lib_type = %d, lib_entry = 0x%x\n",
 		     cmd->lib_type, lib_interface);
