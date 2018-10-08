@@ -201,7 +201,7 @@ static int simple_vsprintf(char **out, char *format, va_list ap)
 							flags,
 							'a');
 				break;
-
+			case('p'):
 			case('x'):
 				u.u = va_arg(ap, unsigned int);
 				pc += simple_outputi(out,
