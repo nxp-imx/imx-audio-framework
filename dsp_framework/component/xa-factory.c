@@ -34,6 +34,7 @@
 
 #include "mydefs.h"
 #include "dsp_codec_interface.h"
+#include "dsp_renderer_interface.h"
 #include "xf-audio-apicmd.h"
 
 /*******************************************************************************
@@ -72,9 +73,19 @@ extern u32 xf_unia_codec(xf_codec_handle_t handle,
 			 u32 i_idx,
 			 void *pv_value);
 
+
+extern u32 xa_renderer(xf_codec_handle_t handle,
+			u32 i_cmd,
+			u32 i_idx,
+			void *pv_value);
+
 /* ...component class factories */
 extern struct xf_component *xa_audio_codec_factory(struct dsp_main_struct *dsp_config,
 						   xf_codec_func_t *process,
+						   u32 type);
+
+extern struct xf_component *xa_renderer_factory(struct dsp_main_struct *dsp_config,
+						   xf_codec_func_t * process,
 						   u32 type);
 
 /*******************************************************************************
@@ -91,6 +102,7 @@ static const struct xf_component_id xf_component_id[] = {
 	{ "audio-decoder/drm",      CODEC_DRM_DEC,     xa_audio_codec_factory,     xf_unia_codec },
 	{ "audio-decoder/sbc",      CODEC_SBC_DEC,     xa_audio_codec_factory,     xf_unia_codec },
 	{ "audio-encoder/sbc",      CODEC_SBC_ENC,     xa_audio_codec_factory,     xf_unia_codec },
+	{ "renderer/esai",          RENDER_ESAI,       xa_renderer_factory,        xa_renderer },
 };
 
 /* ...number of items in the map */
