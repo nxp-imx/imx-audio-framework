@@ -43,6 +43,7 @@ C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
 			  $(SRC_DIR)/plugins/audio_codec/xa-unia-codec.o             \
 			  $(SRC_DIR)/plugins/renderer/io.o                           \
 			  $(SRC_DIR)/plugins/renderer/edma.o                         \
+			  $(SRC_DIR)/plugins/renderer/sai.o                          \
 			  $(SRC_DIR)/init/main.o                                     \
 			  $(SRC_DIR)/ipc/xf-shmem.o                                  \
 			  $(SRC_DIR)/ipc/xf-msg.o                                    \
