@@ -28,6 +28,7 @@ INCLUDES   += -I$(INC_DIR)/lib                            \
 			  -I$(SRC_DIR)/arch                           \
 			  -I$(SRC_DIR)/arch/libloader/include         \
 			  -I$(SRC_DIR)/plugins/audio_codec            \
+			  -I$(SRC_DIR)/plugins/renderer            \
 			  -I$(SRC_DIR)/component/audio
 
 # Put common C files here
@@ -42,6 +43,7 @@ C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
 			  $(SRC_DIR)/component/audio/xa-class-base.o                 \
 			  $(SRC_DIR)/component/audio/xa-class-renderer.o             \
 			  $(SRC_DIR)/plugins/audio_codec/xa-unia-codec.o             \
+			  $(SRC_DIR)/plugins/renderer/xa-renderer-esai.o             \
 			  $(SRC_DIR)/plugins/renderer/io.o                           \
 			  $(SRC_DIR)/plugins/renderer/edma.o                         \
 			  $(SRC_DIR)/plugins/renderer/sai.o                          \
@@ -71,6 +73,7 @@ clean:
 	rm -f $(SRC_DIR)/component/*.o
 	rm -f $(SRC_DIR)/component/audio/*.o
 	rm -f $(SRC_DIR)/plugins/audio_codec/*.o
+	rm -f $(SRC_DIR)/plugins/renderer/*.o
 	rm -f $(SRC_DIR)/init/*.o
 	rm -f $(SRC_DIR)/ipc/*.o
 	rm -f $(SRC_DIR)/memory/*.o

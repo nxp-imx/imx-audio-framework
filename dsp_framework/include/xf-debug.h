@@ -69,6 +69,10 @@
 
 #define BUG(cond, fmt, ...)             (void)0
 
+/* ...check if non-zero value is a power-of-two */
+#define xf_is_power_of_two(v)       (((v) & ((v) - 1)) == 0)
+
+
 /*******************************************************************************
  * Run-time error processing
  ******************************************************************************/
