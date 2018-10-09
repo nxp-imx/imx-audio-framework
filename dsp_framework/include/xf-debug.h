@@ -59,7 +59,7 @@
 
 #ifndef offset_of
 #define offset_of(type, member)         \
-	((int)&(((const type *)(0))->(member)))
+	((int)&(((const type *)(0))->member))
 #endif
 
 #ifndef container_of
