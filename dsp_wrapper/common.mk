@@ -157,7 +157,7 @@ ifeq ($(ANDROID_BUILD),1)
 	TOOL_CHAIN_PATH = /opt/android-ndk64-r10e-standalone
 	CC              = $(CCACHE) $(TOOL_CHAIN_PATH)/bin/aarch64-linux-android-gcc
 	AR              = $(TOOL_CHAIN_PATH)/bin/aarch64-linux-android-ar
-	LD              = $(CCACHE) $(TOOL_CHAIN_PATH)/bin/aarch64-linux-android-g++
+	LD              = $(CCACHE) $(TOOL_CHAIN_PATH)/bin/aarch64-linux-android-gcc
 	STRIP           = $(TOOL_CHAIN_PATH)/bin/aarch64-linux-android-strip
 	STDLIBDIR       = -L$(TOOL_CHAIN_PATH)/lib/gcc/aarch64-linux-android/4.9 -L$(TOOL_CHAIN_PATH)/sysroot/usr/lib
 	C_DEFINES      += -Wa,--noexecstack -Werror=format-security -fno-short-enums
@@ -172,7 +172,7 @@ ifeq ($(ANDROID_BUILD),1)
 	C_DEFINES      += -DANDROID -DNDEBUG -DNDEBUG -UDEBUG -MD -I$(TOOL_CHAIN_PATH)/sysroot/usr/include
 	C_DEFINES      += -g -MD
 
-	L_DEFINES      += -llog -lc -lstdc++ -lm -Wl,--gc-sections -Wl,-shared,-Bsymbolic -Wl,--whole-archive -Wl,--no-whole-archive -Wl,-z,noexecstack -Wl,--no-undefined
+	L_DEFINES      += -llog -lc -lm -Wl,--gc-sections -Wl,-shared,-Bsymbolic -Wl,--whole-archive -Wl,--no-whole-archive -Wl,-z,noexecstack -Wl,--no-undefined
 
 	LIB_DIR    =   ../release/wrapper
 	OPTIMIZE        = -Os
@@ -180,7 +180,7 @@ ifeq ($(ANDROID_BUILD),1)
 	TOOL_CHAIN_PATH = /opt/android-ndk-r9-standalone
 	CC              = $(CCACHE) $(TOOL_CHAIN_PATH)/bin/arm-linux-androideabi-gcc
 	AR              = $(TOOL_CHAIN_PATH)/bin/arm-linux-androideabi-ar
-	LD              = $(CCACHE) $(TOOL_CHAIN_PATH)/bin/arm-linux-androideabi-g++
+	LD              = $(CCACHE) $(TOOL_CHAIN_PATH)/bin/arm-linux-androideabi-gcc
 	STRIP           = $(TOOL_CHAIN_PATH)/bin/arm-linux-androideabi-strip
 	STDLIBDIR       = -L$(TOOL_CHAIN_PATH)/lib/gcc/arm-linux-androideabi/4.6 -L$(TOOL_CHAIN_PATH)/sysroot/usr/lib
 	C_DEFINES       +=  -mthumb -mthumb-interwork -mfpu=neon -mfloat-abi=softfp -msoft-float
@@ -196,7 +196,7 @@ ifeq ($(ANDROID_BUILD),1)
 	C_DEFINES      += -DANDROID -DNDEBUG -DNDEBUG -UDEBUG -MD -I$(TOOL_CHAIN_PATH)/sysroot/usr/include
 	C_DEFINES      += -g -MD
 
-	L_DEFINES      += -llog -lc -lstdc++ -lm -Wl,--gc-sections -Wl,-shared,-Bsymbolic -Wl,--whole-archive -Wl,--no-whole-archive -Wl,-z,noexecstack -Wl,--fix-cortex-a8 -Wl,--no-undefined
+	L_DEFINES      += -llog -lc -lm -Wl,--gc-sections -Wl,-shared,-Bsymbolic -Wl,--whole-archive -Wl,--no-whole-archive -Wl,-z,noexecstack -Wl,--fix-cortex-a8 -Wl,--no-undefined
 
 	LIB_DIR    =   ../release/wrapper
 	OPTIMIZE        = -Os
