@@ -76,6 +76,7 @@ void help_info(int ac, char *av[])
 	printf("                        DRM        for 6\n");
 	printf("                        SBCDEC     for 7\n");
 	printf("                        SBCENC     for 8\n");
+	printf("                        OGGDEC     for 9\n");
 	printf("          -i InFileNam  Input File Name\n");
 	printf("          -o OutName    Output File Name\n");
 	printf("          -s Samplerate Sampling Rate of Audio\n");
@@ -227,6 +228,7 @@ void *comp_process_entry(void *arg)
 				case CODEC_DAB_DEC:
 				case CODEC_SBC_DEC:
 				case CODEC_SBC_ENC:
+				case CODEC_FSL_OGG_DEC:
 					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
 					    (p_info.ret != XA_ERROR_STREAM)) {
 						/* ...issue asynchronous zero-length
