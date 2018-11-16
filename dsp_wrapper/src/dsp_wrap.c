@@ -167,6 +167,9 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	case SBCENC:
 		comp_type = CODEC_SBC_ENC;
 		break;
+	case OGG:
+		comp_type = CODEC_FSL_OGG_DEC;
+		break;
 	default:
 #ifdef DEBUG
 		TRACE("DSP doesn't support this audio type!\n");
