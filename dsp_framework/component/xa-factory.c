@@ -102,6 +102,7 @@ static const struct xf_component_id xf_component_id[] = {
 	{ "audio-decoder/drm",      CODEC_DRM_DEC,     xa_audio_codec_factory,     xf_unia_codec },
 	{ "audio-decoder/sbc",      CODEC_SBC_DEC,     xa_audio_codec_factory,     xf_unia_codec },
 	{ "audio-encoder/sbc",      CODEC_SBC_ENC,     xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/ogg",      CODEC_FSL_OGG_DEC,     xa_audio_codec_factory,     xf_unia_codec },
 	{ "renderer/esai",          RENDER_ESAI,       xa_renderer_factory,        xa_renderer },
 };
 
