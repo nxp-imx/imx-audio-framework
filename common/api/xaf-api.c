@@ -263,9 +263,15 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 	} else if (comp_type == CODEC_SBC_ENC) {
 		p_comp->dec_id = "audio-encoder/sbc";
 		strcat(lib_path, "lib_dsp_sbc_enc.so");
+	} else if (comp_type == CODEC_FSL_OGG_DEC) {
+		p_comp->dec_id = "audio-decoder/ogg";
+		strcat(lib_path, "lib_dsp_ogg_dec.so");
 	}
 
-	strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
+	if (comp_type >= CODEC_FSL_OGG_DEC)
+		strcat(lib_wrap_path, "fsl_lib_dsp_codec_wrap.so");
+	else
+		strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
 	p_comp->codec_wrap_lib.lib_type = DSP_CODEC_WRAP_LIB;
 
 	/* ...create decoder component instance (select core-0) */
@@ -281,7 +287,6 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		TRACE("load codec wrapper lib error: %d\n", ret);
 		return ret;
 	}
-
 	/* ...load codec lib */
 	ret = xf_load_lib(p_handle, &p_comp->codec_lib);
 	if (ret) {
