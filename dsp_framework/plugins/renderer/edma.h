@@ -74,7 +74,7 @@
 
 #define DMA_MEM_TO_DEV 0
 #define DMA_DEV_TO_MEM 1
-
+#define DMA_DEV_TO_DEV 2
 
 #define IRQSTR_ADDR           0x51080000
 
@@ -102,7 +102,8 @@ struct nxp_edma_hw_tcd {
 }__attribute__ ((aligned(32)));
 
 void edma_init(volatile void *edma_addr, u32 type, struct nxp_edma_hw_tcd *tcd,
-	       volatile void *dev_addr, volatile void *dma_buf_addr,
+	       volatile void *dev_addr, volatile void *dev2_addr,
+	       volatile void *dma_buf_addr,
 	       u32 period_size, u32 period_count);
 
 void edma_start(volatile void * edma_addr,

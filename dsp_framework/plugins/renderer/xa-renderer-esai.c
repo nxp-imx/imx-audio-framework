@@ -306,6 +306,7 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	edma_init(d->edma_addr, DMA_MEM_TO_DEV,
 				d->tcd_align32,
 				d->dev_addr + d->dev_fifo_off,
+				0,
 				d->dma_buf,
 				d->frame_size * d->sample_size,
 				2);
