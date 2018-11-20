@@ -75,6 +75,10 @@ void edma_init(volatile void *edma_addr, u32 type,
 	u32 burst=4, addr_width=2;
 	int i;
 
+	nbytes = burst * addr_width;
+	attr = (EDMA_TCD_ATTR_SSIZE_16BIT | EDMA_TCD_ATTR_DSIZE_16BIT);
+	iter = period_len / nbytes;
+
 	for ( i = 0; i < period_count; i ++ ) {
 		if (dma_addr_next >= dma_addr + buf_len)
 			dma_addr_next = dma_addr;
@@ -90,14 +94,10 @@ void edma_init(volatile void *edma_addr, u32 type,
 			doff = 2;
 		}
 
-		nbytes = burst * addr_width;
-		attr = (EDMA_TCD_ATTR_SSIZE_16BIT | EDMA_TCD_ATTR_DSIZE_16BIT);
-		iter = period_len / nbytes;
-
 		last_sg = (u32)&tcd[(i+1)%period_count];
 
-		edma_fill_tcd(&tcd[i], src_addr, dst_addr, attr, soff, nbytes, 0,
-					iter, iter, doff, last_sg, 1, 0, 1, 0);
+		edma_fill_tcd(&tcd[i], src_addr, dst_addr, attr, soff, nbytes,
+			      0, iter, iter, doff, last_sg, 1, 0, 1, 0);
 		dma_addr_next = dma_addr_next + period_len;
 	}
 }
