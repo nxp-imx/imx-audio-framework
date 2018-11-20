@@ -61,11 +61,10 @@ void edma_set_tcd(volatile void * edma_addr, struct nxp_edma_hw_tcd *tcd) {
 	write16(edma_addr + EDMA_TCD_CSR, tcd->csr);
 }
 
-
-void edma_init(volatile void * edma_addr, u32 type,
+void edma_init(volatile void *edma_addr, u32 type,
 	       struct nxp_edma_hw_tcd *tcd,
-	       volatile void * sai_addr,
-	       volatile void * dma_buf_addr,
+	       volatile void *dev_addr,
+	       volatile void *dma_buf_addr,
 	       u32 period_size, u32 period_count) {
 	u32 dma_addr = (u32)dma_buf_addr;
 	u32 period_len = period_size;
@@ -81,11 +80,11 @@ void edma_init(volatile void * edma_addr, u32 type,
 			dma_addr_next = dma_addr;
 		if (type == DMA_MEM_TO_DEV) {
 			src_addr = dma_addr_next;
-			dst_addr = (u32)sai_addr;
+			dst_addr = (u32)dev_addr;
 			soff = 2;
 			doff = 0;
 		} else if (type == DMA_DEV_TO_MEM) {
-			src_addr = (u32)sai_addr;
+			src_addr = (u32)dev_addr;
 			dst_addr = dma_addr_next;
 			soff = 0;
 			doff = 2;

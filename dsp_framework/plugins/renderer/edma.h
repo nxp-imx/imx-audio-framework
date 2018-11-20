@@ -101,13 +101,9 @@ struct nxp_edma_hw_tcd {
 	u16  biter;
 }__attribute__ ((aligned(32)));
 
-void edma_init(volatile void * edma_addr,
-		u32 type,
-		struct nxp_edma_hw_tcd *tcd,
-		volatile void * sai_addr,
-		volatile void * dma_buf_addr,
-		u32 period_size,
-		u32 period_count);
+void edma_init(volatile void *edma_addr, u32 type, struct nxp_edma_hw_tcd *tcd,
+	       volatile void *dev_addr, volatile void *dma_buf_addr,
+	       u32 period_size, u32 period_count);
 
 void edma_start(volatile void * edma_addr,
 		struct nxp_edma_hw_tcd * tcd,
