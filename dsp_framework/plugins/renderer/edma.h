@@ -86,6 +86,9 @@
 #define EDMA_ADDR_ESAI_TX     0x59270000
 #define EDMA_ADDR_ESAI_RX     0x59260000
 
+#define ASRC_ADDR		0x59000000
+#define EDMA_ADDR_ASRC_RXA	0x59200000
+#define EDMA_ADDR_ASRC_TXA	0x59230000
 
 struct nxp_edma_hw_tcd {
 	u32  saddr;

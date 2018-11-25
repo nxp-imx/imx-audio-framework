@@ -35,6 +35,7 @@
 #include "sai.h"
 #include "esai.h"
 #include "edma.h"
+#include "asrc.h"
 #include "irqstr.h"
 #include "io.h"
 
@@ -49,6 +50,9 @@
 
 #define ESAI_INT_NUM       409
 #define EDMA_ESAI_INT_NUM  410
+
+#define ASRC_INT_NUM      372
+#define EDMA_ASRC_INT_NUM 374
 
 /* ...API structure */
 struct XADevRenderer
@@ -113,25 +117,42 @@ struct XADevRenderer
 	void                  *dma_buf;
 
 	void                  *dev_addr;
+	void                  *fe_dev_addr;
 
 	void                  *edma_addr;
+	void                  *fe_edma_addr;
 
 	void                  *irqstr_addr;
 
 	/* struct nxp_edma_hw_tcd  tcd[MAX_PERIOD_COUNT];*/
 	void                  *tcd;
-
 	void                  *tcd_align32;
+
+	void                  *fe_tcd;
+	void                  *fe_tcd_align32;
 
 	void                  (*dev_init)(volatile void * dev_addr, int mode,
 					  int channel, int rate, int width, int mclk_rate);
 	void                  (*dev_start)(volatile void * dev_addr, int tx);
 	void                  (*dev_stop)(volatile void * dev_addr, int tx);
 	void                  (*dev_isr)(volatile void * dev_addr);
+	void                  (*fe_dev_isr)(volatile void * dev_addr);
+
+
+	void                  (*fe_dev_init)(volatile void * dev_addr, int mode,
+					     int channel, int rate, int width, int mclk_rate);
+	void                  (*fe_dev_start)(volatile void * dev_addr, int tx);
+	void                  (*fe_dev_stop)(volatile void * dev_addr, int tx);
+
 
 	u32                   dev_Int;
 	u32                   dev_fifo_off;
 	u32                   dma_Int;
+
+	u32                   fe_dev_Int;
+	u32                   fe_dma_Int;
+	u32                   fe_dev_fifo_in_off;
+	u32                   fe_dev_fifo_out_off;
 };
 
 /*******************************************************************************
@@ -179,7 +200,10 @@ static inline int xa_hw_renderer_start(struct XADevRenderer *d)
 	LOG(("HW-renderer started\n"));
 
 	irqstr_start(d->irqstr_addr);
+	edma_start(d->fe_edma_addr, d->fe_tcd_align32, 0);
 	edma_start(d->edma_addr, d->tcd_align32, 0);
+
+	d->fe_dev_start(d->fe_dev_addr, 1);
 	d->dev_start(d->dev_addr, 1);
 
 	return 0;
@@ -192,7 +216,9 @@ static inline void xa_hw_renderer_pause(struct XADevRenderer *d)
 	LOG(("HW-renderer paused\n"));
 	irqstr_stop(d->irqstr_addr);
 	edma_stop(d->edma_addr);
+	edma_stop(d->fe_edma_addr);
 	d->dev_stop(d->dev_addr, 1);
+	d->fe_dev_stop(d->fe_dev_addr, 1);
 }
 
 /* ...resume renderer operation */
@@ -201,7 +227,11 @@ static inline void xa_hw_renderer_resume(struct XADevRenderer *d)
 	/* ...rethink it - tbd */
 	LOG(("HW-renderer resumed\n"));
 	irqstr_start(d->irqstr_addr);
+
+	edma_start(d->fe_edma_addr, d->fe_tcd_align32, 0);
 	edma_start(d->edma_addr, d->tcd_align32, 0);
+
+	d->fe_dev_start(d->fe_dev_addr, 1);
 	d->dev_start(d->dev_addr, 1);
 }
 
@@ -211,7 +241,9 @@ static inline void xa_hw_renderer_close(struct XADevRenderer *d)
 	LOG(("HW-renderer closed\n"));
 	irqstr_stop(d->irqstr_addr);
 	edma_stop(d->edma_addr);
+	edma_stop(d->fe_edma_addr);
 	d->dev_stop(d->dev_addr, 1);
+	d->fe_dev_stop(d->fe_dev_addr, 1);
 }
 
 /* ...emulation of renderer interrupt service routine */
@@ -220,16 +252,16 @@ static void xa_hw_renderer_isr(struct XADevRenderer *d)
 	s32     avail;
 	u32     status;
 
-	/* period eclapse */
-	status = read32(d->irqstr_addr + IRQSTEER_CHnSTATUS(IRQ_TO_MASK_OFFSET(d->dev_Int+32)));
+	/* period elapse */
+	status = read32(d->irqstr_addr + IRQSTEER_CHnSTATUS(IRQ_TO_MASK_OFFSET(d->fe_dev_Int+32)));
 
 	LOG2("xa_hw_renderer_isr status %x, %d\n", status, d->rendered);
 
-	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->dev_Int+32)))
-		d->dev_isr(d->dev_addr);
+	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dev_Int+32)))
+		d->fe_dev_isr(d->fe_dev_addr);
 
-	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->dma_Int+32))) {
-		edma_irq_handler(d->edma_addr);
+	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dma_Int+32))) {
+		edma_irq_handler(d->fe_edma_addr);
 
 		d->rendered = d->rendered + d->frame_size;
 		/* ...notify user on input-buffer (idx = 0) consumption */
@@ -285,6 +317,10 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 
 	d->tcd_align32 = (void *)(((u32)d->tcd + 31) & ~31);
 
+	d->fe_tcd = MEM_scratch_malloc(&dsp_config->scratch_mem_info,
+				MAX_PERIOD_COUNT * sizeof(struct nxp_edma_hw_tcd) + 32);
+
+	d->fe_tcd_align32 = (void *)(((u32)d->fe_tcd + 31) & ~31);
 
 	/*It is better to send address through the set_param */
 	d->dev_addr    =  (void *)ESAI_ADDR;
@@ -293,6 +329,14 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 
 	d->dma_Int     =   EDMA_ESAI_INT_NUM;
 	d->edma_addr   =  (void *)EDMA_ADDR_ESAI_TX;
+
+	d->fe_dma_Int  =   EDMA_ASRC_INT_NUM;
+	d->fe_dev_Int  =   ASRC_INT_NUM;
+	d->fe_dev_addr = (void *)ASRC_ADDR;
+	d->fe_edma_addr = (void *)EDMA_ADDR_ASRC_RXA;
+	d->fe_dev_fifo_in_off = REG_ASRDIA;
+	d->fe_dev_fifo_out_off = REG_ASRDOA;
+
 	d->irqstr_addr =  (void *)IRQSTR_ADDR;
 
 	d->dev_init     = esai_init;
@@ -300,18 +344,27 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	d->dev_stop     = esai_stop;
 	d->dev_isr      = esai_irq_handler;
 
+	d->fe_dev_init  = asrc_init;
+	d->fe_dev_start = asrc_start;
+	d->fe_dev_stop  = asrc_stop;
+	d->fe_dev_isr   = asrc_irq_handler;
+
 	/*init hw device*/
+
+	edma_init(d->fe_edma_addr, DMA_MEM_TO_DEV, d->fe_tcd_align32,
+		  d->fe_dev_addr + d->fe_dev_fifo_in_off, 0, d->dma_buf,
+		  d->frame_size * d->sample_size,
+		  2);
+	edma_init(d->edma_addr, DMA_DEV_TO_DEV, d->tcd_align32,
+		  d->dev_addr + d->dev_fifo_off,
+		  d->fe_dev_addr + d->fe_dev_fifo_out_off, 0,
+		  d->frame_size * d->sample_size,
+		  2);
+
+	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+
+	d->fe_dev_init(d->fe_dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
 	d->dev_init(d->dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
-
-	edma_init(d->edma_addr, DMA_MEM_TO_DEV,
-				d->tcd_align32,
-				d->dev_addr + d->dev_fifo_off,
-				0,
-				d->dma_buf,
-				d->frame_size * d->sample_size,
-				2);
-
-	irqstr_init(d->irqstr_addr, d->dev_Int, d->dma_Int);
 
 	_xtos_set_interrupt_handler_arg(INT_NUM_IRQSTR_DSP_6, xa_hw_renderer_isr, d);
 	_xtos_ints_on((1 << INT_NUM_IRQSTR_DSP_6) | (1 << 7));
@@ -844,6 +897,7 @@ static DSP_ERROR_TYPE xf_renderer_cleanup(struct XADevRenderer *d,
 		(struct dsp_main_struct *)d->private_data;
 
 	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->dma_buf);
+	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->fe_tcd);
 	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->tcd);
 
 	return ret;
