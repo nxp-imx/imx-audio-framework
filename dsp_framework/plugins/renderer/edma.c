@@ -146,7 +146,7 @@ void edma_stop(volatile void * edma_addr) {
 	u32 val;
 	
 	val = read32(edma_addr+ EDMA_CH_CSR);
-	val |= ~EDMA_CH_CSR_ERQ;
+	val &= ~EDMA_CH_CSR_ERQ;
 	write32(edma_addr + EDMA_CH_CSR, val);
 }
 
