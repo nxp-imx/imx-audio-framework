@@ -214,6 +214,8 @@ struct DSP_Handle {
 	bool depth_is_set;
 	bool input_over;
 	bool inptr_busy, outptr_busy;
+	bool codecdata_copy;
+	unsigned int codecoffset;
 
 };
 

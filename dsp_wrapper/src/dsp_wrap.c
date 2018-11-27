@@ -189,6 +189,8 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	pDSP_handle->inner_buf.buf_size = INBUF_SIZE;
 	pDSP_handle->inner_buf.threshold = INBUF_SIZE;
 	memset(pDSP_handle->inner_buf.data, 0, INBUF_SIZE);
+	pDSP_handle->codecoffset = 0;
+	pDSP_handle->codecdata_copy = FALSE;
 
 	/* ...open DSP proxy - specify "DSP#0" */
 	err = xaf_adev_open(&pDSP_handle->adev);
@@ -593,6 +595,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	bool buf_from_out = FALSE;
 	uint32 *channel_map = NULL;
 	uint32 in_size = 0, in_off = 0, out_size = 0;
+	unsigned int *codecoffset = &pDSP_handle->codecoffset;
 
 	if (*OutputBuf)
 		buf_from_out = TRUE;
@@ -604,13 +607,34 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
 #endif
 
-	ret = InputBufHandle(&pDSP_handle->inner_buf,
-			     InputBuf,
-			     InputSize,
-			     offset,
-			     pDSP_handle->framed);
-	if (ret != ACODEC_SUCCESS)
-		return ret;
+	if (pDSP_handle->codec_type == OGG) {
+		if (pDSP_handle->codecdata_copy == FALSE) {
+			InputBufHandle(&pDSP_handle->inner_buf,
+						pDSP_handle->codecData.buf,
+						pDSP_handle->codecData.size,
+						codecoffset,
+						pDSP_handle->framed);
+			if (pDSP_handle->codecData.size <= *codecoffset)
+				pDSP_handle->codecdata_copy = TRUE;
+		}
+		if (pDSP_handle->codecdata_copy == TRUE) {
+			ret = InputBufHandle(&pDSP_handle->inner_buf,
+						 InputBuf,
+						 InputSize,
+						 offset,
+						 pDSP_handle->framed);
+			if (ret != ACODEC_SUCCESS)
+				return ret;
+		}
+	} else {
+		ret = InputBufHandle(&pDSP_handle->inner_buf,
+						 InputBuf,
+						 InputSize,
+						 offset,
+						 pDSP_handle->framed);
+		if (ret != ACODEC_SUCCESS)
+			return ret;
+	}
 
 	inbuf_data = pDSP_handle->inner_buf.data;
 	inner_offset = &pDSP_handle->inner_buf.inner_offset;
