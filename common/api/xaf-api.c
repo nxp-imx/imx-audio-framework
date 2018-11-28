@@ -269,7 +269,7 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 	}
 
 	if (comp_type >= CODEC_FSL_OGG_DEC)
-		strcat(lib_wrap_path, "fsl_lib_dsp_codec_wrap.so");
+		strcat(lib_wrap_path, "lib_dsp_codec_wrap_ext.so");
 	else
 		strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
 	p_comp->codec_wrap_lib.lib_type = DSP_CODEC_WRAP_LIB;
