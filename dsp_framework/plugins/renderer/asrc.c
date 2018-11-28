@@ -6,11 +6,91 @@
 #include "mydefs.h"
 #include "asrc.h"
 
+static int proc_autosel(int Fsin, int Fsout, int *pre_proc, int *post_proc)
+{
+	int det_out_op2_cond;
+	int det_out_op0_cond;
+	det_out_op2_cond = (((Fsin * 15 > Fsout * 16) & (Fsout < 56000)) |
+					((Fsin > 56000) & (Fsout < 56000)));
+	det_out_op0_cond = (Fsin * 23 < Fsout * 8);
+
+	/*
+	 * Not supported case: Tsout>16.125*Tsin, and Tsout>8.125*Tsin.
+	 */
+	if (Fsin * 8 > 129 * Fsout)
+		*pre_proc = 5;
+	else if (Fsin * 8 > 65 * Fsout)
+		*pre_proc = 4;
+	else if (Fsin * 8 > 33 * Fsout)
+		*pre_proc = 2;
+	else if (Fsin * 8 > 15 * Fsout) {
+		if (Fsin > 152000)
+			*pre_proc = 2;
+		else
+			*pre_proc = 1;
+	} else if (Fsin < 76000)
+		*pre_proc = 0;
+	else if (Fsin > 152000)
+		*pre_proc = 2;
+	else
+		*pre_proc = 1;
+
+	if (det_out_op2_cond)
+		*post_proc = 2;
+	else if (det_out_op0_cond)
+		*post_proc = 0;
+	else
+		*post_proc = 1;
+
+	if (*pre_proc == 4 || *pre_proc == 5)
+		return -1;
+	return 0;
+}
+
+#define IDEAL_RATIO_DECIMAL_DEPTH 26
+
+int asrc_set_ideal_ratio(volatile void * asrc_addr, int index,
+				    int inrate, int outrate)
+{
+	unsigned long ratio;
+	int i;
+
+	if (!outrate)
+		return -1;
+
+	/* Calculate the intergal part of the ratio */
+	ratio = (inrate / outrate) << IDEAL_RATIO_DECIMAL_DEPTH;
+
+	/* ... and then the 26 depth decimal part */
+	inrate %= outrate;
+
+	for (i = 1; i <= IDEAL_RATIO_DECIMAL_DEPTH; i++) {
+		inrate <<= 1;
+
+		if (inrate < outrate)
+			continue;
+
+		ratio |= 1 << (IDEAL_RATIO_DECIMAL_DEPTH - i);
+		inrate -= outrate;
+
+		if (!inrate)
+			break;
+	}
+
+	write32(asrc_addr + REG_ASRIDRL(index), ratio);
+	write32(asrc_addr + REG_ASRIDRH(index), ratio >> 24);
+
+	return 0;
+}
+
+
+
 void asrc_init(volatile void * asrc_addr, int mode, int channels, int rate,
 	       int width, int mclk_rate) {
 	unsigned long ipg_rate;
 	int reg, retry = 10;
 	int clk_index, ideal;
+	int pre_proc, post_proc;
 
 	/* initialize ASRC */
 
@@ -38,14 +118,8 @@ void asrc_init(volatile void * asrc_addr, int mode, int channels, int rate,
 	write32(asrc_addr + REG_ASR76K, ipg_rate / 76000);
 	write32(asrc_addr + REG_ASR56K, ipg_rate / 56000);
 
-	/* configure ASRC */
-	if (rate == 48000) {
-		clk_index = 0;
-		ideal = 0;
-	} else {
-		clk_index = 15;
-		ideal = 1;
-	}
+	clk_index = 15;
+	ideal = 1;
 
 	/* 2 channels, pair A */
 	write32_bit(asrc_addr + REG_ASRCNCR,
@@ -101,14 +175,14 @@ void asrc_init(volatile void * asrc_addr, int mode, int channels, int rate,
 		    ASRCTR_IDRi_MASK(0) | ASRCTR_USRi_MASK(0),
 		    ASRCTR_IDR(0) | ASRCTR_USR(0));
 
+	proc_autosel(rate, 48000, &pre_proc, &post_proc);
+
 	/* apply configurations for pre- and post-processing */
 	write32_bit(asrc_addr + REG_ASRCFG,
 		    ASRCFG_PREMODi_MASK(0) | ASRCFG_POSTMODi_MASK(0),
-		    ASRCFG_PREMOD(0, 0) | ASRCFG_POSTMOD(0, 1));
+		    ASRCFG_PREMOD(0, pre_proc) | ASRCFG_POSTMOD(0, post_proc));
 
-	/* set ideal ratio = 44100/48000 */
-	write32(asrc_addr + REG_ASRIDRL(0), 0x00ACCCCC);
-	write32(asrc_addr + REG_ASRIDRH(0), 0x00000003);
+	asrc_set_ideal_ratio(asrc_addr, 0, rate, 48000);
 }
 
 void asrc_start(volatile void *asrc_addr, int tx) {
