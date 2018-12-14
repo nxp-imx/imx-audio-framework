@@ -76,7 +76,8 @@
 #define DMA_DEV_TO_MEM 1
 #define DMA_DEV_TO_DEV 2
 
-#define IRQSTR_ADDR           0x51080000
+#define IRQSTR_QXP_ADDR       0x51080000
+#define IRQSTR_QM_ADDR        0x510A0000
 
 #define SAI_ADDR              0x59040000
 #define EDMA_ADDR_SAI_TX      0x592d0000

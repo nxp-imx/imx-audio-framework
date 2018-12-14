@@ -337,7 +337,10 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	d->fe_dev_fifo_in_off = REG_ASRDIA;
 	d->fe_dev_fifo_out_off = REG_ASRDOA;
 
-	d->irqstr_addr =  (void *)IRQSTR_ADDR;
+	if (dsp_config->dpu_ext_msg.dsp_board_type == DSP_IMX8QXP_TYPE)
+		d->irqstr_addr =  (void *)IRQSTR_QXP_ADDR;
+	else
+		d->irqstr_addr =  (void *)IRQSTR_QM_ADDR;
 
 	d->dev_init     = esai_init;
 	d->dev_start    = esai_start;
