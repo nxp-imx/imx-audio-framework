@@ -71,6 +71,7 @@ struct icm_dpu_ext_msg {
 	u32     scratch_buf_size;
 	u32     dsp_config_phys;
 	u32     dsp_config_size;
+	u32	dsp_board_type;
 };
 
 #define XF_CFG_MESSAGE_POOL_SIZE  256
@@ -105,6 +106,11 @@ struct dsp_main_struct {
 
 	struct dsp_mem_info scratch_mem_info;
 
+};
+
+enum {
+	DSP_IMX8QXP_TYPE = 0,
+	DSP_IMX8QM_TYPE,
 };
 
 #endif
