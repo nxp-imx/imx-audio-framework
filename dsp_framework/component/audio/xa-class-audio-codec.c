@@ -622,6 +622,15 @@ static DSP_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 	return XA_SUCCESS;
 }
 
+static DSP_ERROR_TYPE xa_codec_suspend(struct XACodecBase *base, struct xf_message *m) {
+
+	return XA_SUCCESS;
+}
+
+static DSP_ERROR_TYPE xa_codec_resume(struct XACodecBase *base, struct xf_message *m) {
+
+	return XA_SUCCESS;
+}
 /*******************************************************************************
  * Component entry point
  ******************************************************************************/
@@ -635,6 +644,8 @@ static DSP_ERROR_TYPE (* const xa_codec_cmd[])(struct XACodecBase *, struct xf_m
 	[XF_OPCODE_TYPE(XF_EMPTY_THIS_BUFFER)] = xa_codec_empty_this_buffer,
 	[XF_OPCODE_TYPE(XF_FILL_THIS_BUFFER)] = xa_codec_fill_this_buffer,
 	[XF_OPCODE_TYPE(XF_FLUSH)] = xa_codec_flush,
+	[XF_OPCODE_TYPE(XF_RESUME)]  = xa_codec_resume,
+	[XF_OPCODE_TYPE(XF_SUSPEND)]  = xa_codec_suspend,
 	[XF_OPCODE_TYPE(XF_LOAD_LIB)] = xa_codec_lib_load,
 	[XF_OPCODE_TYPE(XF_UNLOAD_LIB)] = xa_codec_lib_unload,
 };

@@ -353,6 +353,20 @@ static DSP_ERROR_TYPE xa_renderer_postprocess(struct XACodecBase *base, u32 ret)
 	return XA_SUCCESS;
 }
 
+static DSP_ERROR_TYPE xa_renderer_suspend(struct XACodecBase *base, struct xf_message *m) {
+
+	XA_API(base, XF_API_CMD_SUSPEND, 0, NULL);
+
+	return XA_SUCCESS;
+}
+
+static DSP_ERROR_TYPE xa_renderer_resume(struct XACodecBase *base, struct xf_message *m) {
+
+	XA_API(base, XF_API_CMD_RESUME, 0, NULL);
+
+	return XA_SUCCESS;
+}
+
 /*******************************************************************************
  * Command-processing function
  ******************************************************************************/
@@ -368,6 +382,9 @@ static DSP_ERROR_TYPE (* const xa_renderer_cmd[])(struct XACodecBase *, struct x
 	[XF_OPCODE_TYPE(XF_EMPTY_THIS_BUFFER)] = xa_renderer_empty_this_buffer,
 	[XF_OPCODE_TYPE(XF_FILL_THIS_BUFFER)] = xa_renderer_fill_this_buffer,
 	[XF_OPCODE_TYPE(XF_FLUSH)]  = xa_renderer_flush,
+
+	[XF_OPCODE_TYPE(XF_RESUME)]  = xa_renderer_resume,
+	[XF_OPCODE_TYPE(XF_SUSPEND)]  = xa_renderer_suspend,
 };
 
 /* ...total number of commands supported */

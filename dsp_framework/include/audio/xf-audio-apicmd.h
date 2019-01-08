@@ -58,6 +58,8 @@ enum xf_api_cmd_generic {
 	XF_API_CMD_RUNTIME_INIT       = 0x000E,
 	XF_API_CMD_CLEANUP            = 0x000F,
 	XF_API_CMD_SET_LIB_ENTRY      = 0x0010,
+	XF_API_CMD_SUSPEND            = 0x0011,
+	XF_API_CMD_RESUME             = 0x0012,
 
 };
 
