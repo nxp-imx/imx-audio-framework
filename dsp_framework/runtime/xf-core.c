@@ -155,8 +155,23 @@ static int xf_proxy_suspend(struct dsp_main_struct *dsp_config,
 			    struct xf_message *m)
 {
 	union icm_header_t icm_msg;
+	struct xf_cmap_link     *link;
+	struct xf_component *component;
+	u32                 i;
 
 	LOG("Process XF_SUSPEND command\n");
+
+	/* ...call suspend of each component */
+	for (link = &dsp_config->cmap[i = 0]; i < XF_CFG_MAX_CLIENTS; i++, link++) {
+		if (link->c != NULL) {
+			component = link->c;
+
+			component->entry(component, m);
+		}
+	}
+
+	/* ...return message back to the pool */
+	xf_msg_pool_put(&dsp_config->pool, m);
 
 	/* ...disable shard message pool between DSP and AP core */
 	XF_PROXY_WRITE(dsp_config, cmd_invalid, 1);
@@ -168,8 +183,7 @@ static int xf_proxy_suspend(struct dsp_main_struct *dsp_config,
 		       dsp_config,
 		       sizeof(struct dsp_main_struct));
 
-	/* ...return message back to the pool */
-	xf_msg_pool_put(&dsp_config->pool, m);
+	dsp_config->is_core_init = 0;
 
 	/* ...send ack to dsp driver */
 	icm_msg.allbits = 0;
@@ -185,6 +199,10 @@ static int xf_proxy_resume(struct dsp_main_struct *dsp_config,
 			   struct xf_message *m)
 {
 	union icm_header_t icm_msg;
+	struct xf_cmap_link     *link;
+	struct xf_component *component;
+	struct xf_message *m_tmp;
+	u32                 i;
 
 	LOG("Process XF_RESUME command\n");
 
@@ -200,6 +218,28 @@ static int xf_proxy_resume(struct dsp_main_struct *dsp_config,
 	/* ...enable shard message pool between DSP and AP core */
 	XF_PROXY_WRITE(dsp_config, cmd_invalid, 0);
 	XF_PROXY_WRITE(dsp_config, rsp_invalid, 0);
+
+	m_tmp = xf_msg_pool_get(&dsp_config->pool);
+	if (!m_tmp) {
+		LOG("Error: ICM Queue full\n");
+		return -ENOMEM;
+	}
+	/* ...fill message parameters */
+	m_tmp->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
+	m_tmp->opcode = XF_RESUME;
+	m_tmp->length = 0;
+	m_tmp->buffer = 0;
+	m_tmp->ret = 0;
+
+	/* ...call resume of each component */
+	for (link = &dsp_config->cmap[i = 0]; i < XF_CFG_MAX_CLIENTS; i++, link++) {
+		if (link->c != NULL) {
+			component = link->c;
+			component->entry(component, m_tmp);
+		}
+	}
+
+	xf_msg_pool_put(&dsp_config->pool, m_tmp);
 
 	/* ...set is_interrupt flag */
 	dsp_config->is_interrupt = 1;
@@ -363,6 +403,15 @@ void xf_core_service(struct dsp_main_struct *dsp_config)
 
 			/* ...set local status change */
 			status = 1;
+			/*
+			 * Break the loop when SUSPEND for we have store the
+			 * env, after resume,  the framework will be
+			 * reconfigured to same env.
+			 */
+			if (m->opcode == XF_SUSPEND) {
+				status = 0;
+				break;
+			}
 		}
 
 		/* ...if scheduler queue is empty, break the loop */
