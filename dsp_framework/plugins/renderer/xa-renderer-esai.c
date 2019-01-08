@@ -82,7 +82,8 @@ struct XADevRenderer
 
 	/* ...component state */
 	u32                     state;
-
+	/* ...component state */
+	u32                     suspend_state;
 	/* ...notification callback pointer */
 	xa_renderer_cb_t       *cdata;
 
@@ -136,6 +137,8 @@ struct XADevRenderer
 	void                  (*dev_start)(volatile void * dev_addr, int tx);
 	void                  (*dev_stop)(volatile void * dev_addr, int tx);
 	void                  (*dev_isr)(volatile void * dev_addr);
+	void                  (*dev_suspend)(volatile void * dev_addr, u32 *cache_addr);
+	void                  (*dev_resume)(volatile void * dev_addr, u32 *cache_addr);
 	void                  (*fe_dev_isr)(volatile void * dev_addr);
 
 
@@ -143,6 +146,8 @@ struct XADevRenderer
 					     int channel, int rate, int width, int mclk_rate);
 	void                  (*fe_dev_start)(volatile void * dev_addr, int tx);
 	void                  (*fe_dev_stop)(volatile void * dev_addr, int tx);
+	void                  (*fe_dev_suspend)(volatile void * dev_addr, u32 *cache_addr);
+	void                  (*fe_dev_resume)(volatile void * dev_addr, u32 *cache_addr);
 
 
 	u32                   dev_Int;
@@ -153,6 +158,11 @@ struct XADevRenderer
 	u32                   fe_dma_Int;
 	u32                   fe_dev_fifo_in_off;
 	u32                   fe_dev_fifo_out_off;
+
+	u32                   dev_cache[40];
+	u32                   fe_dev_cache[40];
+	u32                   edma_cache[40];
+	u32                   fe_edma_cache[40];
 };
 
 /*******************************************************************************
@@ -200,8 +210,8 @@ static inline int xa_hw_renderer_start(struct XADevRenderer *d)
 	LOG(("HW-renderer started\n"));
 
 	irqstr_start(d->irqstr_addr);
-	edma_start(d->fe_edma_addr, d->fe_tcd_align32, 0);
-	edma_start(d->edma_addr, d->tcd_align32, 0);
+	edma_start(d->fe_edma_addr, 0);
+	edma_start(d->edma_addr, 0);
 
 	d->fe_dev_start(d->fe_dev_addr, 1);
 	d->dev_start(d->dev_addr, 1);
@@ -228,8 +238,8 @@ static inline void xa_hw_renderer_resume(struct XADevRenderer *d)
 	LOG(("HW-renderer resumed\n"));
 	irqstr_start(d->irqstr_addr);
 
-	edma_start(d->fe_edma_addr, d->fe_tcd_align32, 0);
-	edma_start(d->edma_addr, d->tcd_align32, 0);
+	edma_start(d->fe_edma_addr, 0);
+	edma_start(d->edma_addr,  0);
 
 	d->fe_dev_start(d->fe_dev_addr, 1);
 	d->dev_start(d->dev_addr, 1);
@@ -346,11 +356,15 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	d->dev_start    = esai_start;
 	d->dev_stop     = esai_stop;
 	d->dev_isr      = esai_irq_handler;
+	d->dev_suspend  = esai_suspend;
+	d->dev_resume   = esai_resume;
 
 	d->fe_dev_init  = asrc_init;
 	d->fe_dev_start = asrc_start;
 	d->fe_dev_stop  = asrc_stop;
 	d->fe_dev_isr   = asrc_irq_handler;
+	d->fe_dev_suspend  = asrc_suspend;
+	d->fe_dev_resume   = asrc_resume;
 
 	/*init hw device*/
 
@@ -368,6 +382,9 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 
 	d->fe_dev_init(d->fe_dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
 	d->dev_init(d->dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
+
+	edma_set_tcd(d->fe_edma_addr, d->fe_tcd_align32);
+	edma_set_tcd(d->edma_addr, d->tcd_align32);
 
 	_xtos_set_interrupt_handler_arg(INT_NUM_IRQSTR_DSP_6, xa_hw_renderer_isr, d);
 	_xtos_ints_on((1 << INT_NUM_IRQSTR_DSP_6) | (1 << 7));
@@ -520,7 +537,7 @@ static DSP_ERROR_TYPE xf_renderer_preinit(struct XADevRenderer *d, u32 i_idx, vo
 	/* ...set private data pointer */
 	d->private_data = pv_value;
 
-	d->state = XA_RENDERER_FLAG_PREINIT_DONE;
+	d->state |= XA_RENDERER_FLAG_PREINIT_DONE;
 
 	return ret;
 }
@@ -549,6 +566,8 @@ static DSP_ERROR_TYPE xf_renderer_postinit(struct XADevRenderer *d, u32 i_idx, v
 	DSP_ERROR_TYPE ret = XA_SUCCESS;
 
 	XF_CHK_ERR(xa_hw_renderer_init(d) == 0, XA_PARA_ERROR);
+
+	d->state |= XA_RENDERER_FLAG_POSTINIT_DONE;
 
 	return ret;
 }
@@ -903,6 +922,60 @@ static DSP_ERROR_TYPE xf_renderer_cleanup(struct XADevRenderer *d,
 	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->fe_tcd);
 	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->tcd);
 
+	LOG("xf_renderer_cleanup\n");
+	return ret;
+}
+
+static DSP_ERROR_TYPE xf_renderer_suspend(struct XADevRenderer *d,
+					   u32 i_idx,
+					   void *pv_value)
+{
+	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	struct dsp_main_struct *dsp_config =
+		(struct dsp_main_struct *)d->private_data;
+
+	LOG("xf_renderer_suspend\n");
+
+	d->suspend_state = d->state;
+
+	if (xa_hw_renderer_running(d)) {
+		xa_hw_renderer_control(d, XA_RENDERER_STATE_PAUSE);
+	}
+
+	if (d->state & XA_RENDERER_FLAG_POSTINIT_DONE) {
+		d->dev_suspend(d->dev_addr, d->dev_cache);
+		d->fe_dev_suspend(d->fe_dev_addr, d->fe_dev_cache);
+		edma_suspend(d->edma_addr, d->edma_cache);
+		edma_suspend(d->fe_edma_addr, d->fe_edma_cache);
+	}
+
+	return ret;
+}
+
+static DSP_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
+					   u32 i_idx,
+					   void *pv_value)
+{
+	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	struct dsp_main_struct *dsp_config =
+		(struct dsp_main_struct *)d->private_data;
+
+	if (d->state & XA_RENDERER_FLAG_POSTINIT_DONE) {
+		irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+		d->dev_resume(d->dev_addr, d->dev_cache);
+		d->fe_dev_resume(d->fe_dev_addr, d->fe_dev_cache);
+		edma_resume(d->edma_addr, d->edma_cache);
+		edma_resume(d->fe_edma_addr, d->fe_edma_cache);
+
+		_xtos_set_interrupt_handler_arg(INT_NUM_IRQSTR_DSP_6, xa_hw_renderer_isr, d);
+		_xtos_ints_on((1 << INT_NUM_IRQSTR_DSP_6) | (1 << 7));
+	}
+
+	if (d->suspend_state & XA_RENDERER_FLAG_RUNNING) {
+		xa_hw_renderer_control(d, XA_RENDERER_STATE_RUN);
+	}
+
+	LOG("xf_renderer_resume\n");
 	return ret;
 }
 
@@ -924,6 +997,8 @@ static DSP_ERROR_TYPE (* const xa_renderer_api[])(struct XADevRenderer *, u32, v
 	[XF_API_CMD_INPUT_OVER]             = xf_renderer_input_over,
 	[XF_API_CMD_GET_CONSUMED_BYTES]     = xf_renderer_get_consumed_bytes,
 	[XF_API_CMD_CLEANUP]                = xf_renderer_cleanup,
+	[XF_API_CMD_SUSPEND]                = xf_renderer_suspend,
+	[XF_API_CMD_RESUME]                 = xf_renderer_resume,
 };
 
 /* ...total numer of commands supported */
