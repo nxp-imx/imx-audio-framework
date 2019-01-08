@@ -111,8 +111,9 @@ void edma_init(volatile void *edma_addr, u32 type, struct nxp_edma_hw_tcd *tcd,
 	       u32 period_size, u32 period_count);
 
 void edma_start(volatile void * edma_addr,
-		struct nxp_edma_hw_tcd * tcd,
 		u32 is_rx);
+
+void edma_set_tcd(volatile void * edma_addr, struct nxp_edma_hw_tcd *tcd);
 
 void edma_stop(volatile void * edma_addr);
 void edma_dump(volatile void * edma_addr);

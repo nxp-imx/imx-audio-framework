@@ -121,11 +121,8 @@ void edma_irq_handler(volatile void * edma_addr) {
 
 }
 
-void edma_start(volatile void * edma_addr, struct nxp_edma_hw_tcd * tcd,
-		u32 is_rx) {
+void edma_start(volatile void * edma_addr, u32 is_rx) {
 	u32 val;
-
-	edma_set_tcd(edma_addr, &tcd[0]);
 
 	val = read32(edma_addr + EDMA_CH_SBR);
 
