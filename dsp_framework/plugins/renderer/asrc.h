@@ -273,4 +273,6 @@ void asrc_stop(volatile void *asrc_addr, int tx);
 void asrc_dump(volatile void *asrc_addr);
 void asrc_irq_handler(volatile void * asrc_addr);
 
+void asrc_suspend(volatile void *asrc_addr,  u32 *cache_addr);
+void asrc_resume(volatile void *asrc_addr,  u32 *cache_addr);
 #endif

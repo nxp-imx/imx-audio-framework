@@ -93,6 +93,51 @@ void esai_stop(volatile void * esai_addr, int tx) {
 				ESAI_xFCR_xFR, 0);
 }
 
+void esai_suspend(volatile void *esai_addr,  u32 *cache_addr) {
+
+	cache_addr[0] = read32(esai_addr + REG_ESAI_ECR);
+	cache_addr[1] = read32(esai_addr + REG_ESAI_ESR);
+	cache_addr[2] = read32(esai_addr + REG_ESAI_TFCR);
+	cache_addr[3] = read32(esai_addr + REG_ESAI_TFSR);
+	cache_addr[4] = read32(esai_addr + REG_ESAI_RFCR);
+	cache_addr[5] = read32(esai_addr + REG_ESAI_RFSR);
+	cache_addr[6] = read32(esai_addr + REG_ESAI_SAISR);
+	cache_addr[7] = read32(esai_addr + REG_ESAI_SAICR);
+	cache_addr[8] = read32(esai_addr + REG_ESAI_TCR);
+	cache_addr[9] = read32(esai_addr + REG_ESAI_TCCR);
+	cache_addr[10] = read32(esai_addr + REG_ESAI_RCR);
+	cache_addr[11] = read32(esai_addr + REG_ESAI_RCCR);
+	cache_addr[12] = read32(esai_addr + REG_ESAI_TSMA);
+	cache_addr[13] = read32(esai_addr + REG_ESAI_TSMB);
+	cache_addr[14] = read32(esai_addr + REG_ESAI_RSMA);
+	cache_addr[15] = read32(esai_addr + REG_ESAI_RSMB);
+	cache_addr[16] = read32(esai_addr + REG_ESAI_PRRC);
+	cache_addr[17] = read32(esai_addr + REG_ESAI_PCRC);
+}
+
+void esai_resume(volatile void *esai_addr, u32 * cache_addr) {
+
+	write32(esai_addr + REG_ESAI_ECR,   cache_addr[0]);
+	write32(esai_addr + REG_ESAI_TFCR,  cache_addr[2]);
+	write32(esai_addr + REG_ESAI_RFCR,  cache_addr[4]);
+	write32(esai_addr + REG_ESAI_SAICR, cache_addr[7]);
+	write32(esai_addr + REG_ESAI_TCR,   cache_addr[8]);
+	write32(esai_addr + REG_ESAI_TCCR,  cache_addr[9]);
+	write32(esai_addr + REG_ESAI_RCR,   cache_addr[10]);
+	write32(esai_addr + REG_ESAI_RCCR,  cache_addr[11]);
+	write32(esai_addr + REG_ESAI_TSMA,  cache_addr[12]);
+	write32(esai_addr + REG_ESAI_TSMB,  cache_addr[13]);
+	write32(esai_addr + REG_ESAI_RSMA,  cache_addr[14]);
+	write32(esai_addr + REG_ESAI_RSMB,  cache_addr[15]);
+	write32(esai_addr + REG_ESAI_PRRC,  cache_addr[16]);
+	write32(esai_addr + REG_ESAI_PCRC,  cache_addr[17]);
+	write32_bit(esai_addr + REG_ESAI_TFCR,
+				ESAI_xFCR_xFR_MASK,
+				ESAI_xFCR_xFR);
+	write32_bit(esai_addr + REG_ESAI_TFCR,
+				ESAI_xFCR_xFR_MASK,
+				0);
+}
 
 void esai_irq_handler(volatile void * esai_addr) {
 

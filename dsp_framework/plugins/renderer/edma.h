@@ -118,4 +118,7 @@ void edma_set_tcd(volatile void * edma_addr, struct nxp_edma_hw_tcd *tcd);
 void edma_stop(volatile void * edma_addr);
 void edma_dump(volatile void * edma_addr);
 
+void edma_suspend(volatile void *edma_addr,  u32 *cache_addr);
+void edma_resume(volatile void *edma_addr,  u32 *cache_addr);
+
 #endif

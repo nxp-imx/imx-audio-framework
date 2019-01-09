@@ -220,5 +220,73 @@ void asrc_irq_handler(volatile void *asrc_addr) {
 	write32(asrc_addr + REG_ASRSTR, ASRSTR_AOLE);
 }
 
+void asrc_suspend(volatile void *asrc_addr,  u32 *cache_addr) {
+
+	cache_addr[0] = read32(asrc_addr + REG_ASRCTR);
+	cache_addr[1] = read32(asrc_addr + REG_ASRIER);
+	cache_addr[2] = read32(asrc_addr + REG_ASRCNCR);
+	cache_addr[3] = read32(asrc_addr + REG_ASRCFG);
+	cache_addr[4] = read32(asrc_addr + REG_ASRCSR);
+	cache_addr[5] = read32(asrc_addr + REG_ASRCDR1);
+	cache_addr[6] = read32(asrc_addr + REG_ASRCDR2);
+	cache_addr[7] = read32(asrc_addr + REG_ASRSTR);
+	cache_addr[8] = read32(asrc_addr + REG_ASRPM1);
+	cache_addr[9] = read32(asrc_addr + REG_ASRPM2);
+	cache_addr[10] = read32(asrc_addr + REG_ASRPM3);
+	cache_addr[11] = read32(asrc_addr + REG_ASRPM4);
+	cache_addr[12] = read32(asrc_addr + REG_ASRPM5);
+	cache_addr[13] = read32(asrc_addr + REG_ASRTFR1);
+	cache_addr[14] = read32(asrc_addr + REG_ASRCCR);
+	cache_addr[18] = read32(asrc_addr + REG_ASRIDRHA);
+	cache_addr[19] = read32(asrc_addr + REG_ASRIDRLA);
+	cache_addr[20] = read32(asrc_addr + REG_ASRIDRHB);
+	cache_addr[21] = read32(asrc_addr + REG_ASRIDRLB);
+	cache_addr[22] = read32(asrc_addr + REG_ASRIDRHC);
+	cache_addr[23] = read32(asrc_addr + REG_ASRIDRLC);
+	cache_addr[24] = read32(asrc_addr + REG_ASR76K);
+	cache_addr[25] = read32(asrc_addr + REG_ASR56K);
+	cache_addr[26] = read32(asrc_addr + REG_ASRMCRA);
+	cache_addr[27] = read32(asrc_addr + REG_ASRFSTA);
+	cache_addr[28] = read32(asrc_addr + REG_ASRMCRB);
+	cache_addr[29] = read32(asrc_addr + REG_ASRFSTB);
+	cache_addr[30] = read32(asrc_addr + REG_ASRMCRC);
+	cache_addr[31] = read32(asrc_addr + REG_ASRFSTC);
+	cache_addr[32] = read32(asrc_addr + REG_ASRMCR1A);
+	cache_addr[33] = read32(asrc_addr + REG_ASRMCR1B);
+	cache_addr[34] = read32(asrc_addr + REG_ASRMCR1C);
+}
+
+void asrc_resume(volatile void *asrc_addr,  u32 *cache_addr) {
+	write32(asrc_addr + REG_ASRCTR,  cache_addr[0]);
+	write32(asrc_addr + REG_ASRIER,  cache_addr[1]);
+	write32(asrc_addr + REG_ASRCNCR, cache_addr[2]);
+	write32(asrc_addr + REG_ASRCFG,  cache_addr[3]);
+	write32(asrc_addr + REG_ASRCSR,  cache_addr[4]);
+	write32(asrc_addr + REG_ASRCDR1, cache_addr[5]);
+	write32(asrc_addr + REG_ASRCDR2, cache_addr[6]);
+	write32(asrc_addr + REG_ASRSTR,  cache_addr[7]);
+	write32(asrc_addr + REG_ASRPM1,  cache_addr[8]);
+	write32(asrc_addr + REG_ASRPM2,  cache_addr[9]);
+	write32(asrc_addr + REG_ASRPM3,  cache_addr[10]);
+	write32(asrc_addr + REG_ASRPM4,  cache_addr[11]);
+	write32(asrc_addr + REG_ASRPM5,  cache_addr[12]);
+	write32(asrc_addr + REG_ASRTFR1, cache_addr[13]);
+	write32(asrc_addr + REG_ASRCCR,  cache_addr[14]);
+	write32(asrc_addr + REG_ASRIDRHA, cache_addr[18]);
+	write32(asrc_addr + REG_ASRIDRLA, cache_addr[19]);
+	write32(asrc_addr + REG_ASRIDRHB, cache_addr[20]);
+	write32(asrc_addr + REG_ASRIDRLB, cache_addr[21]);
+	write32(asrc_addr + REG_ASRIDRHC, cache_addr[22]);
+	write32(asrc_addr + REG_ASRIDRLC, cache_addr[23]);
+	write32(asrc_addr + REG_ASR76K,  cache_addr[24]);
+	write32(asrc_addr + REG_ASR56K,  cache_addr[25]);
+	write32(asrc_addr + REG_ASRMCRA, cache_addr[26]);
+	write32(asrc_addr + REG_ASRMCRB, cache_addr[28]);
+	write32(asrc_addr + REG_ASRMCRC, cache_addr[30]);
+	write32(asrc_addr + REG_ASRMCR1A, cache_addr[32]);
+	write32(asrc_addr + REG_ASRMCR1B, cache_addr[33]);
+	write32(asrc_addr + REG_ASRMCR1C, cache_addr[34]);
+}
+
 void asrc_dump(volatile void *asrc_addr) { }
 

@@ -147,6 +147,44 @@ void edma_stop(volatile void * edma_addr) {
 	write32(edma_addr + EDMA_CH_CSR, val);
 }
 
+
+void edma_suspend(volatile void *edma_addr,  u32 *cache_addr){
+
+	cache_addr[0] = read32(edma_addr + EDMA_CH_CSR);
+	cache_addr[1] = read32(edma_addr + EDMA_CH_ES);
+	cache_addr[2] = read32(edma_addr + EDMA_CH_INT);
+	cache_addr[3] = read32(edma_addr + EDMA_CH_SBR);
+	cache_addr[4] = read32(edma_addr + EDMA_CH_PRI);
+	cache_addr[5] = read32(edma_addr + EDMA_TCD_SADDR);
+	cache_addr[6] = read16(edma_addr + EDMA_TCD_SOFF);
+	cache_addr[7] = read16(edma_addr + EDMA_TCD_ATTR);
+	cache_addr[8] = read32(edma_addr + EDMA_TCD_NBYTES);
+	cache_addr[9] = read32(edma_addr + EDMA_TCD_SLAST);
+	cache_addr[10] = read32(edma_addr + EDMA_TCD_DADDR);
+	cache_addr[11] = read16(edma_addr + EDMA_TCD_DOFF);
+	cache_addr[12] = read16(edma_addr + EDMA_TCD_CITER);
+	cache_addr[13] = read32(edma_addr + EDMA_TCD_DLAST_SGA);
+	cache_addr[14] = read16(edma_addr + EDMA_TCD_CSR);
+	cache_addr[15] = read16(edma_addr + EDMA_TCD_BITER);
+}
+
+void edma_resume(volatile void *edma_addr,  u32 *cache_addr){
+
+	write32(edma_addr + EDMA_CH_CSR,     cache_addr[0]);
+	write32(edma_addr + EDMA_CH_SBR,     cache_addr[3]);
+	write32(edma_addr + EDMA_TCD_SADDR,  cache_addr[5]);
+	write16(edma_addr + EDMA_TCD_SOFF,   cache_addr[6]);
+	write16(edma_addr + EDMA_TCD_ATTR,   cache_addr[7]);
+	write32(edma_addr + EDMA_TCD_NBYTES, cache_addr[8]);
+	write32(edma_addr + EDMA_TCD_SLAST,  cache_addr[9]);
+	write32(edma_addr + EDMA_TCD_DADDR,  cache_addr[10]);
+	write16(edma_addr + EDMA_TCD_DOFF,   cache_addr[11]);
+	write16(edma_addr + EDMA_TCD_CITER,  cache_addr[12]);
+	write32(edma_addr + EDMA_TCD_DLAST_SGA,  cache_addr[13]);
+	write16(edma_addr + EDMA_TCD_CSR,    cache_addr[14]);
+	write16(edma_addr + EDMA_TCD_BITER,  cache_addr[15]);
+}
+
 void edma_dump(volatile void * edma_addr) {
 	LOG1("EDMA_CH_CSR %x\n",  read32(edma_addr + EDMA_CH_CSR));
 	LOG1("EDMA_CH_ES %x\n",   read32(edma_addr + EDMA_CH_ES));

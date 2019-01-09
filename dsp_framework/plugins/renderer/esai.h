@@ -333,4 +333,6 @@ void esai_stop(volatile void * esai_addr, int tx);
 void esai_dump(volatile void * esai_addr);
 void esai_irq_handler(volatile void * esai_addr);
 
+void esai_suspend(volatile void *esai_addr,  u32 *cache_addr);
+void esai_resume(volatile void *esai_addr,  u32 *cache_addr);
 #endif
