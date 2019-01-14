@@ -40,8 +40,9 @@
 #define CODEC_DRM_DEC		6
 #define CODEC_SBC_DEC		7
 #define CODEC_SBC_ENC		8
-#define CODEC_FSL_OGG_DEC       9
-#define CODEC_DEMO_DEC		10
+#define CODEC_FSL_OGG_DEC   9
+#define CODEC_FSL_MP3_DEC   10
+#define CODEC_DEMO_DEC		11
 
 enum DSP_ERROR_TYPE {
 	XA_SUCCESS = 0,

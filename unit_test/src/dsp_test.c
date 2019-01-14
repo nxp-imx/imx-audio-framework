@@ -77,6 +77,7 @@ void help_info(int ac, char *av[])
 	printf("                        SBCDEC     for 7\n");
 	printf("                        SBCENC     for 8\n");
 	printf("                        OGGDEC     for 9\n");
+	printf("                        FSLMP3DEC  for 10\n");
 	printf("          -i InFileNam  Input File Name\n");
 	printf("          -o OutName    Output File Name\n");
 	printf("          -s Samplerate Sampling Rate of Audio\n");
@@ -229,8 +230,9 @@ void *comp_process_entry(void *arg)
 				case CODEC_SBC_DEC:
 				case CODEC_SBC_ENC:
 				case CODEC_FSL_OGG_DEC:
+				case CODEC_FSL_MP3_DEC:
 					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
-					    (p_info.ret != XA_ERROR_STREAM)) {
+					    (p_info.ret != XA_ERROR_STREAM) && (p_info.ret != XA_END_OF_STREAM)) {
 						/* ...issue asynchronous zero-length
 						 * buffer to output port (port-id=1)
 						 */
@@ -457,62 +459,64 @@ int main(int ac, char *av[])
 				      sizeof(char), 0x1000, fd_src);
 
 		/* search for ID3V2 */
-		id3_v2_found =
-			search_id3_v2((unsigned char *)component[0].inptr);
+		if (type != CODEC_FSL_MP3_DEC) {
+			id3_v2_found =
+				search_id3_v2((unsigned char *)component[0].inptr);
 
-		if (id3_v2_found) {
-			TRACE("ID3V2 data :\n");
-			/* initialise the max fields */
-			init_id3v2_field(&id3v2);
+			if (id3_v2_found) {
+				TRACE("ID3V2 data :\n");
+				/* initialise the max fields */
+				init_id3v2_field(&id3v2);
 
-			while (!id3_v2_complete && id3_v2_found) {
-				/* if ID3V2 is found, decode ID3V2 */
-				id3_v2_complete = decode_id3_v2((const char *const)component[0].inptr,
-								&id3v2, continue_flag, i_fread_bytes);
+				while (!id3_v2_complete && id3_v2_found) {
+					/* if ID3V2 is found, decode ID3V2 */
+					id3_v2_complete = decode_id3_v2((const char *const)component[0].inptr,
+									&id3v2, continue_flag, i_fread_bytes);
 
-				if (!id3_v2_complete) {
-					continue_flag = 1;
+					if (!id3_v2_complete) {
+						continue_flag = 1;
+						i_bytes_consumed = id3v2.bytes_consumed;
+
+						if (i_bytes_consumed < i_fread_bytes)
+							xa_shift_input_buffer((char *)component[0].inptr,
+										  i_fread_bytes, i_bytes_consumed);
+
+						fseek(fd_src, i_bytes_consumed, SEEK_SET);
+
+						pub_input_ptr = (unsigned char *)component[0].inptr;
+
+						i_fread_bytes = fread(pub_input_ptr,
+									  sizeof(unsigned char), 0x1000, fd_src);
+						if (i_fread_bytes <= 0) {
+							TRACE("ID3 Tag Decoding: End of file reached.\n");
+							flag = 1;      /* failed */
+							break;
+						}
+						i_buff_size = i_fread_bytes;
+					}
+				}
+
+				if (id3_v2_complete) {
+					TRACE("\n");
+
 					i_bytes_consumed = id3v2.bytes_consumed;
-
-					if (i_bytes_consumed < i_fread_bytes)
-						xa_shift_input_buffer((char *)component[0].inptr,
-								      i_fread_bytes, i_bytes_consumed);
-
 					fseek(fd_src, i_bytes_consumed, SEEK_SET);
 
 					pub_input_ptr = (unsigned char *)component[0].inptr;
 
 					i_fread_bytes = fread(pub_input_ptr,
-							      sizeof(unsigned char), 0x1000, fd_src);
+								  sizeof(unsigned char), 0x1000, fd_src);
 					if (i_fread_bytes <= 0) {
-						TRACE("ID3 Tag Decoding: End of file reached.\n");
+						TRACE("ID3V2 tag decoding: end of file reached.\n");
 						flag = 1;      /* failed */
-						break;
 					}
+
 					i_buff_size = i_fread_bytes;
+					i_bytes_consumed = 0;
 				}
+				if (flag)
+					goto Fail;
 			}
-
-			if (id3_v2_complete) {
-				TRACE("\n");
-
-				i_bytes_consumed = id3v2.bytes_consumed;
-				fseek(fd_src, i_bytes_consumed, SEEK_SET);
-
-				pub_input_ptr = (unsigned char *)component[0].inptr;
-
-				i_fread_bytes = fread(pub_input_ptr,
-						      sizeof(unsigned char), 0x1000, fd_src);
-				if (i_fread_bytes <= 0) {
-					TRACE("ID3V2 tag decoding: end of file reached.\n");
-					flag = 1;      /* failed */
-				}
-
-				i_buff_size = i_fread_bytes;
-				i_bytes_consumed = 0;
-			}
-			if (flag)
-			    goto Fail;
 		}
 	}
 #endif
