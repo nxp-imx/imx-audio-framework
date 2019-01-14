@@ -146,7 +146,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 		comp_type = CODEC_MP2_DEC;
 		break;
 	case MP3:
-		comp_type = CODEC_MP3_DEC;
+		comp_type = CODEC_FSL_MP3_DEC;
 		break;
 	case AAC:
 	case AAC_PLUS:
@@ -606,7 +606,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 #ifdef DEBUG
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
 #endif
-
 	if (pDSP_handle->codec_type == OGG) {
 		if (pDSP_handle->codecdata_copy == FALSE) {
 			InputBufHandle(&pDSP_handle->inner_buf,
@@ -640,44 +639,48 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	inner_offset = &pDSP_handle->inner_buf.inner_offset;
 	inner_size = &pDSP_handle->inner_buf.inner_size;
 
-	if ((pDSP_handle->input_over == TRUE) &&
-	    (!pDSP_handle->outptr_busy) &&
-		(pDSP_handle->last_output_size <= 0)) {
-		ret = ACODEC_END_OF_STREAM;
-		pDSP_handle->input_over = FALSE;
+	if (pDSP_handle->component.comp_type != CODEC_FSL_MP3_DEC) {
+		if ((pDSP_handle->input_over == TRUE) &&
+			(!pDSP_handle->outptr_busy) &&
+			(pDSP_handle->last_output_size <= 0)) {
+			ret = ACODEC_END_OF_STREAM;
+			pDSP_handle->input_over = FALSE;
 
-		return ret;
+			return ret;
+		}
 	}
 
 	if (!InputBuf && (*inner_size <= 0))
 		pDSP_handle->input_over = TRUE;
 
-	if (!pDSP_handle->ID3flag && !memcmp(inbuf_data +
-					(*inner_offset), "ID3", 3)) {
-		uint8 *pBuff = inbuf_data + (*inner_offset);
+	if (pDSP_handle->component.comp_type != CODEC_FSL_MP3_DEC) {
+		if (!pDSP_handle->ID3flag && !memcmp(inbuf_data +
+						(*inner_offset), "ID3", 3)) {
+			uint8 *pBuff = inbuf_data + (*inner_offset);
 
-		pDSP_handle->tagsize = (pBuff[6] << 21) |
-			(pBuff[7] << 14) | (pBuff[8] << 7) | pBuff[9];
-		pDSP_handle->tagsize += 10;
-		pDSP_handle->ID3flag = TRUE;
-	}
-	if (pDSP_handle->ID3flag) {
-		if (*inner_size >= pDSP_handle->tagsize) {
-			pDSP_handle->ID3flag = FALSE;
-			*inner_offset += pDSP_handle->tagsize;
-			*inner_size -= pDSP_handle->tagsize;
-			pDSP_handle->consumed_length += pDSP_handle->tagsize;
-			pDSP_handle->tagsize = 0;
+			pDSP_handle->tagsize = (pBuff[6] << 21) |
+				(pBuff[7] << 14) | (pBuff[8] << 7) | pBuff[9];
+			pDSP_handle->tagsize += 10;
+			pDSP_handle->ID3flag = TRUE;
+		}
+		if (pDSP_handle->ID3flag) {
+			if (*inner_size >= pDSP_handle->tagsize) {
+				pDSP_handle->ID3flag = FALSE;
+				*inner_offset += pDSP_handle->tagsize;
+				*inner_size -= pDSP_handle->tagsize;
+				pDSP_handle->consumed_length += pDSP_handle->tagsize;
+				pDSP_handle->tagsize = 0;
 
-			memmove(inbuf_data,
-				inbuf_data + (*inner_offset), *inner_size);
-			*inner_offset = 0;
-		} else {
-			pDSP_handle->tagsize -= *inner_size;
-			*inner_offset += *inner_size;
-			pDSP_handle->consumed_length += *inner_size;
-			*inner_size = 0;
-			return ACODEC_NOT_ENOUGH_DATA;
+				memmove(inbuf_data,
+					inbuf_data + (*inner_offset), *inner_size);
+				*inner_offset = 0;
+			} else {
+				pDSP_handle->tagsize -= *inner_size;
+				*inner_offset += *inner_size;
+				pDSP_handle->consumed_length += *inner_size;
+				*inner_size = 0;
+				return ACODEC_NOT_ENOUGH_DATA;
+			}
 		}
 	}
 
@@ -867,6 +870,8 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			if (err == XA_ERROR_STREAM)
 				ret = ACODEC_ERROR_STREAM;
 		}
+		if (pDSP_handle->component.comp_type == CODEC_FSL_MP3_DEC && err == XA_END_OF_STREAM)
+			ret = ACODEC_END_OF_STREAM;
 		pDSP_handle->last_err = err;
 		break;
 	case BSAC:
