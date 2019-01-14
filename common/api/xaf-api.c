@@ -266,6 +266,9 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 	} else if (comp_type == CODEC_FSL_OGG_DEC) {
 		p_comp->dec_id = "audio-decoder/ogg";
 		strcat(lib_path, "lib_dsp_ogg_dec.so");
+	} else if (comp_type == CODEC_FSL_MP3_DEC) {
+		p_comp->dec_id = "audio-decoder/mp3ext";
+		strcat(lib_path, "lib_dsp_mp3_dec_ext.so");
 	}
 
 	if (comp_type >= CODEC_FSL_OGG_DEC)
