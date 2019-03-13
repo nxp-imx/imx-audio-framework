@@ -37,6 +37,7 @@
 
 /* ...audio-specific API */
 #include "dsp_codec_interface.h"
+#include "fsl_unia.h"
 #include "xf-audio-apicmd.h"
 #include "xf-component.h"
 #include "mydefs.h"
@@ -48,23 +49,23 @@
 struct XACodecBase;
 
 /* ...memory buffer initialization */
-typedef DSP_ERROR_TYPE (*xa_codec_memtab_f)(struct XACodecBase *codec,
+typedef UA_ERROR_TYPE (*xa_codec_memtab_f)(struct XACodecBase *codec,
 							u32 size,
 							u32 align);
 
 /* ...preprocessing operation */
-typedef DSP_ERROR_TYPE  (*xa_codec_preprocess_f)(struct XACodecBase *);
+typedef UA_ERROR_TYPE  (*xa_codec_preprocess_f)(struct XACodecBase *);
 
 /* ...postprocessing operation */
-typedef DSP_ERROR_TYPE  (*xa_codec_postprocess_f)(struct XACodecBase *, u32);
+typedef UA_ERROR_TYPE  (*xa_codec_postprocess_f)(struct XACodecBase *, u32);
 
 /* ...parameter setting function */
-typedef DSP_ERROR_TYPE  (*xa_codec_setparam_f)(struct XACodecBase *,
+typedef UA_ERROR_TYPE  (*xa_codec_setparam_f)(struct XACodecBase *,
 								s32,
 								void *p);
 
 /* ...parameter retrival function */
-typedef DSP_ERROR_TYPE  (*xa_codec_getparam_f)(struct XACodecBase *,
+typedef UA_ERROR_TYPE  (*xa_codec_getparam_f)(struct XACodecBase *,
 								s32,
 								void *p);
 
@@ -112,7 +113,7 @@ struct XACodecBase {
 	xa_codec_getparam_f     getparam;
 
 	/* ...command-processing table */
-	DSP_ERROR_TYPE (* const *command)(struct XACodecBase *,
+	UA_ERROR_TYPE (* const *command)(struct XACodecBase *,
 					  struct xf_message *);
 
 	/* ...command-processing table size */
@@ -157,9 +158,9 @@ struct XACodecBase {
 /* ...low-level codec API function execution */
 #define XA_API(codec, cmd, idx, pv)                                               \
 ({                                                                                \
-	DSP_ERROR_TYPE  __e;                                                          \
+	UA_ERROR_TYPE  __e;                                                          \
 	__e = (codec)->process((xf_codec_handle_t)((codec)->api), (cmd), (idx), (pv));\
-	if (__e != XA_SUCCESS) {                                                      \
+	if (__e != ACODEC_SUCCESS) {                                                      \
 		LOG1("XA_API error: %x\n", __e);                                          \
 	}                                                                             \
 	__e;                                                                          \
@@ -168,19 +169,19 @@ struct XACodecBase {
 /* ...codec hook invocation */
 #define CODEC_API(codec, func, ...)                                 \
 ({                                                                  \
-	DSP_ERROR_TYPE __e;                                             \
+	UA_ERROR_TYPE __e;                                             \
 	__e = (codec)->func((codec), ##__VA_ARGS__);                    \
-	if (__e != XA_SUCCESS) {                                        \
+	if (__e != ACODEC_SUCCESS) {                                        \
 		LOG1(" CODEC_API error: %x\n", __e);                        \
 	}                                                               \
 	__e;                                                            \
 })
 
 /* ...SET-PARAM processing */
-DSP_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m);
+UA_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m);
 
 /* ...GET-PARAM message processing */
-DSP_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m);
+UA_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m);
 
 /* ...data processing scheduling */
 void xa_base_schedule(struct XACodecBase *base, u32 dts);

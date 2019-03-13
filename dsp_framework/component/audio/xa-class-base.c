@@ -43,12 +43,12 @@
  ******************************************************************************/
 
 /* ...codec pre-initialization */
-static DSP_ERROR_TYPE xa_base_preinit(struct XACodecBase *base)
+static UA_ERROR_TYPE xa_base_preinit(struct XACodecBase *base)
 {
 	struct dsp_main_struct *dsp_config =
 		(struct dsp_main_struct *)base->component.private_data;
 	u32 size;
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	/* ...get API structure size */
 	XA_API(base, XF_API_CMD_GET_API_SIZE, 0, &size);
@@ -62,7 +62,7 @@ static DSP_ERROR_TYPE xa_base_preinit(struct XACodecBase *base)
 		     XF_API_CMD_PRE_INIT,
 		     base->codec_id,
 		     (void *)dsp_config);
-	if (ret != XA_SUCCESS) {
+	if (ret != ACODEC_SUCCESS) {
 		LOG2("Codec[%d] pre-initialization error, error = %d\n",
 		     base->codec_id, ret);
 		return ret;
@@ -75,9 +75,9 @@ static DSP_ERROR_TYPE xa_base_preinit(struct XACodecBase *base)
 }
 
 /* ...initialization setup */
-static DSP_ERROR_TYPE xa_base_init(struct XACodecBase *base)
+static UA_ERROR_TYPE xa_base_init(struct XACodecBase *base)
 {
-	DSP_ERROR_TYPE ret;
+	UA_ERROR_TYPE ret;
 
 	/* ...codec initialization */
 	ret = XA_API(base, XF_API_CMD_INIT, 0, NULL);
@@ -89,9 +89,9 @@ static DSP_ERROR_TYPE xa_base_init(struct XACodecBase *base)
 }
 
 /* ...post-initialization setup */
-static DSP_ERROR_TYPE xa_base_postinit(struct XACodecBase *base)
+static UA_ERROR_TYPE xa_base_postinit(struct XACodecBase *base)
 {
-	DSP_ERROR_TYPE ret;
+	UA_ERROR_TYPE ret;
 
 	/* ...codec post-initialization */
 	ret = XA_API(base, XF_API_CMD_POST_INIT, 0, NULL);
@@ -107,18 +107,18 @@ static DSP_ERROR_TYPE xa_base_postinit(struct XACodecBase *base)
  ******************************************************************************/
 
 /* ...SET-PARAM processing (enabled in all states) */
-DSP_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
+UA_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 {
 	struct xf_set_param_msg *cmd = m->buffer;
 	s32 command, value;
 	u32 n, i;
-	DSP_ERROR_TYPE ret;
+	UA_ERROR_TYPE ret;
 
 	/* ...check if we need to do initialization */
 	if ((base->state & XA_BASE_FLAG_INIT) == 0) {
 		/* ...do basic initialization */
-		if (xa_base_init(base) != XA_SUCCESS)
-			return XA_INIT_ERR;
+		if (xa_base_init(base) != ACODEC_SUCCESS)
+			return ACODEC_INIT_ERR;
 
 		/* ...mark the codec static configuration is set */
 		base->state ^= XA_BASE_FLAG_INIT;
@@ -136,7 +136,7 @@ DSP_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 		LOG2("set-param: [%d], %d\n", command, value);
 
 		ret = XA_API(base, XF_API_CMD_SET_PARAM, command, &value);
-		if (ret != XA_SUCCESS) {
+		if (ret != ACODEC_SUCCESS) {
 			m->ret = ret;
 			break;
 		}
@@ -150,12 +150,12 @@ DSP_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 }
 
 /* ...GET-PARAM message processing (enabled in all states) */
-DSP_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m)
+UA_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m)
 {
 	struct xf_get_param_msg *cmd = m->buffer;
 	u32 command, value;
 	u32 n, i;
-	DSP_ERROR_TYPE ret = 0;
+	UA_ERROR_TYPE ret = 0;
 
 	/* ...calculate amount of parameters */
 	n = m->length / sizeof(*cmd);
@@ -164,7 +164,7 @@ DSP_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m)
 	for (i = 0; i < n; i++) {
 		command = cmd[i].id;
 		ret = XA_API(base, XF_API_CMD_GET_PARAM, command, &value);
-		if (ret != XA_SUCCESS) {
+		if (ret != ACODEC_SUCCESS) {
 			m->ret = ret;
 			break;
 		}
@@ -184,17 +184,17 @@ DSP_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m)
  ******************************************************************************/
 
 /* ...generic codec data processing */
-static DSP_ERROR_TYPE xa_base_process(struct XACodecBase *base)
+static UA_ERROR_TYPE xa_base_process(struct XACodecBase *base)
 {
-	DSP_ERROR_TYPE    ret;
+	UA_ERROR_TYPE    ret;
 
 	/* ...check if we need to do post-initialization */
 	if ((base->state & XA_BASE_FLAG_POSTINIT) == 0) {
 		/* ...check if we need to do initialization */
 		if ((base->state & XA_BASE_FLAG_INIT) == 0) {
 			/* ...do basic initialization */
-			if (xa_base_init(base) != XA_SUCCESS)
-				return XA_INIT_ERR;
+			if (xa_base_init(base) != ACODEC_SUCCESS)
+				return ACODEC_INIT_ERR;
 
 			/* ...mark the codec static configuration is set */
 			base->state ^= XA_BASE_FLAG_INIT;
@@ -202,8 +202,8 @@ static DSP_ERROR_TYPE xa_base_process(struct XACodecBase *base)
 
 		/* ...do post-initialization step */
 		ret = xa_base_postinit(base);
-		if (ret != XA_SUCCESS)
-			return XA_INIT_ERR;
+		if (ret != ACODEC_SUCCESS)
+			return ACODEC_INIT_ERR;
 
 		/* ...mark the codec static configuration is set */
 		base->state ^= XA_BASE_FLAG_POSTINIT | XA_BASE_FLAG_EXECUTION;
@@ -214,7 +214,7 @@ static DSP_ERROR_TYPE xa_base_process(struct XACodecBase *base)
 
 	/* ...codec-specific preprocessing (buffer maintenance) */
 	ret = CODEC_API(base, preprocess);
-	if (ret != XA_SUCCESS)
+	if (ret != ACODEC_SUCCESS)
 		/* ...return non-fatal codec error */
 		return ret;
 
@@ -236,7 +236,7 @@ static int xa_base_command(struct xf_component *component, struct xf_message *m)
 
 	/* ...invoke data-processing function if message is null */
 	if (!m) {
-		XF_CHK_ERR((xa_base_process(base) != XA_SUCCESS),
+		XF_CHK_ERR((xa_base_process(base) != ACODEC_SUCCESS),
 			   XA_ERR_UNKNOWN);
 		return 0;
 	}
@@ -259,7 +259,7 @@ static int xa_base_command(struct xf_component *component, struct xf_message *m)
 	XF_CHK_ERR(base->command[cmd] != NULL, XA_PARA_ERROR);
 
 	/* ...pass control to specific command */
-	XF_CHK_ERR((base->command[cmd](base, m) != XA_SUCCESS), XA_ERR_UNKNOWN);
+	XF_CHK_ERR((base->command[cmd](base, m) != ACODEC_SUCCESS), XA_ERR_UNKNOWN);
 
 	/* ...execution completed successfully */
 	return 0;
@@ -310,7 +310,7 @@ void xa_base_destroy(struct XACodecBase *base)
 {
 	struct dsp_main_struct *dsp_config =
 		(struct dsp_main_struct *)base->component.private_data;
-	DSP_ERROR_TYPE    ret;
+	UA_ERROR_TYPE    ret;
 
 	/* ...deallocate all resources */
 	MEM_scratch_mfree(&dsp_config->scratch_mem_info, base->api);
@@ -352,7 +352,7 @@ struct XACodecBase *xa_base_factory(struct dsp_main_struct *dsp_config,
 	base->component.private_data = (void *)dsp_config;
 
 	/* ...do basic initialization */
-	if (xa_base_preinit(base) != XA_SUCCESS) {
+	if (xa_base_preinit(base) != ACODEC_SUCCESS) {
 		/* ...initialization failed for some reason; do cleanup */
 		xa_base_destroy(base);
 

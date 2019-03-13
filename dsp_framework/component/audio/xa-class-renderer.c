@@ -90,7 +90,7 @@ struct XARenderer
  ******************************************************************************/
 
 /* ...EMPTY-THIS-BUFFER command processing */
-static DSP_ERROR_TYPE xa_renderer_empty_this_buffer(struct XACodecBase *base, struct xf_message *m)
+static UA_ERROR_TYPE xa_renderer_empty_this_buffer(struct XACodecBase *base, struct xf_message *m)
 {
 	struct XARenderer *renderer = (struct XARenderer *) base;
 
@@ -109,11 +109,11 @@ static DSP_ERROR_TYPE xa_renderer_empty_this_buffer(struct XACodecBase *base, st
 		xa_base_schedule(base, 0);
 	}
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...FILL-THIS-BUFFER command processing */
-static DSP_ERROR_TYPE xa_renderer_fill_this_buffer(struct XACodecBase *base, struct xf_message *m)
+static UA_ERROR_TYPE xa_renderer_fill_this_buffer(struct XACodecBase *base, struct xf_message *m)
 {
 	struct XARenderer *renderer = (struct XARenderer *) base;
 
@@ -137,11 +137,11 @@ static DSP_ERROR_TYPE xa_renderer_fill_this_buffer(struct XACodecBase *base, str
 		}
 	}
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...FLUSH command processing */
-static DSP_ERROR_TYPE xa_renderer_flush(struct XACodecBase *base, struct xf_message *m)
+static UA_ERROR_TYPE xa_renderer_flush(struct XACodecBase *base, struct xf_message *m)
 {
 	struct XARenderer *renderer = (struct XARenderer *) base;
 
@@ -163,7 +163,7 @@ static DSP_ERROR_TYPE xa_renderer_flush(struct XACodecBase *base, struct xf_mess
 	/* ...pass response to caller */
 	xf_response(m);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /*******************************************************************************
@@ -197,7 +197,7 @@ static void xa_renderer_callback(xa_renderer_cb_t *cdata, u32 i_idx)
  ******************************************************************************/
 
 /* ...buffers handling */
-static DSP_ERROR_TYPE xa_renderer_memtab(struct XACodecBase *base, u32 size, u32 align)
+static UA_ERROR_TYPE xa_renderer_memtab(struct XACodecBase *base, u32 size, u32 align)
 {
 	struct XARenderer *renderer = (struct XARenderer *)base;
 	struct dsp_main_struct *dsp_config =
@@ -220,11 +220,11 @@ static DSP_ERROR_TYPE xa_renderer_memtab(struct XACodecBase *base, u32 size, u32
 	/* ...mark renderer output buffer is ready */
 	base->state |= XA_RENDERER_FLAG_OUTPUT_READY;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...preprocessing function */
-static DSP_ERROR_TYPE xa_renderer_preprocess(struct XACodecBase *base)
+static UA_ERROR_TYPE xa_renderer_preprocess(struct XACodecBase *base)
 {
 	struct XARenderer     *renderer = (struct XARenderer *) base;
 	struct dsp_main_struct *dsp_config =
@@ -236,7 +236,7 @@ static DSP_ERROR_TYPE xa_renderer_preprocess(struct XACodecBase *base)
 	if (base->state & XA_BASE_FLAG_RUNTIME_INIT)
 	{
 		/* ...no special processing in runtime initialization stage */
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 	}
 
 	/* ...submit input buffer to the renderer */
@@ -256,7 +256,7 @@ static DSP_ERROR_TYPE xa_renderer_preprocess(struct XACodecBase *base)
 		else if (!xf_input_port_done(&renderer->input))
 		{
 			/* ...no input data available; do nothing */
-			return XA_NOT_ENOUGH_DATA;
+			return ACODEC_NOT_ENOUGH_DATA;
 		}
 		else
 		{
@@ -271,7 +271,7 @@ static DSP_ERROR_TYPE xa_renderer_preprocess(struct XACodecBase *base)
 		{
 			/* ...insufficient input data */
 //			xf_msg_submit(&dsp_config->queue, &renderer->msg);
-//			return XA_SUCCESS;
+//			return ACODEC_SUCCESS;
 		}
 //		else
 //		{
@@ -294,11 +294,11 @@ static DSP_ERROR_TYPE xa_renderer_preprocess(struct XACodecBase *base)
 		LOG(("renderer operation is over\n"));
 	}
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...postprocessing function */
-static DSP_ERROR_TYPE xa_renderer_postprocess(struct XACodecBase *base, u32 ret)
+static UA_ERROR_TYPE xa_renderer_postprocess(struct XACodecBase *base, u32 ret)
 {
 	struct XARenderer     *renderer = (struct XARenderer *) base;
 	u32             consumed;
@@ -319,7 +319,7 @@ static DSP_ERROR_TYPE xa_renderer_postprocess(struct XACodecBase *base, u32 ret)
 
 			/* ...reschedule execution instantly (both input- and output-ready conditions are set) */
 			xa_base_schedule(base, 0);
-			return XA_SUCCESS;
+			return ACODEC_SUCCESS;
 		}
 		else
 		{
@@ -350,21 +350,21 @@ static DSP_ERROR_TYPE xa_renderer_postprocess(struct XACodecBase *base, u32 ret)
 		base->state &= ~XA_RENDERER_FLAG_OUTPUT_READY;
 	}
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xa_renderer_suspend(struct XACodecBase *base, struct xf_message *m) {
+static UA_ERROR_TYPE xa_renderer_suspend(struct XACodecBase *base, struct xf_message *m) {
 
 	XA_API(base, XF_API_CMD_SUSPEND, 0, NULL);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xa_renderer_resume(struct XACodecBase *base, struct xf_message *m) {
+static UA_ERROR_TYPE xa_renderer_resume(struct XACodecBase *base, struct xf_message *m) {
 
 	XA_API(base, XF_API_CMD_RESUME, 0, NULL);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /*******************************************************************************
@@ -372,7 +372,7 @@ static DSP_ERROR_TYPE xa_renderer_resume(struct XACodecBase *base, struct xf_mes
  ******************************************************************************/
 
 /* ...command hooks */
-static DSP_ERROR_TYPE (* const xa_renderer_cmd[])(struct XACodecBase *, struct xf_message *) =
+static UA_ERROR_TYPE (* const xa_renderer_cmd[])(struct XACodecBase *, struct xf_message *) =
 {
 	/* ...set-parameter - actually, same as in generic case */
 	[XF_OPCODE_TYPE(XF_SET_PARAM)] = xa_base_set_param,

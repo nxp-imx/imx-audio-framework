@@ -106,7 +106,7 @@ struct XAAudioCodec {
  ******************************************************************************/
 
 /* ...XF_LOAD_LIB command processing */
-static DSP_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
+static UA_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 					struct xf_message *m)
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
@@ -123,19 +123,19 @@ static DSP_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 		break;
 	default:
 		LOG("Unknown lib type\n");
-		m->ret = XA_INIT_ERR;
+		m->ret = ACODEC_INIT_ERR;
 		xf_response(m);
 
-		return XA_INIT_ERR;
+		return ACODEC_INIT_ERR;
 	}
 
 	lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, lib_stat, 0);
 	if (!lib_interface) {
 		LOG2("lib load error: lib_type = %d, lib_entry = 0x%x\n",
 		     cmd->lib_type, lib_interface);
-		m->ret = XA_INIT_ERR;
+		m->ret = ACODEC_INIT_ERR;
 		xf_response(m);
-		return XA_INIT_ERR;
+		return ACODEC_INIT_ERR;
 	}
 
 	/* ...set codec lib handle if codec is loaded as library*/
@@ -149,11 +149,11 @@ static DSP_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 	     lib_interface);
 	xf_response_ok(m);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...XF_UNLOAD_LIB command processing */
-static DSP_ERROR_TYPE xa_codec_lib_unload(struct XACodecBase *base,
+static UA_ERROR_TYPE xa_codec_lib_unload(struct XACodecBase *base,
 					  struct xf_message *m)
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
@@ -186,11 +186,11 @@ static DSP_ERROR_TYPE xa_codec_lib_unload(struct XACodecBase *base,
 	LOG("unload lib successfully\n");
 	xf_response_ok(m);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...EMPTY-THIS-BUFFER command processing */
-static DSP_ERROR_TYPE xa_codec_empty_this_buffer(struct XACodecBase *base,
+static UA_ERROR_TYPE xa_codec_empty_this_buffer(struct XACodecBase *base,
 						 struct xf_message *m)
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
@@ -224,11 +224,11 @@ static DSP_ERROR_TYPE xa_codec_empty_this_buffer(struct XACodecBase *base,
 
 	LOG2("Received input buffer [%x]:%x\n", m->buffer, m->length);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...FILL-THIS-BUFFER command processing */
-static DSP_ERROR_TYPE xa_codec_fill_this_buffer(struct XACodecBase *base,
+static UA_ERROR_TYPE xa_codec_fill_this_buffer(struct XACodecBase *base,
 						struct xf_message *m)
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
@@ -258,13 +258,13 @@ static DSP_ERROR_TYPE xa_codec_fill_this_buffer(struct XACodecBase *base,
 		LOG1("codec[%d] playback completed\n", base->codec_id);
 
 		/* ...playback is over */
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 	} else if ((base->state & XA_BASE_FLAG_COMPLETED) &&
 				!xf_output_port_routed(&codec->output)) {
 		/* ...return message arrived from application immediately */
 		xf_response_ok(m);
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 	} else {
 		LOG2("Received output buffer [%x]:%x\n", m->buffer, m->length);
 
@@ -284,11 +284,11 @@ static DSP_ERROR_TYPE xa_codec_fill_this_buffer(struct XACodecBase *base,
 		}
 	}
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...output port routing */
-static DSP_ERROR_TYPE xa_codec_port_route(struct XACodecBase *base,
+static UA_ERROR_TYPE xa_codec_port_route(struct XACodecBase *base,
 					  struct xf_message *m)
 {
 	struct dsp_main_struct *dsp_config =
@@ -323,11 +323,11 @@ static DSP_ERROR_TYPE xa_codec_port_route(struct XACodecBase *base,
 	/* ...pass success result to caller */
 	xf_response_ok(m);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...port unroute command */
-static DSP_ERROR_TYPE xa_codec_port_unroute(struct XACodecBase *base,
+static UA_ERROR_TYPE xa_codec_port_unroute(struct XACodecBase *base,
 					    struct xf_message *m)
 {
 	struct dsp_main_struct *dsp_config =
@@ -365,14 +365,14 @@ static DSP_ERROR_TYPE xa_codec_port_unroute(struct XACodecBase *base,
 		xf_output_port_unroute_start(&codec->output, m);
 	}
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...FLUSH command processing */
-static DSP_ERROR_TYPE xa_codec_flush(struct XACodecBase *base, struct xf_message *m)
+static UA_ERROR_TYPE xa_codec_flush(struct XACodecBase *base, struct xf_message *m)
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	/* ...command is allowed only in "postinit" state */
 	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, XA_PARA_ERROR);
@@ -444,7 +444,7 @@ static DSP_ERROR_TYPE xa_codec_flush(struct XACodecBase *base, struct xf_message
 		base->state &= ~XA_CODEC_FLAG_OUTPUT_SETUP;
 	}
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /*******************************************************************************
@@ -452,14 +452,14 @@ static DSP_ERROR_TYPE xa_codec_flush(struct XACodecBase *base, struct xf_message
  ******************************************************************************/
 
 /* ...memory buffer handling */
-static DSP_ERROR_TYPE xa_codec_memtab(struct XACodecBase *base,
+static UA_ERROR_TYPE xa_codec_memtab(struct XACodecBase *base,
 				      u32 size,
 				      u32 align)
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 	struct dsp_main_struct *dsp_config =
 		(struct dsp_main_struct *)base->component.private_data;
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	/* ...input port specification; allocate internal buffer */
 	XF_CHK_ERR(xf_input_port_init(&codec->input, size, align,
@@ -474,7 +474,7 @@ static DSP_ERROR_TYPE xa_codec_memtab(struct XACodecBase *base,
 }
 
 /* ...prepare input/output buffers */
-static DSP_ERROR_TYPE xa_codec_preprocess(struct XACodecBase *base)
+static UA_ERROR_TYPE xa_codec_preprocess(struct XACodecBase *base)
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 
@@ -482,7 +482,7 @@ static DSP_ERROR_TYPE xa_codec_preprocess(struct XACodecBase *base)
 	if (!(base->state & XA_CODEC_FLAG_OUTPUT_SETUP)) {
 		if (!xf_output_port_fill(&codec->output)) {
 			/* ...no output buffer available */
-			return XA_NO_OUTPUT;
+			return ACODEC_NO_OUTPUT;
 		}
 
 		LOG("set output ptr ok\n");
@@ -546,11 +546,11 @@ static DSP_ERROR_TYPE xa_codec_preprocess(struct XACodecBase *base)
 	}
 
 	LOG1("Codec[%d] pre-process completed\n", base->codec_id);
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...post-processing operation; input/output ports maintenance */
-static DSP_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
+static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 {
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 	struct xf_input_port *input_port = &codec->input;
@@ -588,7 +588,7 @@ static DSP_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 	/* ...process execution stage transition */
 	if (xf_input_port_done(&codec->input) &&
 	    !produced &&
-	    !ret) {
+	    !ret && base->codec_id != CODEC_FSL_MP3_DEC) {
 		/* ...output stream is over; propagate condition to sink port */
 		if (xf_output_port_flush(&codec->output, XF_FILL_THIS_BUFFER)) {
 			/* ...flushing sequence is not needed;
@@ -607,7 +607,7 @@ static DSP_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 		}
 
 		/* ...return early to prevent task rescheduling */
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 	}
 
 	/* ...reschedule processing if needed */
@@ -619,24 +619,24 @@ static DSP_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 
 	LOG1("Codec[%d] post-process completed\n", base->codec_id);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xa_codec_suspend(struct XACodecBase *base, struct xf_message *m) {
+static UA_ERROR_TYPE xa_codec_suspend(struct XACodecBase *base, struct xf_message *m) {
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xa_codec_resume(struct XACodecBase *base, struct xf_message *m) {
+static UA_ERROR_TYPE xa_codec_resume(struct XACodecBase *base, struct xf_message *m) {
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 /*******************************************************************************
  * Component entry point
  ******************************************************************************/
 
 /* ...command hooks */
-static DSP_ERROR_TYPE (* const xa_codec_cmd[])(struct XACodecBase *, struct xf_message *) = {
+static UA_ERROR_TYPE (* const xa_codec_cmd[])(struct XACodecBase *, struct xf_message *) = {
 	[XF_OPCODE_TYPE(XF_SET_PARAM)] = xa_base_set_param,
 	[XF_OPCODE_TYPE(XF_GET_PARAM)] = xa_base_get_param,
 	[XF_OPCODE_TYPE(XF_ROUTE)] = xa_codec_port_route,
