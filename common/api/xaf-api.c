@@ -265,16 +265,17 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		strcat(lib_path, "lib_dsp_sbc_enc.so");
 	} else if (comp_type == CODEC_FSL_OGG_DEC) {
 		p_comp->dec_id = "audio-decoder/ogg";
-		strcat(lib_path, "lib_dsp_ogg_dec.so");
 	} else if (comp_type == CODEC_FSL_MP3_DEC) {
 		p_comp->dec_id = "audio-decoder/mp3ext";
-		strcat(lib_path, "lib_dsp_mp3_dec_ext.so");
 	}
 
-	if (comp_type >= CODEC_FSL_OGG_DEC)
-		strcat(lib_wrap_path, "lib_dsp_codec_wrap_ext.so");
-	else
+	if (comp_type < CODEC_FSL_OGG_DEC)
 		strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
+	else if (comp_type == CODEC_FSL_OGG_DEC)
+		strcat(lib_wrap_path, "lib_vorbisd_wrap_dsp.so");
+	else if (comp_type == CODEC_FSL_MP3_DEC)
+		strcat(lib_wrap_path, "lib_mp3d_wrap_dsp.so");
+
 	p_comp->codec_wrap_lib.lib_type = DSP_CODEC_WRAP_LIB;
 
 	/* ...create decoder component instance (select core-0) */
@@ -291,10 +292,12 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		return ret;
 	}
 	/* ...load codec lib */
-	ret = xf_load_lib(p_handle, &p_comp->codec_lib);
-	if (ret) {
-		TRACE("load codec lib error: %d\n", ret);
-		return ret;
+	if (comp_type < CODEC_FSL_OGG_DEC) {
+		ret = xf_load_lib(p_handle, &p_comp->codec_lib);
+		if (ret) {
+			TRACE("load codec lib error: %d\n", ret);
+			return ret;
+		}
 	}
 
 	/* ...allocate input buffer */
