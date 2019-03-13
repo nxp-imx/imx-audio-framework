@@ -471,7 +471,7 @@ static inline u32 xa_hw_renderer_get_state(struct XADevRenderer *d)
 }
 
 /* ...HW-renderer control function */
-static inline DSP_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32 state)
+static inline UA_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32 state)
 {
 	switch (state)
 	{
@@ -485,7 +485,7 @@ static inline DSP_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32
 		/* ...mark renderer is running */
 		d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED;
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_STATE_PAUSE:
 		/* ...renderer must be in running state */
@@ -497,7 +497,7 @@ static inline DSP_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32
 		/* ...mark renderer is paused */
 		d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED;
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_STATE_IDLE:
 		/* ...command is valid in any active state; stop renderer operation */
@@ -506,7 +506,7 @@ static inline DSP_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32
 		/* ...reset renderer flags */
 		d->state &= ~(XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED);
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	default:
 		/* ...unrecognized command */
@@ -519,7 +519,7 @@ static inline DSP_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32
  ******************************************************************************/
 
 /* ...standard codec initialization routine */
-static DSP_ERROR_TYPE xa_renderer_get_api_size(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_get_api_size(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...check parameters are sane */
 	XF_CHK_ERR(pv_value, XA_PARA_ERROR);
@@ -527,12 +527,12 @@ static DSP_ERROR_TYPE xa_renderer_get_api_size(struct XADevRenderer *d, u32 i_id
 	/* ...retrieve API structure size */
 	*(u32 *)pv_value = sizeof(*d);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_renderer_preinit(struct XADevRenderer *d, u32 i_idx, void *pv_value)
+static UA_ERROR_TYPE xf_renderer_preinit(struct XADevRenderer *d, u32 i_idx, void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	/* ...set private data pointer */
 	d->private_data = pv_value;
@@ -543,7 +543,7 @@ static DSP_ERROR_TYPE xf_renderer_preinit(struct XADevRenderer *d, u32 i_idx, vo
 }
 
 /* ...standard codec initialization routine */
-static DSP_ERROR_TYPE xa_renderer_init(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_init(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...sanity check - pointer must be valid */
 	XF_CHK_ERR(d, XA_PARA_ERROR);
@@ -558,12 +558,12 @@ static DSP_ERROR_TYPE xa_renderer_init(struct XADevRenderer *d, u32 i_idx, void*
 
 	LOG("xa_renderer_init\n");
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_renderer_postinit(struct XADevRenderer *d, u32 i_idx, void *pv_value)
+static UA_ERROR_TYPE xf_renderer_postinit(struct XADevRenderer *d, u32 i_idx, void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	XF_CHK_ERR(xa_hw_renderer_init(d) == 0, XA_PARA_ERROR);
 
@@ -573,7 +573,7 @@ static DSP_ERROR_TYPE xf_renderer_postinit(struct XADevRenderer *d, u32 i_idx, v
 }
 
 /* ...set renderer configuration parameter */
-static DSP_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	u32     i_value;
 
@@ -600,7 +600,7 @@ static DSP_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 
 		/* ...apply setting */
 		d->pcm_width = i_value;
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_CHANNELS:
 		/* ...command is valid only in configuration state */
@@ -615,7 +615,7 @@ static DSP_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 
 		/* ...apply setting */
 		d->channels = (u32)i_value;
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_SAMPLE_RATE:
 		/* ...command is valid only in configuration state */
@@ -630,7 +630,7 @@ static DSP_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 
 		/* ...apply setting */
 		d->rate = (u32)i_value;
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_FRAME_SIZE:
 		/* ...command is valid only in configuration state */
@@ -645,13 +645,13 @@ static DSP_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 
 		/* ...apply setting */
 		d->frame_size = (u32)i_value;
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_CB:
 		/* ...set opaque callback data function */
 		d->cdata = (xa_renderer_cb_t *)pv_value;
 
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_STATE:
 		/* ...runtime state control parameter valid only in execution state */
@@ -670,7 +670,7 @@ static DSP_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 
 }
 
 /* ...retrieve configuration parameter */
-static DSP_ERROR_TYPE xa_renderer_get_config_param(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_get_config_param(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...sanity check - renderer must be initialized */
 	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
@@ -684,27 +684,27 @@ static DSP_ERROR_TYPE xa_renderer_get_config_param(struct XADevRenderer *d, u32 
 	case XA_RENDERER_CONFIG_PARAM_PCM_WIDTH:
 		/* ...return current PCM width */
 		*(u32 *)pv_value = d->pcm_width;
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_CHANNELS:
 		/* ...return current channel number */
 		*(u32 *)pv_value = d->channels;
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_SAMPLE_RATE:
 		/* ...return current sampling rate */
 		*(u32 *)pv_value = d->rate;
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_FRAME_SIZE:
 		/* ...return current audio frame length (in samples) */
 		*(u32 *)pv_value = d->frame_size;
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	case XA_RENDERER_CONFIG_PARAM_STATE:
 		/* ...return current execution state */
 		*(u32 *)pv_value = xa_hw_renderer_get_state(d);
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	default:
 		/* ...unrecognized parameter */
@@ -713,7 +713,7 @@ static DSP_ERROR_TYPE xa_renderer_get_config_param(struct XADevRenderer *d, u32 
 }
 
 /* ...execution command */
-static DSP_ERROR_TYPE xa_renderer_execute(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_execute(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 
 	/* ...sanity check - pointer must be valid */
@@ -724,11 +724,11 @@ static DSP_ERROR_TYPE xa_renderer_execute(struct XADevRenderer *d, u32 i_idx, vo
 
 	LOG("xa_renderer_execute\n");
 	/* ...process individual command type */
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...set number of input bytes */
-static DSP_ERROR_TYPE xa_renderer_set_input_bytes(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_set_input_bytes(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	u32     size;
 
@@ -754,11 +754,11 @@ static DSP_ERROR_TYPE xa_renderer_set_input_bytes(struct XADevRenderer *d, u32 i
 	d->consumed = d->sample_size * xa_hw_renderer_submit(d, d->input, size);
 
 	/* ...all is correct */
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...get number of consumed bytes */
-static DSP_ERROR_TYPE xf_renderer_get_consumed_bytes(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xf_renderer_get_consumed_bytes(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...sanity check - check parameters */
 	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
@@ -778,7 +778,7 @@ static DSP_ERROR_TYPE xf_renderer_get_consumed_bytes(struct XADevRenderer *d, u3
 	/* ...and reset input buffer index */
 	//d->input = NULL;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /*******************************************************************************
@@ -786,7 +786,7 @@ static DSP_ERROR_TYPE xf_renderer_get_consumed_bytes(struct XADevRenderer *d, u3
  ******************************************************************************/
 
 /* ..get total amount of data for memory tables */
-static DSP_ERROR_TYPE xa_renderer_get_memtabs_size(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_get_memtabs_size(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity checks */
 	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
@@ -797,11 +797,11 @@ static DSP_ERROR_TYPE xa_renderer_get_memtabs_size(struct XADevRenderer *d, u32 
 	/* ...we have all our tables inside API structure */
 	*(u32 *)pv_value = 0;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ..set memory tables pointer */
-static DSP_ERROR_TYPE xa_renderer_set_memtabs_ptr(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_set_memtabs_ptr(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity checks */
 	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
@@ -810,11 +810,11 @@ static DSP_ERROR_TYPE xa_renderer_set_memtabs_ptr(struct XADevRenderer *d, u32 i
 	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, XA_PARA_ERROR);
 
 	/* ...do not do anything; just return success - tbd */
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...return total amount of memory buffers */
-static DSP_ERROR_TYPE xa_renderer_get_n_memtabs(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_get_n_memtabs(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity checks */
 	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
@@ -822,11 +822,11 @@ static DSP_ERROR_TYPE xa_renderer_get_n_memtabs(struct XADevRenderer *d, u32 i_i
 	/* ...we have 1 input buffer */
 	*(u32 *)pv_value = 1;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...return memory buffer data */
-static DSP_ERROR_TYPE xa_renderer_get_mem_info_size(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_get_mem_info_size(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	u32     i_value;
 
@@ -850,11 +850,11 @@ static DSP_ERROR_TYPE xa_renderer_get_mem_info_size(struct XADevRenderer *d, u32
 	/* ...return buffer size to caller */
 	*(u32 *)pv_value = (u32) i_value;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...return memory alignment data */
-static DSP_ERROR_TYPE xa_renderer_get_mem_info_alignment(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_get_mem_info_alignment(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity check */
 	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
@@ -865,11 +865,11 @@ static DSP_ERROR_TYPE xa_renderer_get_mem_info_alignment(struct XADevRenderer *d
 	/* ...all buffers are at least 4-bytes aligned */
 	*(u32 *)pv_value = 4;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
 /* ...return memory type data */
-static DSP_ERROR_TYPE xa_renderer_get_mem_info_type(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_get_mem_info_type(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity check */
 	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
@@ -879,7 +879,7 @@ static DSP_ERROR_TYPE xa_renderer_get_mem_info_type(struct XADevRenderer *d, u32
 }
 
 /* ...set memory pointer */
-static DSP_ERROR_TYPE xa_renderer_set_input_ptr(struct XADevRenderer *d, u32 i_idx, void* pv_value)
+static UA_ERROR_TYPE xa_renderer_set_input_ptr(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity check */
 	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
@@ -893,7 +893,7 @@ static DSP_ERROR_TYPE xa_renderer_set_input_ptr(struct XADevRenderer *d, u32 i_i
 	case 0:
 		/* ...input buffer */
 		d->input = pv_value;
-		return XA_SUCCESS;
+		return ACODEC_SUCCESS;
 
 	default:
 		/* ...invalid index */
@@ -901,20 +901,20 @@ static DSP_ERROR_TYPE xa_renderer_set_input_ptr(struct XADevRenderer *d, u32 i_i
 	}
 }
 
-static DSP_ERROR_TYPE xf_renderer_input_over(struct XADevRenderer *d,
+static UA_ERROR_TYPE xf_renderer_input_over(struct XADevRenderer *d,
 					      u32 i_idx,
 					      void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_renderer_cleanup(struct XADevRenderer *d,
+static UA_ERROR_TYPE xf_renderer_cleanup(struct XADevRenderer *d,
 					   u32 i_idx,
 					   void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 	struct dsp_main_struct *dsp_config =
 		(struct dsp_main_struct *)d->private_data;
 
@@ -926,11 +926,11 @@ static DSP_ERROR_TYPE xf_renderer_cleanup(struct XADevRenderer *d,
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_renderer_suspend(struct XADevRenderer *d,
+static UA_ERROR_TYPE xf_renderer_suspend(struct XADevRenderer *d,
 					   u32 i_idx,
 					   void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 	struct dsp_main_struct *dsp_config =
 		(struct dsp_main_struct *)d->private_data;
 
@@ -952,11 +952,11 @@ static DSP_ERROR_TYPE xf_renderer_suspend(struct XADevRenderer *d,
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
+static UA_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
 					   u32 i_idx,
 					   void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 	struct dsp_main_struct *dsp_config =
 		(struct dsp_main_struct *)d->private_data;
 
@@ -983,7 +983,7 @@ static DSP_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
  * API command hooks
  ******************************************************************************/
 
-static DSP_ERROR_TYPE (* const xa_renderer_api[])(struct XADevRenderer *, u32, void*) = 
+static UA_ERROR_TYPE (* const xa_renderer_api[])(struct XADevRenderer *, u32, void*) = 
 {
 	[XF_API_CMD_GET_API_SIZE]           = xa_renderer_get_api_size,
 	[XF_API_CMD_PRE_INIT]               = xf_renderer_preinit,
@@ -1008,7 +1008,7 @@ static DSP_ERROR_TYPE (* const xa_renderer_api[])(struct XADevRenderer *, u32, v
  * API entry point
  ******************************************************************************/
 
-DSP_ERROR_TYPE xa_renderer(xf_codec_handle_t handle, u32 i_cmd, u32 i_idx, void* pv_value)
+UA_ERROR_TYPE xa_renderer(xf_codec_handle_t handle, u32 i_cmd, u32 i_idx, void* pv_value)
 {
 	struct XADevRenderer *renderer = (struct XADevRenderer *)handle;
 

@@ -26,7 +26,6 @@
 #include "dpu_lib_load.h"
 #include "dsp_codec_interface.h"
 #include "xf-audio-apicmd.h"
-
 /******************************************************************************
  * Internal functions definitions
  *****************************************************************************/
@@ -35,7 +34,6 @@ struct sCodecFun {
 	UniACodecVersionInfo    VersionInfo;
 	UniACodecCreate         Create;
 	UniACodecDelete         Delete;
-	UniACodecInit           Init;
 	UniACodecReset          Reset;
 	UniACodecSetParameter   SetPara;
 	UniACodecGetParameter   GetPara;
@@ -73,7 +71,7 @@ struct XFUniaCodec {
 	void *codecinterface;
 
 	/* ...dsp codec wrapper handle */
-	DSPCodec_Handle pWrpHdl;
+	UniACodec_Handle pWrpHdl;
 
 	/* ...dsp codec wrapper api */
 	struct sCodecFun WrapFun;
@@ -87,21 +85,21 @@ struct XFUniaCodec {
  * Commands processing
  *****************************************************************************/
 
-static DSP_ERROR_TYPE xf_uniacodec_get_api_size(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_get_api_size(struct XFUniaCodec *d,
 						u32 i_idx,
 						void *pv_value)
 {
 	/* ...retrieve API structure size */
 	*(u32 *)pv_value = sizeof(*d);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_preinit(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_preinit(struct XFUniaCodec *d,
 					   u32 i_idx,
 					   void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	/* ...set codec id */
 	d->codec_id = i_idx;
@@ -112,123 +110,236 @@ static DSP_ERROR_TYPE xf_uniacodec_preinit(struct XFUniaCodec *d,
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_init(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_init(struct XFUniaCodec *d,
 					u32 i_idx,
 					void *pv_value)
 {
 	struct dsp_main_struct *dsp_config =
 		(struct dsp_main_struct *)d->private_data;
-	DSPCodecMemoryOps memops;
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+
+	UniACodecMemoryOps  memops;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	if (!d->codecwrapinterface) {
 		LOG("base->codecwrapinterface Pointer is NULL\n");
-		return XA_INIT_ERR;
+		return ACODEC_INIT_ERR;
 	}
 
 	d->codecwrapinterface(ACODEC_API_CREATE_CODEC, (void **)&d->WrapFun.Create);
-	d->codecwrapinterface(ACODEC_API_DELETE_CODEC, (void **)&d->WrapFun.Delete);
-	d->codecwrapinterface(ACODEC_API_INIT_CODEC, (void **)&d->WrapFun.Init);
+	d->codecwrapinterface(ACODEC_API_DEC_FRAME, (void **)&d->WrapFun.Process);
 	d->codecwrapinterface(ACODEC_API_RESET_CODEC, (void **)&d->WrapFun.Reset);
-	d->codecwrapinterface(ACODEC_API_SET_PARAMETER, (void **)&d->WrapFun.SetPara);
-	d->codecwrapinterface(ACODEC_API_SET_PARAMETER, (void **)&d->WrapFun.SetPara);
+	d->codecwrapinterface(ACODEC_API_DELETE_CODEC, (void **)&d->WrapFun.Delete);
 	d->codecwrapinterface(ACODEC_API_GET_PARAMETER, (void **)&d->WrapFun.GetPara);
-	d->codecwrapinterface(ACODEC_API_DECODE_FRAME, (void **)&d->WrapFun.Process);
+	d->codecwrapinterface(ACODEC_API_SET_PARAMETER, (void **)&d->WrapFun.SetPara);
 	d->codecwrapinterface(ACODEC_API_GET_LAST_ERROR, (void **)&d->WrapFun.GetLastError);
 
-	memops.Malloc = (void *)MEM_scratch_malloc;
-	memops.Free = (void *)MEM_scratch_mfree;
-#ifdef DEBUG
-	memops.dsp_printf = NULL;
-#endif
-
-	memops.p_xa_process_api = d->codecinterface;
-	memops.dsp_config = &dsp_config->scratch_mem_info;
+	memops.Malloc = (void *)MEM_scratch_ua_malloc;
+	memops.Free = (void *)MEM_scratch_ua_mfree;
 
 	if (!d->WrapFun.Create) {
 		LOG("WrapFun.Create Pointer is NULL\n");
-		return XA_INIT_ERR;
+		return ACODEC_INIT_ERR;
 	}
 
-	d->pWrpHdl = d->WrapFun.Create(&memops, d->codec_id);
+	d->pWrpHdl = d->WrapFun.Create(&memops);
 	if (!d->pWrpHdl) {
 		LOG("Create codec error in codec wrapper\n");
-		return XA_INIT_ERR;
+		return ACODEC_INIT_ERR;
 	}
 
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_postinit(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_postinit(struct XFUniaCodec *d,
 					    u32 i_idx,
 					    void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
-
-	if (!d->WrapFun.Init) {
-		LOG("WrapFun.Init Pointer is NULL\n");
-		return XA_INIT_ERR;
-	}
-
-	/* ...initialize codec memory */
-	ret = d->WrapFun.Init(d->pWrpHdl);
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 					    u32 i_idx,
 					    void *pv_value)
 {
-	DSPCodecSetParameter param;
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UniACodecParameter parameter;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	if (!d->WrapFun.SetPara) {
 		LOG("WrapFun.SetPara Pointer is NULL\n");
-		return XA_INIT_ERR;
+		return ACODEC_INIT_ERR;
+	}
+	switch (i_idx) {
+	case UNIA_SAMPLERATE:
+		parameter.samplerate = *(u32 *)pv_value;
+		break;
+	case UNIA_CHANNEL:
+		parameter.channels = *(u32 *)pv_value;
+		break;
+	case UNIA_DEPTH:
+		parameter.depth = *(u32 *)pv_value;
+		break;
+	case UNIA_DOWNMIX_STEREO:
+		parameter.downmix = *(u32 *)pv_value;
+		break;
+	case UNIA_STREAM_TYPE:
+		parameter.stream_type = *(u32 *)pv_value;
+		break;
+	case UNIA_BITRATE:
+		parameter.bitrate = *(u32 *)pv_value;
+		break;
+	case UNIA_TO_STEREO:
+		parameter.mono_to_stereo = *(u32 *)pv_value;
+		break;
+	case UNIA_FRAMED:
+		parameter.framed = *(u32 *)pv_value;
+		break;
+	case UNIA_CODEC_ID:
+		parameter.codec_id = *(u32 *)pv_value;
+		break;
+	case UNIA_CODEC_ENTRY_ADDR:
+		parameter.codec_entry_addr = *(u32 *)pv_value;
+		break;
+#ifdef DEBUG
+	case UNIA_FUNC_PRINT:
+		parameter.Printf = NULL;
+		break;
+#endif
+	case UNIA_CODEC_DATA:
+		break;
+	default:
+		break;
 	}
 
-	param.cmd = i_idx;
-	param.val = *(u32 *)pv_value;
+	if ((d->codec_id == CODEC_MP2_DEC) ||
+		(d->codec_id == CODEC_MP3_DEC)) {
+		switch (i_idx) {
+		/*****dedicate for mp3 dec and mp2 dec*****/
+		case UNIA_MP3_DEC_CRC_CHECK:
+			parameter.crc_check = *(u32 *)pv_value;
+			break;
+		case UNIA_MP3_DEC_MCH_ENABLE:
+			parameter.mch_enable = *(u32 *)pv_value;
+			break;
+		case UNIA_MP3_DEC_NONSTD_STRM_SUPPORT:
+			parameter.nonstd_strm_support = *(u32 *)pv_value;
+			break;
+		default:
+			break;
+		}
+	} else if (d->codec_id == CODEC_BSAC_DEC) {
+		switch (i_idx) {
+		/*****dedicate for bsac dec***************/
+		case UNIA_BSAC_DEC_DECODELAYERS:
+			parameter.layers = *(u32 *)pv_value;
+			break;
+		default:
+			break;
+		}
+	} else if ((d->codec_id == CODEC_AAC_DEC)) {
+		switch (i_idx) {
+		/*****dedicate for aacplus dec***********/
+		case UNIA_CHANNEL:
+			if (*(u32 *)pv_value > 2) {
+				return ACODEC_PROFILE_NOT_SUPPORT;
+			}
+			break;
+		case UNIA_AACPLUS_DEC_BDOWNSAMPLE:
+			parameter.bdownsample = *(u32 *)pv_value;
+			break;
+		case UNIA_AACPLUS_DEC_BBITSTREAMDOWNMIX:
+			parameter.bbitstreamdownmix = *(u32 *)pv_value;
+			break;
+		case UNIA_AACPLUS_DEC_CHANROUTING:
+			parameter.chanrouting = *(u32 *)pv_value;
+			break;
+		default:
+			break;
+		}
+	} else if (d->codec_id == CODEC_DAB_DEC) {
+		switch (i_idx) {
+		/*****************dedicate for dabplus dec******************/
+		case UNIA_DABPLUS_DEC_BDOWNSAMPLE:
+			parameter.bdownsample = *(u32 *)pv_value;
+			break;
+		case UNIA_DABPLUS_DEC_BBITSTREAMDOWNMIX:
+			parameter.bbitstreamdownmix = *(u32 *)pv_value;
+			break;
+		case UNIA_DABPLUS_DEC_CHANROUTING:
+			parameter.chanrouting = *(u32 *)pv_value;
+			break;
+		default:
+			break;
+		}
+	} else if (d->codec_id == CODEC_SBC_ENC) {
+		switch (i_idx) {
+		/*******************dedicate for sbc enc******************/
+		case UNIA_SBC_ENC_SUBBANDS:
+			parameter.enc_subbands = *(u32 *)pv_value;
+			break;
+		case UNIA_SBC_ENC_BLOCKS:
+			parameter.enc_blocks = *(u32 *)pv_value;
+			break;
+		case UNIA_SBC_ENC_SNR:
+			parameter.enc_snr = *(u32 *)pv_value;
+			break;
+		case UNIA_SBC_ENC_BITPOOL:
+			parameter.enc_bitpool = *(u32 *)pv_value;
+			break;
+		case UNIA_SBC_ENC_CHMODE:
+			parameter.enc_chmode = *(u32 *)pv_value;
+			break;
+		default:
+			break;
+		}
+	}
 
-	ret = d->WrapFun.SetPara(d->pWrpHdl, &param);
+
+	ret = d->WrapFun.SetPara(d->pWrpHdl, i_idx, &parameter);
 
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_getparam(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_getparam(struct XFUniaCodec *d,
 					    u32 i_idx,
 					    void *pv_value)
 {
-	DSPCodecGetParameter param;
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UniACodecParameter param;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	if (!d->WrapFun.GetPara) {
 		LOG("WrapFun.GetPara Pointer is NULL\n");
-		return XA_INIT_ERR;
+		return ACODEC_INIT_ERR;
 	}
-
 	/* ...retrieve the collection of codec  parameters */
-	ret = d->WrapFun.GetPara(d->pWrpHdl, &param);
+	ret = d->WrapFun.GetPara(d->pWrpHdl, i_idx, &param);
 	if (ret)
-		return XA_PARA_ERROR;
+		return ACODEC_PARA_ERROR;
 
-	/* ...retrieve the collection of codec  parameters */
 	switch (i_idx) {
-	case XA_SAMPLERATE:
-		*(u32 *)pv_value = param.sfreq;
+	case UNIA_SAMPLERATE:
+		*(u32 *)pv_value = param.samplerate;
 		break;
-	case XA_CHANNEL:
+	case UNIA_CHANNEL:
 		*(u32 *)pv_value = param.channels;
 		break;
-	case XA_DEPTH:
-		*(u32 *)pv_value = param.bits;
+	case UNIA_OUTPUT_PCM_FORMAT:
 		break;
-	case XA_CONSUMED_LENGTH:
-		*(u32 *)pv_value = param.consumed_bytes;
+	case UNIA_CODEC_DESCRIPTION:
 		break;
-	case XA_CONSUMED_CYCLES:
-		*(u32 *)pv_value = param.cycles;
+	case UNIA_BITRATE:
+		*(u32 *)pv_value = param.bitrate;
+		break;
+	case UNIA_CONSUMED_LENGTH:
+		*(u32 *)pv_value = param.consumed_length;
+		break;
+	case UNIA_OUTBUF_ALLOC_SIZE:
+		break;
+	case UNIA_DEPTH:
+		*(u32 *)pv_value = param.depth;
+		break;
+	case UA_TYPE_MAX:
 		break;
 	default:
 		*(u32 *)pv_value = 0;
@@ -238,107 +349,110 @@ static DSP_ERROR_TYPE xf_uniacodec_getparam(struct XFUniaCodec *d,
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_execute(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_execute(struct XFUniaCodec *d,
 					   u32 i_idx,
 					   void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 	u32 offset = 0;
 
 	if (!d->WrapFun.Process) {
 		LOG("WrapFun.Process Pointer is NULL\n");
-		return XA_INIT_ERR;
+		return ACODEC_INIT_ERR;
 	}
 
 	LOG4("in_buf = %x, in_size = %x, offset = %d, out_buf = %x\n",
 	     d->inptr, d->in_size, d->consumed, d->outptr);
+
+	/* pass to ua wrapper input is over */
+	if (d->input_over && d->in_size == 0 && d->codec_id >= CODEC_FSL_OGG_DEC)
+		d->inptr = NULL;
+
 	ret = d->WrapFun.Process(d->pWrpHdl,
 				d->inptr,
 				d->in_size,
 				&offset,
 				(u8 **)&d->outptr,
-				&d->out_size,
-				d->input_over);
+				&d->out_size);
 
 	d->consumed = offset;
-
 	LOG3("process: consumed = %d, produced = %d, ret = %d\n",
 	     d->consumed, d->out_size, ret);
-
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_set_input_ptr(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_set_input_ptr(struct XFUniaCodec *d,
 						 u32 i_idx,
 						 void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	d->inptr = (u8 *)pv_value;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_set_output_ptr(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_set_output_ptr(struct XFUniaCodec *d,
 						  u32 i_idx,
 						  void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	d->outptr = (u8 *)pv_value;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_set_input_bytes(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_set_input_bytes(struct XFUniaCodec *d,
 						   u32 i_idx,
 						   void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	d->in_size = *(u32 *)pv_value;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_get_output_bytes(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_get_output_bytes(struct XFUniaCodec *d,
 						    u32 i_idx,
 						    void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	*(u32 *)pv_value = d->out_size;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_get_consumed_bytes(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_get_consumed_bytes(struct XFUniaCodec *d,
 						      u32 i_idx,
 						      void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	*(u32 *)pv_value = d->consumed;
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_input_over(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_input_over(struct XFUniaCodec *d,
 					      u32 i_idx,
 					      void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	d->input_over = 1;
+	xf_uniacodec_setparam(d, UNIA_INPUT_OVER, NULL);
 
-	return XA_SUCCESS;
+	return ACODEC_SUCCESS;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_set_lib_entry(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_set_lib_entry(struct XFUniaCodec *d,
 						 u32 i_idx,
 						 void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	if (i_idx == DSP_CODEC_WRAP_LIB) {
 		d->codecwrapinterface = (tUniACodecQueryInterface)pv_value;
@@ -346,17 +460,17 @@ static DSP_ERROR_TYPE xf_uniacodec_set_lib_entry(struct XFUniaCodec *d,
 		d->codecinterface = pv_value;
 	} else {
 		LOG("Unknown lib type\n");
-		ret = XA_INIT_ERR;
+		ret = ACODEC_INIT_ERR;
 	}
 
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_runtime_init(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_runtime_init(struct XFUniaCodec *d,
 						u32 i_idx,
 						void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	if (d->WrapFun.Reset)
 		ret = d->WrapFun.Reset(d->pWrpHdl);
@@ -368,11 +482,11 @@ static DSP_ERROR_TYPE xf_uniacodec_runtime_init(struct XFUniaCodec *d,
 	return ret;
 }
 
-static DSP_ERROR_TYPE xf_uniacodec_cleanup(struct XFUniaCodec *d,
+static UA_ERROR_TYPE xf_uniacodec_cleanup(struct XFUniaCodec *d,
 					   u32 i_idx,
 					   void *pv_value)
 {
-	DSP_ERROR_TYPE ret = XA_SUCCESS;
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	/* ...destory codec resources */
 	if (d->WrapFun.Delete)
@@ -385,7 +499,7 @@ static DSP_ERROR_TYPE xf_uniacodec_cleanup(struct XFUniaCodec *d,
  * API command hooks
  ******************************************************************************/
 
-static DSP_ERROR_TYPE (* const xf_unia_codec_api[])(struct XFUniaCodec *, u32, void *) = {
+static UA_ERROR_TYPE (* const xf_unia_codec_api[])(struct XFUniaCodec *, u32, void *) = {
 	[XF_API_CMD_GET_API_SIZE]      = xf_uniacodec_get_api_size,
 	[XF_API_CMD_PRE_INIT]          = xf_uniacodec_preinit,
 	[XF_API_CMD_INIT]              = xf_uniacodec_init,
@@ -420,10 +534,10 @@ u32 xf_unia_codec(xf_codec_handle_t handle,
 	struct XFUniaCodec *uniacodec = (struct XFUniaCodec *)handle;
 
 	/* ...check if command index is sane */
-	XF_CHK_ERR(i_cmd < XF_UNIACODEC_API_COMMANDS_NUM, XA_PARA_ERROR);
+	XF_CHK_ERR(i_cmd < XF_UNIACODEC_API_COMMANDS_NUM, ACODEC_PARA_ERROR);
 
 	/* ...see if command is defined */
-	XF_CHK_ERR(xf_unia_codec_api[i_cmd] != NULL, XA_PARA_ERROR);
+	XF_CHK_ERR(xf_unia_codec_api[i_cmd] != NULL, ACODEC_PARA_ERROR);
 
 	/* ...execute requested command */
 	return xf_unia_codec_api[i_cmd](uniacodec, i_idx, pv_value);
