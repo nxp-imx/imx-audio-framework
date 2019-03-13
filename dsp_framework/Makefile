@@ -29,7 +29,8 @@ INCLUDES   += -I$(INC_DIR)/lib                            \
 			  -I$(SRC_DIR)/arch/libloader/include         \
 			  -I$(SRC_DIR)/plugins/audio_codec            \
 			  -I$(SRC_DIR)/plugins/renderer            \
-			  -I$(SRC_DIR)/component/audio
+			  -I$(SRC_DIR)/component/audio \
+			  -I$(SRC_DIR)/plugins/audio_codec/uni_audio
 
 # Put common C files here
 C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
