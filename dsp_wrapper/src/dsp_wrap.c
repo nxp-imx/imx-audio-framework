@@ -639,7 +639,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	inner_offset = &pDSP_handle->inner_buf.inner_offset;
 	inner_size = &pDSP_handle->inner_buf.inner_size;
 
-	if (pDSP_handle->component.comp_type != CODEC_FSL_MP3_DEC) {
+	if (pDSP_handle->component.comp_type < CODEC_FSL_OGG_DEC) {
 		if ((pDSP_handle->input_over == TRUE) &&
 			(!pDSP_handle->outptr_busy) &&
 			(pDSP_handle->last_output_size <= 0)) {
@@ -730,7 +730,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 
 	pDSP_handle->last_output_size = out_size;
 
-	if (err == XA_SUCCESS) {
+	if (err == XA_SUCCESS || err == ACODEC_CAPIBILITY_CHANGE) {
 #ifdef DEBUG
 		TRACE("NO_ERROR: consumed length = %d, output size = %d\n",
 		      in_size, out_size);
@@ -745,7 +745,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 		pDSP_handle->samplerate = param[0].value;
 		pDSP_handle->channels = param[1].value;
 		pDSP_handle->depth = param[2].value;
-
 		if ((pDSP_handle->channels == 1) &&
 		    ((pDSP_handle->codec_type == AAC)      ||
 			(pDSP_handle->codec_type == AAC_PLUS) ||
@@ -923,6 +922,10 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 				ret = ACODEC_ERROR_STREAM;
 		}
 		pDSP_handle->last_err = err;
+		break;
+	case OGG:
+		if (err == XA_END_OF_STREAM)
+			ret = ACODEC_END_OF_STREAM;
 		break;
 	default:
 		break;
