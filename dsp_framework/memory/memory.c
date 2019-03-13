@@ -36,13 +36,20 @@
  */
 #define  BTOU(nb)  ((((nb) + ABLKSIZE - 1) / ABLKSIZE) + 1)
 
+struct dsp_mem_info *DSP_mem_info;
+
 void MEM_scratch_init(struct dsp_mem_info *mem_info, u32 ptr, u32 size)
 {
 	mem_info->scratch_buf_ptr = (u8 *)ptr;
 	mem_info->scratch_total_size = size;
 	mem_info->scratch_remaining = size;
+	DSP_mem_info = mem_info;
 }
 
+void *MEM_scratch_ua_malloc(int size)
+{
+	return MEM_scratch_malloc(DSP_mem_info, size);
+}
 /* sample implementation for memory allocation,
  * This always to allocates 8-byte aligned buffers
  */
@@ -128,6 +135,10 @@ void *MEM_scratch_malloc(struct dsp_mem_info *mem_info, int nb)
 	return (void *)p;
 }
 
+void MEM_scratch_ua_mfree(void *ptr)
+{
+	MEM_scratch_mfree(DSP_mem_info, ptr);
+}
 /* Note: This function free up the memory allocations done using
  * function MEM_heap_malloc
  */

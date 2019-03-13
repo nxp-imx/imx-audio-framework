@@ -50,4 +50,6 @@ void MEM_scratch_init(struct dsp_mem_info *mem_info, u32 ptr, u32 size);
 void *MEM_scratch_malloc(struct dsp_mem_info *mem_info, int size);
 void MEM_scratch_mfree(struct dsp_mem_info *mem_info, void *blk);
 
+void *MEM_scratch_ua_malloc(int size);
+void MEM_scratch_ua_mfree(void *ptr);
 #endif
