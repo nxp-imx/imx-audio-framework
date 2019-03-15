@@ -547,7 +547,7 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle,
 			break;
 		case AAC:
 		case AAC_PLUS:
-			parameter->outbuf_alloc_size = 16384;
+			parameter->outbuf_alloc_size = 18432;
 			break;
 		default:
 			parameter->outbuf_alloc_size = 16384;
@@ -639,7 +639,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	inner_offset = &pDSP_handle->inner_buf.inner_offset;
 	inner_size = &pDSP_handle->inner_buf.inner_size;
 
-	if (pDSP_handle->component.comp_type < CODEC_FSL_OGG_DEC) {
+	if (pDSP_handle->component.comp_type < CODEC_FSL_OGG_DEC && pDSP_handle->component.comp_type != CODEC_AAC_DEC) {
 		if ((pDSP_handle->input_over == TRUE) &&
 			(!pDSP_handle->outptr_busy) &&
 			(pDSP_handle->last_output_size <= 0)) {

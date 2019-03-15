@@ -157,10 +157,10 @@ UA_ERROR_TYPE SetDefaultFeature(UniACodec_Handle pua_handle)
 	case AAC:
 	case AAC_PLUS:
 		/* disable force mono to stereo output */
-		parameter.mono_to_stereo = 0;
+		/*parameter.mono_to_stereo = 0;
 		err = DSPDecSetPara(pua_handle,
 				    UNIA_TO_STEREO,
-				    &parameter);
+				    &parameter);*/
 		break;
 	case DAB_PLUS:
 		/* disable force mono to stereo output */
@@ -171,10 +171,10 @@ UA_ERROR_TYPE SetDefaultFeature(UniACodec_Handle pua_handle)
 		break;
 	case BSAC:
 		/* disable force mono to stereo output */
-		parameter.mono_to_stereo = 0;
+		/*parameter.mono_to_stereo = 0;
 		err = DSPDecSetPara(pua_handle,
 				    UNIA_TO_STEREO,
-				    &parameter);
+				    &parameter);*/
 		break;
 	case DRM:
 		break;
