@@ -42,7 +42,14 @@
 #define CODEC_SBC_ENC		8
 #define CODEC_FSL_OGG_DEC   9
 #define CODEC_FSL_MP3_DEC   10
-#define CODEC_DEMO_DEC		11
+#define CODEC_FSL_AAC_DEC   11
+#define CODEC_FSL_AAC_PLUS_DEC   12
+#define CODEC_FSL_AC3_DEC   13
+#define CODEC_FSL_DDP_DEC   14
+#define CODEC_FSL_NBAMR_DEC   15
+#define CODEC_FSL_WBAMR_DEC   16
+#define CODEC_FSL_WMA_DEC   17
+#define CODEC_DEMO_DEC		18
 
 enum DSP_ERROR_TYPE {
 	XA_SUCCESS = 0,
@@ -79,6 +86,8 @@ enum DSP_ParaType {
 	//UNIA_CHANNEL_MASK,
 	XA_TO_STEREO,
 
+	XA_WMA_BLOCKALIGN = 0x100,
+	XA_WMA_VERSION,
 /* dedicate for mp3 dec */
 	XA_MP3_DEC_CRC_CHECK = 0x120,
 	XA_MP3_DEC_MCH_ENABLE,
