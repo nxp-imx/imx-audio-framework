@@ -57,7 +57,7 @@
 
 /* ...number of max input buffers */
 #define INBUF_SIZE                      4096
-#define OUTBUF_SIZE                     16384
+#define OUTBUF_SIZE                     4096*9
 
 #define N_ELEMENTS(arr)	(sizeof(arr) / sizeof((arr)[0]))
 

@@ -150,7 +150,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 		break;
 	case AAC:
 	case AAC_PLUS:
-		comp_type = CODEC_AAC_DEC;
+		comp_type = CODEC_FSL_AAC_DEC;
 		break;
 	case DAB_PLUS:
 		comp_type = CODEC_DAB_DEC;
@@ -169,6 +169,18 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 		break;
 	case OGG:
 		comp_type = CODEC_FSL_OGG_DEC;
+		break;
+	case AC3:
+		comp_type = CODEC_FSL_AC3_DEC;
+		break;
+	case DD_PLUS:
+		comp_type = CODEC_FSL_DDP_DEC;
+		break;
+	case NBAMR:
+		comp_type = CODEC_FSL_NBAMR_DEC;
+		break;
+	case WBAMR:
+		comp_type = CODEC_FSL_WBAMR_DEC;
 		break;
 	default:
 #ifdef DEBUG
@@ -379,6 +391,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		param.value = parameter->mono_to_stereo;
 		break;
 	case UNIA_STREAM_TYPE:
+		pDSP_handle->stream_type = parameter->stream_type;
 		param.value = parameter->stream_type;
 		break;
 	case UNIA_BITRATE:
@@ -548,6 +561,18 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle,
 		case AAC:
 		case AAC_PLUS:
 			parameter->outbuf_alloc_size = 18432;
+			break;
+		case AC3:
+			parameter->outbuf_alloc_size = 1536*sizeof(long)*6;
+			break;
+		case DD_PLUS:
+			parameter->outbuf_alloc_size = 36864;
+			break;
+		case NBAMR:
+			parameter->outbuf_alloc_size = 240*sizeof(short);
+			break;
+		case WBAMR:
+			parameter->outbuf_alloc_size = 320*sizeof(short);
 			break;
 		default:
 			parameter->outbuf_alloc_size = 16384;
@@ -745,15 +770,17 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 		pDSP_handle->samplerate = param[0].value;
 		pDSP_handle->channels = param[1].value;
 		pDSP_handle->depth = param[2].value;
-		if ((pDSP_handle->channels == 1) &&
-		    ((pDSP_handle->codec_type == AAC)      ||
-			(pDSP_handle->codec_type == AAC_PLUS) ||
-			(pDSP_handle->codec_type == BSAC)     ||
-			(pDSP_handle->codec_type == DAB_PLUS))) {
-			cancel_unused_channel_data(*OutputBuf,
-					*OutputSize, pDSP_handle->depth);
+		if (pDSP_handle->component.comp_type < CODEC_FSL_OGG_DEC) {
+			if ((pDSP_handle->channels == 1) &&
+				((pDSP_handle->codec_type == AAC)      ||
+				(pDSP_handle->codec_type == AAC_PLUS) ||
+				(pDSP_handle->codec_type == BSAC)     ||
+				(pDSP_handle->codec_type == DAB_PLUS))) {
+				cancel_unused_channel_data(*OutputBuf,
+						*OutputSize, pDSP_handle->depth);
 
-			*OutputSize >>= 1;
+				*OutputSize >>= 1;
+			}
 		}
 
 		if ((pDSP_handle->codec_type != SBCENC) &&
@@ -847,6 +874,9 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	case AAC_PLUS:
 		/******************dedicate for aacplus dec*******************/
 		if (err == XA_NOT_ENOUGH_DATA) {
+			if (pDSP_handle->stream_type == STREAM_ADIF && InputSize >= *offset)
+				ret = XA_SUCCESS;
+			else
 			ret = ACODEC_NOT_ENOUGH_DATA;
 		} else if (err == XA_CAPIBILITY_CHANGE) {
 			ret = ACODEC_CAPIBILITY_CHANGE;
@@ -854,7 +884,10 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			ret = ACODEC_ERROR_STREAM;
 		} else if (err == XA_ERR_UNKNOWN) {
 			ret = ACODEC_ERR_UNKNOWN;
-		}
+		} else if (err == XA_END_OF_STREAM) {
+			ret = ACODEC_END_OF_STREAM;
+		} else
+			ret = err;
 
 		pDSP_handle->last_err = err;
 		break;
@@ -880,6 +913,8 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 		} else {
 			if (err == XA_ERROR_STREAM)
 				ret = ACODEC_ERROR_STREAM;
+			if (err == XA_END_OF_STREAM)
+				ret = ACODEC_END_OF_STREAM;
 		}
 		pDSP_handle->last_err = err;
 		break;
@@ -926,6 +961,24 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	case OGG:
 		if (err == XA_END_OF_STREAM)
 			ret = ACODEC_END_OF_STREAM;
+		break;
+	case AC3:
+		if (err == XA_END_OF_STREAM)
+			ret = ACODEC_END_OF_STREAM;
+		break;
+	case DD_PLUS:
+		if (err == XA_END_OF_STREAM)
+			ret = ACODEC_END_OF_STREAM;
+		break;
+	case NBAMR:
+		if (err == XA_END_OF_STREAM)
+			ret = ACODEC_END_OF_STREAM;
+		break;
+	case WBAMR:
+		if (err == XA_END_OF_STREAM)
+			ret = ACODEC_END_OF_STREAM;
+		else if (err == XA_ERROR_STREAM)
+			ret = ACODEC_ERROR_STREAM;
 		break;
 	default:
 		break;
