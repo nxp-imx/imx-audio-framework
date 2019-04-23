@@ -592,7 +592,7 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 	/* ...process execution stage transition */
 	if (xf_input_port_done(&codec->input) &&
 	    !produced &&
-	    !ret && base->codec_id != CODEC_FSL_MP3_DEC) {
+	    ret == ACODEC_END_OF_STREAM) {
 		/* ...output stream is over; propagate condition to sink port */
 		if (xf_output_port_flush(&codec->output, XF_FILL_THIS_BUFFER)) {
 			/* ...flushing sequence is not needed;

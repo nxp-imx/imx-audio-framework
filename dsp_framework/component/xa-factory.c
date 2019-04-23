@@ -94,17 +94,22 @@ extern struct xf_component *xa_renderer_factory(struct dsp_main_struct *dsp_conf
 
 /* ...component class id */
 static const struct xf_component_id xf_component_id[] = {
-	{ "audio-decoder/mp3",      CODEC_MP3_DEC,     xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-decoder/aac",      CODEC_AAC_DEC,     xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-decoder/bsac",     CODEC_BSAC_DEC,    xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-decoder/dabplus",  CODEC_DAB_DEC,     xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-decoder/mp2",      CODEC_MP2_DEC,     xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-decoder/drm",      CODEC_DRM_DEC,     xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-decoder/sbc",      CODEC_SBC_DEC,     xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-encoder/sbc",      CODEC_SBC_ENC,     xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-decoder/ogg",      CODEC_FSL_OGG_DEC, xa_audio_codec_factory,     xf_unia_codec },
-	{ "audio-decoder/mp3ext",   CODEC_FSL_MP3_DEC, xa_audio_codec_factory,     xf_unia_codec },
-	{ "renderer/esai",          RENDER_ESAI,       xa_renderer_factory,        xa_renderer },
+	{ "audio-decoder/mp3",        CODEC_MP3_DEC,          xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/aac",        CODEC_AAC_DEC,          xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/bsac",       CODEC_BSAC_DEC,         xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/dabplus",    CODEC_DAB_DEC,          xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/mp2",        CODEC_MP2_DEC,          xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/drm",        CODEC_DRM_DEC,          xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/sbc",        CODEC_SBC_DEC,          xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-encoder/sbc",        CODEC_SBC_ENC,          xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/ogg",        CODEC_FSL_OGG_DEC,      xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/mp3ext",     CODEC_FSL_MP3_DEC,      xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/aacext",     CODEC_FSL_AAC_DEC,      xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/ac3",        CODEC_FSL_AC3_DEC,      xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/ddp",        CODEC_FSL_DDP_DEC,      xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/nbamr",      CODEC_FSL_NBAMR_DEC,    xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/wbamr",      CODEC_FSL_WBAMR_DEC,    xa_audio_codec_factory,     xf_unia_codec },
+	{ "renderer/esai",            RENDER_ESAI,            xa_renderer_factory,        xa_renderer },
 };
 
 /* ...number of items in the map */
