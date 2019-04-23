@@ -78,6 +78,11 @@ void help_info(int ac, char *av[])
 	printf("                        SBCENC     for 8\n");
 	printf("                        OGGDEC     for 9\n");
 	printf("                        FSLMP3DEC  for 10\n");
+	printf("                        FSLACCDEC  for 11\n");
+	printf("                        FSLAC3DEC  for 13\n");
+	printf("                        FSLDDPDEC  for 14\n");
+	printf("                        FSLNBAMRDEC  for 15\n");
+	printf("                        FSLWBAMRDEC  for 16\n");
 	printf("          -i InFileNam  Input File Name\n");
 	printf("          -o OutName    Output File Name\n");
 	printf("          -s Samplerate Sampling Rate of Audio\n");
@@ -231,7 +236,37 @@ void *comp_process_entry(void *arg)
 				case CODEC_SBC_ENC:
 				case CODEC_FSL_OGG_DEC:
 				case CODEC_FSL_MP3_DEC:
+				case CODEC_FSL_AC3_DEC:
+				case CODEC_FSL_DDP_DEC:
+				case CODEC_FSL_NBAMR_DEC:
+				case CODEC_FSL_WBAMR_DEC:
 					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
+					    (p_info.ret != XA_ERROR_STREAM) && (p_info.ret != XA_END_OF_STREAM)) {
+						/* ...issue asynchronous zero-length
+						 * buffer to output port (port-id=1)
+						 */
+						ret = xaf_comp_process(p_comp,
+								       p_comp->outptr,
+								       OUTBUF_SIZE,
+								       XF_FILL_THIS_BUFFER);
+						continue;
+					} else {
+						ret = p_info.ret;
+						goto Fail;
+					}
+					break;
+				case CODEC_FSL_AAC_DEC:
+					if (p_info.ret == XA_PROFILE_NOT_SUPPORT) {
+						TRACE("error: aac_dec execute fatal unsupported feature!\n");
+						ret = p_info.ret;
+						goto Fail;
+					}
+					else if (p_info.ret != XA_NOT_ENOUGH_DATA && p_info.ret != XA_CAPIBILITY_CHANGE
+							&& p_info.ret != XA_ERROR_STREAM && p_info.ret != XA_END_OF_STREAM) {
+						ret = p_info.ret;
+						goto Fail;
+					}
+					else if ((p_info.ret == XA_NOT_ENOUGH_DATA) || p_info.ret == XA_CAPIBILITY_CHANGE ||
 					    (p_info.ret != XA_ERROR_STREAM) && (p_info.ret != XA_END_OF_STREAM)) {
 						/* ...issue asynchronous zero-length
 						 * buffer to output port (port-id=1)
@@ -626,6 +661,7 @@ int main(int ac, char *av[])
 			goto Fail;
 		}
 	}
+
 
 	if (AOption.comp_routed) {
 		/* ...issue asynchronous buffer to routed
