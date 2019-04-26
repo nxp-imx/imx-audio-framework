@@ -73,7 +73,6 @@ static UA_ERROR_TYPE xa_base_preinit(struct XACodecBase *base)
 
 	return ret;
 }
-
 /* ...initialization setup */
 static UA_ERROR_TYPE xa_base_init(struct XACodecBase *base)
 {
@@ -81,6 +80,18 @@ static UA_ERROR_TYPE xa_base_init(struct XACodecBase *base)
 
 	/* ...codec initialization */
 	ret = XA_API(base, XF_API_CMD_INIT, 0, NULL);
+
+	/* dedicate to Candence codec initialization*/
+	if (base->codecinterface) {
+		XA_API(base, XF_API_CMD_SET_PARAM, UNIA_CODEC_ID, &base->codec_id);
+
+		ret = XA_API(base, XF_API_CMD_SET_PARAM, UNIA_CODEC_ENTRY_ADDR, (void *)&base->codecinterface);
+		LOG3("Codec[%d] set codec entry[%p] completed, ret = %d\n", base->codec_id,
+				base->codecinterface, ret);
+	}
+#ifdef DEBUG
+	XA_API(base, XF_API_CMD_SET_PARAM, UNIA_FUNC_PRINT, NULL);
+#endif
 
 	LOG2("Codec[%d] initialization completed, ret = %d\n",
 	     base->codec_id, ret);

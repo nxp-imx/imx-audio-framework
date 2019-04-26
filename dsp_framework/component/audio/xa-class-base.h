@@ -87,6 +87,9 @@ struct XACodecBase {
 	/* ...codec API handle, passed to *process */
 	xf_codec_handle_t       api;
 
+	/* ...codec API entry point (addr) */
+	void *                  codecinterface;
+
 	/* codec identifier */
 	u32 codec_id;
 

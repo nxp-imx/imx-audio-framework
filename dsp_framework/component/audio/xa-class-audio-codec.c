@@ -138,6 +138,10 @@ static UA_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 		return ACODEC_INIT_ERR;
 	}
 
+	/* save codec entry addr */
+	if (cmd->lib_type == DSP_CODEC_LIB)
+		base->codecinterface = lib_interface;
+
 	/* ...set codec lib handle if codec is loaded as library*/
 	XA_API(base,
 	       XF_API_CMD_SET_LIB_ENTRY,
