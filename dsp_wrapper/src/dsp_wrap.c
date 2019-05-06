@@ -383,6 +383,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		break;
 	case UNIA_CODEC_DATA:
 		pDSP_handle->codecData = parameter->codecData;
+		param.value = parameter->codecData.size;
 		break;
 	case UNIA_DOWNMIX_STEREO:
 		pDSP_handle->downmix = parameter->downmix;
@@ -631,7 +632,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 #ifdef DEBUG
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
 #endif
-	if (pDSP_handle->codec_type == OGG) {
+	if (pDSP_handle->codec_type == OGG || pDSP_handle->component.comp_type == CODEC_FSL_AAC_DEC) {
 		if (pDSP_handle->codecdata_copy == FALSE) {
 			InputBufHandle(&pDSP_handle->inner_buf,
 						pDSP_handle->codecData.buf,
@@ -746,7 +747,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 #endif
 
 	err = comp_process(pDSP_handle, pIn, in_size, &in_off, pOut, &out_size);
-
 	*inner_size -= in_off;
 	*inner_offset += in_off;
 	if (buf_from_out)
