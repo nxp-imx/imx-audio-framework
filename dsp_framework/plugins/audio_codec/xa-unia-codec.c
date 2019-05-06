@@ -207,6 +207,8 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 		break;
 #endif
 	case UNIA_CODEC_DATA:
+		parameter.codecData.buf = NULL;
+		parameter.codecData.size = *(u32 *)pv_value;
 		break;
 	default:
 		break;
@@ -294,7 +296,6 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 			break;
 		}
 	}
-
 
 	ret = d->WrapFun.SetPara(d->pWrpHdl, i_idx, &parameter);
 
