@@ -149,8 +149,10 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 		comp_type = CODEC_FSL_MP3_DEC;
 		break;
 	case AAC:
-	case AAC_PLUS:
 		comp_type = CODEC_FSL_AAC_DEC;
+		break;
+	case AAC_PLUS:
+		comp_type = CODEC_AAC_DEC;
 		break;
 	case DAB_PLUS:
 		comp_type = CODEC_DAB_DEC;
@@ -491,6 +493,19 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 			param.value = parameter->enc_chmode;
 			break;
 		default:
+			break;
+		}
+	} else if (pDSP_handle->codec_type == OGG) {
+		switch (ParaType) {
+		case UNIA_CODEC_DATA:
+		case UNIA_OUTPUT_PCM_FORMAT:
+			ParaType = -1;
+			break;
+		}
+	} else if (pDSP_handle->codec_type == AC3) {
+		switch (ParaType) {
+		case UNIA_OUTPUT_PCM_FORMAT:
+			ParaType = -1;
 			break;
 		}
 	}
