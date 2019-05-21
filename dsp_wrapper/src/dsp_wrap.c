@@ -373,6 +373,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		break;
 	case UNIA_FRAMED:
 		pDSP_handle->framed = parameter->framed;
+		param.value = parameter->framed;
 		break;
 	case UNIA_DEPTH:
 		if (parameter->depth != 16 &&
@@ -435,8 +436,13 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		default:
 			break;
 		}
-	} else if ((pDSP_handle->codec_type == AAC) ||
-		       (pDSP_handle->codec_type == AAC_PLUS)) {
+	} else if (pDSP_handle->codec_type == AAC) {
+		switch (ParaType) {
+		case UNIA_CHAN_MAP_TABLE:
+			ParaType = -1;
+			break;
+		}
+	} else if(pDSP_handle->codec_type == AAC_PLUS) {
 		switch (ParaType) {
 		/*****dedicate for aacplus dec***********/
 		case UNIA_CHANNEL:
@@ -495,16 +501,11 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		default:
 			break;
 		}
-	} else if (pDSP_handle->codec_type == OGG) {
-		switch (ParaType) {
-		case UNIA_CODEC_DATA:
-		case UNIA_OUTPUT_PCM_FORMAT:
-			ParaType = -1;
-			break;
-		}
-	} else if (pDSP_handle->codec_type == AC3) {
+	} else if (pDSP_handle->codec_type == OGG || pDSP_handle->codec_type == DD_PLUS
+			|| pDSP_handle->codec_type == AC3) {
 		switch (ParaType) {
 		case UNIA_OUTPUT_PCM_FORMAT:
+		case UNIA_CHAN_MAP_TABLE:
 			ParaType = -1;
 			break;
 		}
@@ -657,7 +658,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			if (pDSP_handle->codecData.size <= *codecoffset)
 				pDSP_handle->codecdata_copy = TRUE;
 		}
-		if (pDSP_handle->codecdata_copy == TRUE) {
+		else if (pDSP_handle->codecdata_copy == TRUE) {
 			ret = InputBufHandle(&pDSP_handle->inner_buf,
 						 InputBuf,
 						 InputSize,
@@ -831,7 +832,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			 (memcmp(pDSP_handle->outputFormat.layout,
 					 pDSP_handle->layout_bak,
 					 sizeof(uint32) * pDSP_handle->channels))) &&
-			(pDSP_handle->channels != 0)) {
+			(pDSP_handle->channels != 0) && *OutputSize > 0) {
 #ifdef DEBUG
 			TRACE("output format changed\n");
 #endif
@@ -889,10 +890,10 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	case AAC_PLUS:
 		/******************dedicate for aacplus dec*******************/
 		if (err == XA_NOT_ENOUGH_DATA) {
-			if (pDSP_handle->stream_type == STREAM_ADIF && InputSize >= *offset)
+			if (InputSize > *offset)
 				ret = XA_SUCCESS;
 			else
-			ret = ACODEC_NOT_ENOUGH_DATA;
+				ret = ACODEC_NOT_ENOUGH_DATA;
 		} else if (err == XA_CAPIBILITY_CHANGE) {
 			ret = ACODEC_CAPIBILITY_CHANGE;
 		} else if (err == XA_ERROR_STREAM) {
