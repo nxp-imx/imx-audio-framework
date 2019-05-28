@@ -843,29 +843,25 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			pDSP_handle->outputFormat.interleave = TRUE;
 			pDSP_handle->outputFormat.samplerate = pDSP_handle->samplerate;
 
-			if ((pDSP_handle->channels > 2)  &&
-			    (pDSP_handle->channels <= 8) &&
-				(!pDSP_handle->outputFormat.chan_pos_set)) {
-				if (aacd_channel_layouts[pDSP_handle->channels])
-					memcpy(pDSP_handle->outputFormat.layout,
-					       aacd_channel_layouts[pDSP_handle->channels],
-						   sizeof(uint32) * pDSP_handle->channels);
-			}
-			if (pDSP_handle->channels == 2) {
-				pDSP_handle->outputFormat.layout[0] = UA_CHANNEL_FRONT_LEFT;
-				pDSP_handle->outputFormat.layout[1] = UA_CHANNEL_FRONT_RIGHT;
-			}
-
-			memcpy(pDSP_handle->layout_bak,
-			       pDSP_handle->outputFormat.layout,
-				   sizeof(uint32) * pDSP_handle->channels);
-
 			if ((*OutputSize > 0) && (pDSP_handle->channels > 0))
 				channel_pos_convert(pDSP_handle,
 						    (uint8 *)(*OutputBuf),
 						    *OutputSize,
 						    pDSP_handle->channels,
 						    pDSP_handle->depth);
+
+			if ((pDSP_handle->channels > 2)  &&
+			    (pDSP_handle->channels <= 8) &&
+				(!pDSP_handle->outputFormat.chan_pos_set)) {
+				if (aacd_channel_layouts[pDSP_handle->channels])
+					memcpy(pDSP_handle->outputFormat.layout,
+							aacd_channel_layouts[pDSP_handle->channels],
+							sizeof(uint32) * pDSP_handle->channels);
+			}
+
+			memcpy(pDSP_handle->layout_bak,
+			       pDSP_handle->outputFormat.layout,
+				   sizeof(uint32) * pDSP_handle->channels);
 
 			ret =  ACODEC_CAPIBILITY_CHANGE;
 		}
