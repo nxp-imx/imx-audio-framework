@@ -648,7 +648,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 #ifdef DEBUG
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
 #endif
-	if (pDSP_handle->codec_type == OGG || pDSP_handle->component.comp_type == CODEC_FSL_AAC_DEC) {
+	if (pDSP_handle->codecData.buf && (pDSP_handle->codec_type == OGG || pDSP_handle->component.comp_type == CODEC_FSL_AAC_DEC)) {
 		if (pDSP_handle->codecdata_copy == FALSE) {
 			InputBufHandle(&pDSP_handle->inner_buf,
 						pDSP_handle->codecData.buf,
@@ -681,7 +681,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	inner_offset = &pDSP_handle->inner_buf.inner_offset;
 	inner_size = &pDSP_handle->inner_buf.inner_size;
 
-	if (pDSP_handle->component.comp_type < CODEC_FSL_OGG_DEC && pDSP_handle->component.comp_type != CODEC_AAC_DEC) {
+	if (pDSP_handle->component.comp_type < CODEC_FSL_OGG_DEC) {
 		if ((pDSP_handle->input_over == TRUE) &&
 			(!pDSP_handle->outptr_busy) &&
 			(pDSP_handle->last_output_size <= 0)) {
