@@ -128,7 +128,7 @@ int xf_input_port_put(struct xf_input_port *port, struct xf_message *m)
 }
 
 /* ...internal helper - input message completion */
-static inline int xf_input_port_complete(struct xf_input_port *port)
+int xf_input_port_complete(struct xf_input_port *port)
 {
 	/* ...dequeue message from queue */
 	struct xf_message   *m = xf_msg_dequeue(&port->queue);
@@ -234,14 +234,14 @@ int xf_input_port_fill(struct xf_input_port *port)
 
 		/* ...check if input buffer is processed completely */
 		remaining -= k;
-		if (remaining == 0) {
-			if (!xf_input_port_complete(port)) {
+		//if (remaining == 0) {
+			//if (!xf_input_port_complete(port)) {
 				/* ...no more input messages; break the loop */
 				break;
-			}
+			//}
 			/* ...update remaining counter */
-			remaining = port->remaining;
-		}
+			//remaining = port->remaining;
+		//}
 	}
 
 	/* ...update buffer positions */
@@ -289,7 +289,6 @@ void xf_input_port_consume(struct xf_input_port *port, u32 n)
 				port->flags ^= XF_INPUT_FLAG_EOS |
 					XF_INPUT_FLAG_DONE;
 
-				LOG1("input-port[%p] done\n", port);
 			}
 		} else {
 			/* ...advance message buffer pointer */

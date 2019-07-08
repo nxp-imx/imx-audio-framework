@@ -263,6 +263,7 @@ void xf_input_port_pad(struct xf_input_port *port, u8 pad);
 /* ...consume bytes from input buffer */
 void xf_input_port_consume(struct xf_input_port *port, u32 n);
 
+int xf_input_port_complete(struct xf_input_port *port);
 /* ...purge input port queue */
 void xf_input_port_purge(struct xf_input_port *port);
 
