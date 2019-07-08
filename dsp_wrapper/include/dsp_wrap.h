@@ -57,7 +57,8 @@
 
 /* ...number of max input buffers */
 #define INBUF_SIZE                      4096
-#define OUTBUF_SIZE                     4096*9
+/* Enlarge outbuf size for receive wma10 output */
+#define OUTBUF_SIZE                     8192*3*8*2
 
 #define N_ELEMENTS(arr)	(sizeof(arr) / sizeof((arr)[0]))
 
@@ -216,7 +217,7 @@ struct DSP_Handle {
 	bool inptr_busy, outptr_busy;
 	bool codecdata_copy;
 	unsigned int codecoffset;
-
+	int blockalign;
 };
 
 UA_ERROR_TYPE InputBufHandle(struct innerBuf *inner_buf,

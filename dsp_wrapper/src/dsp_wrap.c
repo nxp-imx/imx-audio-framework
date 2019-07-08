@@ -184,6 +184,9 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	case WBAMR:
 		comp_type = CODEC_FSL_WBAMR_DEC;
 		break;
+	case WMA:
+		comp_type = CODEC_FSL_WMA_DEC;
+		break;
 	default:
 #ifdef DEBUG
 		TRACE("DSP doesn't support this audio type!\n");
@@ -509,6 +512,23 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 			ParaType = -1;
 			break;
 		}
+	} else if (pDSP_handle->codec_type == WMA) {
+		switch (ParaType) {
+		case UNIA_OUTPUT_PCM_FORMAT:
+		case UNIA_CHAN_MAP_TABLE:
+			ParaType = -1;
+			break;
+		case UNIA_CODEC_DATA:
+			param.value = parameter->codecData.size;
+			break;
+		case UNIA_WMA_BlOCKALIGN:
+			param.value = parameter->blockalign;
+			pDSP_handle->blockalign = parameter->blockalign;
+			break;
+		case UNIA_WMA_VERSION:
+			param.value = parameter->version;
+			break;
+		}
 	}
 
 	param.id = ParaType;
@@ -591,6 +611,9 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle,
 		case WBAMR:
 			parameter->outbuf_alloc_size = 320*sizeof(short);
 			break;
+		case WMA:
+			parameter->outbuf_alloc_size = 8192*3*8*2;
+			break;
 		default:
 			parameter->outbuf_alloc_size = 16384;
 			break;
@@ -638,44 +661,62 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	uint32 *channel_map = NULL;
 	uint32 in_size = 0, in_off = 0, out_size = 0;
 	unsigned int *codecoffset = &pDSP_handle->codecoffset;
+	static int offset_copy = 0;
+	int sync_buf_flag = 0;
 
 	if (*OutputBuf)
 		buf_from_out = TRUE;
 
 	if (pDSP_handle->stream_type == STREAM_ADIF)
 		pDSP_handle->framed = 0;
+	if (pDSP_handle->codec_type == WMA) {
+		pDSP_handle->framed = 1;
+		sync_buf_flag = 1;
+	}
+	if (pDSP_handle->codec_type == AC3) {
+		pDSP_handle->framed = 1;
+		sync_buf_flag = 1;
+	}
 
 #ifdef DEBUG
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
 #endif
-	if (pDSP_handle->codecData.buf && (pDSP_handle->codec_type == OGG || pDSP_handle->component.comp_type == CODEC_FSL_AAC_DEC)) {
+	if (pDSP_handle->codecData.buf && (pDSP_handle->codec_type == OGG || pDSP_handle->component.comp_type == CODEC_FSL_AAC_DEC ||
+		pDSP_handle->codec_type == WMA)) {
 		if (pDSP_handle->codecdata_copy == FALSE) {
 			InputBufHandle(&pDSP_handle->inner_buf,
 						pDSP_handle->codecData.buf,
 						pDSP_handle->codecData.size,
 						codecoffset,
 						pDSP_handle->framed);
-			if (pDSP_handle->codecData.size <= *codecoffset)
-				pDSP_handle->codecdata_copy = TRUE;
 		}
-		else if (pDSP_handle->codecdata_copy == TRUE) {
+	} else
+		pDSP_handle->codecdata_copy = TRUE;
+
+	if (pDSP_handle->codecdata_copy == TRUE) {
+		if (sync_buf_flag) {
+			if (!pDSP_handle->inptr_busy) {
+						ret = InputBufHandle(&pDSP_handle->inner_buf,
+									 InputBuf,
+									 InputSize,
+									 &offset_copy,
+									 pDSP_handle->framed);
+						if (ret != ACODEC_SUCCESS)
+							return ret;
+						}
+		} else {
 			ret = InputBufHandle(&pDSP_handle->inner_buf,
-						 InputBuf,
-						 InputSize,
-						 offset,
-						 pDSP_handle->framed);
+							 InputBuf,
+							 InputSize,
+							 offset,
+							 pDSP_handle->framed);
 			if (ret != ACODEC_SUCCESS)
 				return ret;
 		}
-	} else {
-		ret = InputBufHandle(&pDSP_handle->inner_buf,
-						 InputBuf,
-						 InputSize,
-						 offset,
-						 pDSP_handle->framed);
-		if (ret != ACODEC_SUCCESS)
-			return ret;
 	}
+
+	if (pDSP_handle->codecData.size <= *codecoffset)
+		pDSP_handle->codecdata_copy = TRUE;
 
 	inbuf_data = pDSP_handle->inner_buf.data;
 	inner_offset = &pDSP_handle->inner_buf.inner_offset;
@@ -763,8 +804,16 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 #endif
 
 	err = comp_process(pDSP_handle, pIn, in_size, &in_off, pOut, &out_size);
+
 	*inner_size -= in_off;
 	*inner_offset += in_off;
+	if ((pDSP_handle->codec_type == WMA || pDSP_handle->codec_type == AC3) && sync_buf_flag == 1) {
+		if (pDSP_handle->inptr_busy == FALSE) {
+			*offset = offset_copy;
+			if (offset_copy >= InputSize)
+				offset_copy = 0;
+		}
+	}
 	if (buf_from_out)
 		memcpy(*OutputBuf, pOut, out_size);
 	*OutputSize = out_size;
@@ -873,7 +922,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 				*OutputBuf = NULL;
 			}
 		}
-
 		return ret;
 	}
 
@@ -886,7 +934,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	case AAC_PLUS:
 		/******************dedicate for aacplus dec*******************/
 		if (err == XA_NOT_ENOUGH_DATA) {
-			if (InputSize > *offset)
+			if (InputBuf && InputSize > *offset)
 				ret = XA_SUCCESS;
 			else
 				ret = ACODEC_NOT_ENOUGH_DATA;
@@ -987,6 +1035,18 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			ret = ACODEC_END_OF_STREAM;
 		break;
 	case WBAMR:
+		if (err == XA_END_OF_STREAM)
+			ret = ACODEC_END_OF_STREAM;
+		else if (err == XA_ERROR_STREAM)
+			ret = ACODEC_ERROR_STREAM;
+		break;
+	case WMA:
+		if (err == XA_NOT_ENOUGH_DATA) {
+			if (InputSize > *offset)
+				ret = ACODEC_SUCCESS;
+			else
+				ret = ACODEC_NOT_ENOUGH_DATA;
+			}
 		if (err == XA_END_OF_STREAM)
 			ret = ACODEC_END_OF_STREAM;
 		else if (err == XA_ERROR_STREAM)
