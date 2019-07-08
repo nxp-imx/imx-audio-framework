@@ -525,7 +525,7 @@ static UA_ERROR_TYPE xa_codec_preprocess(struct XACodecBase *base)
 			}
 		}
 
-		LOG1("input-buffer fill-level: %u bytes\n", filled);
+		LOG1("input-buffer fill-level: %d bytes\n", filled);
 
 		/* ...check if input stream is over */
 		if (xf_input_port_done(&codec->input)) {
@@ -574,8 +574,28 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 		/* ...consume specified number of bytes from input port */
 		xf_input_port_consume(&codec->input, consumed);
 
-		/* ...clear input-setup flag */
-		base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
+		if (codec->input.filled) {
+			if (codec->input.remaining)
+				xf_input_port_fill(&codec->input);
+
+		/* ...set input buffer pointer as needed */
+			XA_API(base, XF_API_CMD_SET_INPUT_PTR, 0, codec->input.buffer);
+
+		/* ...specify number of bytes available in the input buffer */
+			XA_API(base,
+				   XF_API_CMD_SET_INPUT_BYTES,
+				   0,
+				   &codec->input.filled);
+		}
+
+		if (!xf_input_port_done(&codec->input) &&(ret == ACODEC_NOT_ENOUGH_DATA || !codec->input.filled)) {
+			if (!codec->input.remaining) {
+				xf_input_port_complete(&codec->input);
+
+			/* ...clear input-setup flag */
+			base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
+			}
+		}
 	}
 
 	/* ...output buffer maintenance; check if we have produced anything */
