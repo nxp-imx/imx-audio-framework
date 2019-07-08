@@ -51,7 +51,7 @@
 
 /* ...number of max input buffers */
 #define INBUF_SIZE                      4096
-#define OUTBUF_SIZE                     4096*9
+#define OUTBUF_SIZE                     8192*3*8*2
 
 /* ...pre-declaration of struct */
 struct xaf_pipeline;

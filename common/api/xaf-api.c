@@ -277,7 +277,10 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		p_comp->dec_id = "audio-decoder/nbamr";
 	} else if (comp_type == CODEC_FSL_WBAMR_DEC) {
 		p_comp->dec_id = "audio-decoder/wbamr";
+	} else if (comp_type == CODEC_FSL_WMA_DEC) {
+		p_comp->dec_id = "audio-decoder/wma";
 	}
+
 
 	if (comp_type < CODEC_FSL_OGG_DEC)
 		strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
@@ -295,6 +298,8 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		strcat(lib_wrap_path, "lib_nbamrd_wrap_dsp.so");
 	else if (comp_type == CODEC_FSL_WBAMR_DEC)
 		strcat(lib_wrap_path, "lib_wbamrd_wrap_dsp.so");
+	else if (comp_type == CODEC_FSL_WMA_DEC)
+		strcat(lib_wrap_path, "lib_wma10d_wrap_dsp.so");
 
 	p_comp->codec_wrap_lib.lib_type = DSP_CODEC_WRAP_LIB;
 
