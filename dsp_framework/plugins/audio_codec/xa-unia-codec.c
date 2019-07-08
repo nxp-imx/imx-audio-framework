@@ -295,7 +295,18 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 		default:
 			break;
 		}
+	} else if (d->codec_id == CODEC_FSL_WMA_DEC) {
+		switch (i_idx) {
+		/*******************dedicate for wma dec******************/
+		case UNIA_WMA_BlOCKALIGN:
+			parameter.blockalign = *(u32 *)pv_value;
+			break;
+		case UNIA_WMA_VERSION:
+			parameter.version = *(u32 *)pv_value;
+			break;
+		}
 	}
+
 
 	ret = d->WrapFun.SetPara(d->pWrpHdl, i_idx, &parameter);
 
