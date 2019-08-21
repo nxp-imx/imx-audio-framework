@@ -10,11 +10,11 @@
 SRC_DIR     = ./
 INC_DIR     = ./include
 
-LINK_DIR    = $(TOOL_PATH)/builds/RF-2016.4-linux/hifi4_nxp_v3_3_1_2_dev/xtensa-elf/lib/mainsim
-SYSTEM_DIR  = $(TOOL_PATH)/builds/RF-2016.4-linux/hifi4_nxp_v3_3_1_2_dev/config
+LINK_DIR    = $(TOOL_PATH)/builds/RF-2016.4-linux/$(XTENSA_CORE)/xtensa-elf/lib/mainsim
+SYSTEM_DIR  = $(TOOL_PATH)/builds/RF-2016.4-linux/$(XTENSA_CORE)/config
 
-CFLAGS      += -mlongcalls -fmessage-length=0 -DPROC_hifi4_nxp_v3_3_1_2_dev       \
-			  -DCONFIG_hifi4_nxp_v3_3_1_2_dev -DINCL_DEMO_DEC=0 -DPROC_hifi2_std     \
+CFLAGS      += -mlongcalls -fmessage-length=0 -DPROC_$(XTENSA_CORE)       \
+			  -DCONFIG_$(XTENSA_CORE) -DINCL_DEMO_DEC=0 -DPROC_hifi2_std     \
 			  -DCONFIG_hifi2_std -DDPU_LOCAL_MEM_DIRECT_MAP -DINCL_MP3_DEC=0       \
 			  --xtensa-core=$(XTENSA_CORE)                                         \
 			  --xtensa-system=$(SYSTEM_DIR)
