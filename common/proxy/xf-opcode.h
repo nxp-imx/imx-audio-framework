@@ -194,14 +194,22 @@ struct __attribute__((__packed__)) xf_get_param_msg {
  * XF_SET_PARAM message
  ******************************************************************************/
 
+typedef union DATA {
+	u32                 value;
+
+	struct {
+		u32 size;
+		u32 *channel_table[10];
+	} chan_map_tab;
+} data_t;
+
 /* ...component initialization parameter */
 struct __attribute__ ((__packed__)) xf_set_param_msg {
 	/* ...index of parameter passed to SET_CONFIG_PARAM call */
 	u32                 id;
 
 	/* ...value of parameter */
-	u32                 value;
-
+	data_t              mixData;
 };
 
 /* ...length of the command message */

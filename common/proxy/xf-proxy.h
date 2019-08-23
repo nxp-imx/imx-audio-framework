@@ -64,7 +64,8 @@ typedef void (*xf_response_cb)(struct xf_handle *h, struct xf_user_msg *msg);
 enum xf_pool_type {
 	XF_POOL_AUX = 0,
 	XF_POOL_INPUT = 1,
-	XF_POOL_OUTPUT = 2
+	XF_POOL_OUTPUT = 2,
+	XF_POOL_PARAM = 3
 };
 
 /*******************************************************************************
