@@ -58,7 +58,7 @@ static inline u32 xf_ipc_b2a(struct dsp_main_struct *dsp_config, void *b)
 }
 
 /* ...translate shared proxy address to local pointer */
-static inline void *xf_ipc_a2b(struct dsp_main_struct *dsp_config, u32 address)
+void *xf_ipc_a2b(struct dsp_main_struct *dsp_config, u32 address)
 {
 	void *start = (void *)dsp_config->dpu_ext_msg.scratch_buf_phys;
 
