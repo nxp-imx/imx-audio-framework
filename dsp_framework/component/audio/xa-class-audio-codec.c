@@ -588,13 +588,13 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 				   &codec->input.filled);
 		}
 
-		if (!xf_input_port_done(&codec->input) &&(ret == ACODEC_NOT_ENOUGH_DATA || !codec->input.filled)) {
-			if (!codec->input.remaining) {
-				xf_input_port_complete(&codec->input);
+	}
+	if (!xf_input_port_done(&codec->input) &&(ret == ACODEC_NOT_ENOUGH_DATA || !codec->input.filled)) {
+		if (!codec->input.remaining) {
+			xf_input_port_complete(&codec->input);
 
-			/* ...clear input-setup flag */
-			base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
-			}
+		/* ...clear input-setup flag */
+		base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
 		}
 	}
 

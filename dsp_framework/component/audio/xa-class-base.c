@@ -120,9 +120,13 @@ static UA_ERROR_TYPE xa_base_postinit(struct XACodecBase *base)
 /* ...SET-PARAM processing (enabled in all states) */
 UA_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 {
+	struct dsp_main_struct *dsp_config =
+		(struct dsp_main_struct *)base->component.private_data;
+
 	struct xf_set_param_msg *cmd = m->buffer;
-	s32 command, value;
-	u32 n, i;
+	s32 command;
+	data_t value;
+	u32 n, i, j, pos;
 	UA_ERROR_TYPE ret;
 
 	/* ...check if we need to do initialization */
@@ -140,8 +144,20 @@ UA_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 
 	/* ...send the collection of codec  parameters */
 	for (i = 0; i < n; i++) {
+		pos = 0;
 		command = cmd[i].id;
-		value = cmd[i].value;
+		value = cmd[i].mixData;
+
+		/* translate addr saved in param to local addr when special command */
+		if (command == UNIA_CHAN_MAP_TABLE) {
+			value.chan_map_tab.size = cmd[i].mixData.chan_map_tab.size;
+			for(j = 1; j < 2 * value.chan_map_tab.size; j = j+2) {
+				if (cmd[i].mixData.chan_map_tab.channel_table[j]) {
+					value.chan_map_tab.channel_table[pos] = xf_ipc_a2b(dsp_config, cmd[i].mixData.chan_map_tab.channel_table[j]);
+				}
+				pos++;
+			}
+		}
 
 		/* ...apply parameter; pass to codec-specific function */
 		LOG2("set-param: [%d], %d\n", command, value);
