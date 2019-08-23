@@ -367,16 +367,16 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 
 	switch (ParaType) {
 	case UNIA_SAMPLERATE:
-		param.value = parameter->samplerate;
+		param.mixData.value = parameter->samplerate;
 		break;
 	case UNIA_CHANNEL:
 		if (parameter->channels == 0 || parameter->channels > 8)
 			return ACODEC_PARA_ERROR;
-		param.value = parameter->channels;
+		param.mixData.value = parameter->channels;
 		break;
 	case UNIA_FRAMED:
 		pDSP_handle->framed = parameter->framed;
-		param.value = parameter->framed;
+		param.mixData.value = parameter->framed;
 		break;
 	case UNIA_DEPTH:
 		if (parameter->depth != 16 &&
@@ -384,31 +384,49 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 			parameter->depth != 32)
 			return ACODEC_PARA_ERROR;
 
-		param.value = parameter->depth;
+		param.mixData.value = parameter->depth;
 		pDSP_handle->depth_is_set = 1;
 		break;
 	case UNIA_CODEC_DATA:
 		pDSP_handle->codecData = parameter->codecData;
-		param.value = parameter->codecData.size;
+		param.mixData.value = parameter->codecData.size;
 		break;
 	case UNIA_DOWNMIX_STEREO:
 		pDSP_handle->downmix = parameter->downmix;
 		break;
 	case UNIA_TO_STEREO:
-		param.value = parameter->mono_to_stereo;
+		param.mixData.value = parameter->mono_to_stereo;
 		break;
 	case UNIA_STREAM_TYPE:
 		pDSP_handle->stream_type = parameter->stream_type;
-		param.value = parameter->stream_type;
+		param.mixData.value = parameter->stream_type;
 		break;
 	case UNIA_BITRATE:
-		param.value = parameter->bitrate;
+		param.mixData.value = parameter->bitrate;
 		break;
 	case UNIA_OUTPUT_PCM_FORMAT:
 		pDSP_handle->outputFormat = parameter->outputFormat;
 		break;
 	case UNIA_CHAN_MAP_TABLE:
 		pDSP_handle->chan_map_tab = parameter->chan_map_tab;
+		memcpy(&param.mixData.chan_map_tab, &parameter->chan_map_tab, sizeof(CHAN_TABLE));
+
+		{
+			int i;
+			u32 *channel_map;
+			u32 *dest;
+			u32 *dest_phy;
+			dest = pDSP_handle->component.paramptr;
+			for(i = 1; i < 10; i++) {
+				channel_map = parameter->chan_map_tab.channel_table[i];
+				if (channel_map) {
+					memcpy(dest, channel_map, sizeof(uint32) * i);
+					dest_phy =  xf_proxy_b2a(&pDSP_handle->adev.proxy, dest);
+					param.mixData.chan_map_tab.channel_table[i] = dest_phy;
+					dest += i;
+				}
+			}
+		}
 		break;
 	default:
 		break;
@@ -419,13 +437,13 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		switch (ParaType) {
 		/*****dedicate for mp3 dec and mp2 dec*****/
 		case UNIA_MP3_DEC_CRC_CHECK:
-			param.value = parameter->crc_check;
+			param.mixData.value = parameter->crc_check;
 			break;
 		case UNIA_MP3_DEC_MCH_ENABLE:
-			param.value = parameter->mch_enable;
+			param.mixData.value = parameter->mch_enable;
 			break;
 		case UNIA_MP3_DEC_NONSTD_STRM_SUPPORT:
-			param.value = parameter->nonstd_strm_support;
+			param.mixData.value = parameter->nonstd_strm_support;
 			break;
 		default:
 			break;
@@ -434,7 +452,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		switch (ParaType) {
 		/*****dedicate for bsac dec***************/
 		case UNIA_BSAC_DEC_DECODELAYERS:
-			param.value = parameter->layers;
+			param.mixData.value = parameter->layers;
 			break;
 		default:
 			break;
@@ -449,7 +467,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		switch (ParaType) {
 		/*****dedicate for aacplus dec***********/
 		case UNIA_CHANNEL:
-			if (param.value > 2) {
+			if (param.mixData.value > 2) {
 #ifdef DEBUG
 				TRACE("Error: multi-channnel decoding doesn't support for AACPLUS\n");
 #endif
@@ -457,13 +475,13 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 			}
 			break;
 		case UNIA_AACPLUS_DEC_BDOWNSAMPLE:
-			param.value = parameter->bdownsample;
+			param.mixData.value = parameter->bdownsample;
 			break;
 		case UNIA_AACPLUS_DEC_BBITSTREAMDOWNMIX:
-			param.value = parameter->bbitstreamdownmix;
+			param.mixData.value = parameter->bbitstreamdownmix;
 			break;
 		case UNIA_AACPLUS_DEC_CHANROUTING:
-			param.value = parameter->chanrouting;
+			param.mixData.value = parameter->chanrouting;
 			break;
 		default:
 			break;
@@ -472,13 +490,13 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		switch (ParaType) {
 		/*****************dedicate for dabplus dec******************/
 		case UNIA_DABPLUS_DEC_BDOWNSAMPLE:
-			param.value = parameter->bdownsample;
+			param.mixData.value = parameter->bdownsample;
 			break;
 		case UNIA_DABPLUS_DEC_BBITSTREAMDOWNMIX:
-			param.value = parameter->bbitstreamdownmix;
+			param.mixData.value = parameter->bbitstreamdownmix;
 			break;
 		case UNIA_DABPLUS_DEC_CHANROUTING:
-			param.value = parameter->chanrouting;
+			param.mixData.value = parameter->chanrouting;
 			break;
 		default:
 			break;
@@ -487,19 +505,19 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		switch (ParaType) {
 		/*******************dedicate for sbc enc******************/
 		case UNIA_SBC_ENC_SUBBANDS:
-			param.value = parameter->enc_subbands;
+			param.mixData.value = parameter->enc_subbands;
 			break;
 		case UNIA_SBC_ENC_BLOCKS:
-			param.value = parameter->enc_blocks;
+			param.mixData.value = parameter->enc_blocks;
 			break;
 		case UNIA_SBC_ENC_SNR:
-			param.value = parameter->enc_snr;
+			param.mixData.value = parameter->enc_snr;
 			break;
 		case UNIA_SBC_ENC_BITPOOL:
-			param.value = parameter->enc_bitpool;
+			param.mixData.value = parameter->enc_bitpool;
 			break;
 		case UNIA_SBC_ENC_CHMODE:
-			param.value = parameter->enc_chmode;
+			param.mixData.value = parameter->enc_chmode;
 			break;
 		default:
 			break;
@@ -508,7 +526,6 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 			|| pDSP_handle->codec_type == AC3) {
 		switch (ParaType) {
 		case UNIA_OUTPUT_PCM_FORMAT:
-		case UNIA_CHAN_MAP_TABLE:
 			ParaType = -1;
 			break;
 		}
@@ -519,14 +536,14 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 			ParaType = -1;
 			break;
 		case UNIA_CODEC_DATA:
-			param.value = parameter->codecData.size;
+			param.mixData.value = parameter->codecData.size;
 			break;
 		case UNIA_WMA_BlOCKALIGN:
-			param.value = parameter->blockalign;
+			param.mixData.value = parameter->blockalign;
 			pDSP_handle->blockalign = parameter->blockalign;
 			break;
 		case UNIA_WMA_VERSION:
-			param.value = parameter->version;
+			param.mixData.value = parameter->version;
 			break;
 		}
 	}
@@ -535,7 +552,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 	err = xaf_comp_set_config(&pDSP_handle->component, 1, &param);
 
 #ifdef DEBUG
-	TRACE("SetPara: cmd = 0x%x, value = %d\n", ParaType, param.value);
+	TRACE("SetPara: cmd = 0x%x, value = %d\n", ParaType, param.mixData.value);
 #endif
 
 	if (err)
@@ -902,10 +919,18 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			if ((pDSP_handle->channels > 2)  &&
 			    (pDSP_handle->channels <= 8) &&
 				(!pDSP_handle->outputFormat.chan_pos_set)) {
-				if (aacd_channel_layouts[pDSP_handle->channels])
-					memcpy(pDSP_handle->outputFormat.layout,
-							aacd_channel_layouts[pDSP_handle->channels],
-							sizeof(uint32) * pDSP_handle->channels);
+				if (pDSP_handle->codec_type != AC3) {
+					if (aacd_channel_layouts[pDSP_handle->channels])
+						memcpy(pDSP_handle->outputFormat.layout,
+								aacd_channel_layouts[pDSP_handle->channels],
+								sizeof(uint32) * pDSP_handle->channels);
+				}
+				else {
+					if (ac3d_channel_layouts[pDSP_handle->channels])
+						memcpy(pDSP_handle->outputFormat.layout,
+								ac3d_channel_layouts[pDSP_handle->channels],
+								sizeof(uint32) * pDSP_handle->channels);
+				}
 			}
 
 			memcpy(pDSP_handle->layout_bak,

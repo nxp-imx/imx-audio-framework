@@ -220,15 +220,20 @@ void  channel_pos_convert(UniACodec_Handle pua_handle,
 	int16 tmp_16[8];
 	int32 tmp_32[8];
 	uint32 *dest_layout = pDSP_handle->outputFormat.layout;
-	uint32 *aac_layout = aacd_channel_layouts[channels];
+	uint32 *fixed_layout = aacd_channel_layouts[channels];
 	int16 *ptr_16 = (int16 *)data_in;
 	uint8 *ptr_8;
+
+	if (pDSP_handle->codec_type != AC3)
+		fixed_layout = aacd_channel_layouts[channels];
+	else
+		fixed_layout = aacd_channel_layouts[channels];
 
 	if (pDSP_handle->outputFormat.chan_pos_set == TRUE) {
 		// If set channel layout
 		for (i = 0; i < channels; i++) {
 			for (j = 0; j < channels; j++) {
-				if (dest_layout[i] == aac_layout[j]) {
+				if (dest_layout[i] == fixed_layout[j]) {
 					ChanMap[i] = j;
 					break;
 				}
@@ -240,32 +245,33 @@ void  channel_pos_convert(UniACodec_Handle pua_handle,
 		}
 	}
 
-	if (pDSP_handle->outputFormat.chan_pos_set) {
-		if (depth == 16) {
-			for (i = 0; i < loopcnt; i += channels) {
-				for (j = 0; j < channels; j++)
-					tmp_16[j] = ptr_16[i + ChanMap[j]];
+	if (pDSP_handle->codec_type != AC3)
+		if (pDSP_handle->outputFormat.chan_pos_set) {
+			if (depth == 16) {
+				for (i = 0; i < loopcnt; i += channels) {
+					for (j = 0; j < channels; j++)
+						tmp_16[j] = ptr_16[i + ChanMap[j]];
 
-				for (j = 0; j < channels; j++)
-					*ptr_16++ = tmp_16[j];
-			}
-		} else if (depth == 24) {
-			for (i = 0; i < loopcnt; i += channels) {
-				for (j = 0; j < channels; j++) {
-					ptr_8 = data_in + (i + ChanMap[j]) * 3;
-					tmp_32[j] = (*ptr_8)    |
-						(*(ptr_8 + 1) << 8) |
-						(*(ptr_8 + 2) << 16);
+					for (j = 0; j < channels; j++)
+						*ptr_16++ = tmp_16[j];
 				}
-				for (j = 0; j < channels; j++) {
-					ptr_8 = data_in + (i + j) * 3;
-					*ptr_8 = tmp_32[j] & 0xff;
-					*(ptr_8 + 1) = (tmp_32[j] >> 8) & 0xff;
-					*(ptr_8 + 2) = (tmp_32[j] >> 16) & 0xff;
+			} else if (depth == 24) {
+				for (i = 0; i < loopcnt; i += channels) {
+					for (j = 0; j < channels; j++) {
+						ptr_8 = data_in + (i + ChanMap[j]) * 3;
+						tmp_32[j] = (*ptr_8)    |
+							(*(ptr_8 + 1) << 8) |
+							(*(ptr_8 + 2) << 16);
+					}
+					for (j = 0; j < channels; j++) {
+						ptr_8 = data_in + (i + j) * 3;
+						*ptr_8 = tmp_32[j] & 0xff;
+						*(ptr_8 + 1) = (tmp_32[j] >> 8) & 0xff;
+						*(ptr_8 + 2) = (tmp_32[j] >> 16) & 0xff;
+					}
 				}
 			}
 		}
-	}
 }
 
 /* cancel_unused_channel_data - transfer 2 channel output to 1 channel output
