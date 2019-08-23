@@ -107,7 +107,7 @@ int xaf_comp_set_config(struct xaf_comp *p_comp, u32 num_param, void *p_param)
 
 	for (i = 0; i < num_param; i++) {
 		smsg[i].id = param[i].id;
-		smsg[i].value = param[i].value;
+		smsg[i].mixData = param[i].mixData;
 	}
 
 	/* ...pass command to the component */
@@ -347,6 +347,17 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		return ret;
 	}
 
+	/* ...allocate parameter buffer */
+	ret = xf_pool_alloc(p_proxy,
+			1,
+			PARAM_SIZE,
+			XF_POOL_PARAM,
+			&p_comp->parampool);
+	if (ret) {
+		TRACE("allocate component param buffer error: %d\n", ret);
+		return ret;
+	}
+
 	/* ...initialize input buffer pointer */
 	buf   = xf_buffer_get(p_comp->inpool);
 	p_comp->inptr = xf_buffer_data(buf);
@@ -354,6 +365,10 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 	/* ...initialize output buffer pointer */
 	buf   = xf_buffer_get(p_comp->outpool);
 	p_comp->outptr = xf_buffer_data(buf);
+
+	/* ...initialize param buffer pointer */
+	buf   = xf_buffer_get(p_comp->parampool);
+	p_comp->paramptr = xf_buffer_data(buf);
 
 	return ret;
 }
@@ -379,6 +394,8 @@ int xaf_comp_delete(struct xaf_comp *p_comp)
 
 	/* ...free component output buffer */
 	xf_pool_free(p_comp->outpool);
+
+	xf_pool_free(p_comp->parampool);
 
 	return ret;
 }

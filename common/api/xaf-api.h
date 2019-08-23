@@ -52,6 +52,7 @@
 /* ...number of max input buffers */
 #define INBUF_SIZE                      4096
 #define OUTBUF_SIZE                     8192*3*8*2
+#define PARAM_SIZE                      120
 
 /* ...pre-declaration of struct */
 struct xaf_pipeline;
@@ -78,8 +79,10 @@ struct xaf_comp {
 
 	struct xf_pool  *inpool;
 	struct xf_pool  *outpool;
+	struct xf_pool  *parampool;
 	void            *inptr;
 	void            *outptr;
+	void            *paramptr;
 
 	struct lib_info codec_lib;
 	struct lib_info codec_wrap_lib;
