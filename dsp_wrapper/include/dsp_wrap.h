@@ -59,6 +59,8 @@
 #define INBUF_SIZE                      4096
 /* Enlarge outbuf size for receive wma10 output */
 #define OUTBUF_SIZE                     8192*3*8*2
+/* size of parameter buffer for pass complex parameter */
+#define PARAM_SIZE                      120
 
 #define N_ELEMENTS(arr)	(sizeof(arr) / sizeof((arr)[0]))
 
@@ -162,6 +164,61 @@ static uint32 *aacd_channel_layouts[] = {
 struct lastErr {
 	int32 ErrType;
 	char *ErrMsg;
+};
+
+static uint32 ac3d_1channel_layout[] = {
+	/* FC */
+	UA_CHANNEL_FRONT_CENTER,
+};
+
+static uint32 ac3d_2channel_layout[] = {
+	/* FL,FR */
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_RIGHT,
+};
+
+static uint32 ac3d_3channel_layout[] = {
+	/* FL,FC,FR */
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_CENTER,
+	UA_CHANNEL_FRONT_RIGHT,
+};
+
+static uint32 ac3d_4channel_layout[] = {
+	/* FL,FR,BL,BR */
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_RIGHT,
+	UA_CHANNEL_REAR_LEFT,
+	UA_CHANNEL_REAR_RIGHT,
+};
+
+static uint32 ac3d_5channel_layout[] = {
+	/* FL,FC,FR,BL,BR */
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_CENTER,
+	UA_CHANNEL_FRONT_RIGHT,
+	UA_CHANNEL_REAR_LEFT,
+	UA_CHANNEL_REAR_RIGHT
+};
+
+static uint32 ac3d_6channel_layout[] = {
+	/* FC,FL,FR,BL,BR,LFE */
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_CENTER,
+	UA_CHANNEL_FRONT_RIGHT,
+	UA_CHANNEL_REAR_LEFT,
+	UA_CHANNEL_REAR_RIGHT,
+	UA_CHANNEL_LFE
+};
+
+static uint32* ac3d_channel_layouts[] = {
+	NULL,
+	ac3d_1channel_layout, // 1
+	ac3d_2channel_layout, // 2
+	ac3d_3channel_layout,
+	ac3d_4channel_layout,
+	ac3d_5channel_layout,
+	ac3d_6channel_layout,
 };
 
 struct innerBuf {
