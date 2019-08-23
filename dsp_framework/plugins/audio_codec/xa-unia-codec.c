@@ -210,6 +210,9 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 		parameter.codecData.buf = NULL;
 		parameter.codecData.size = *(u32 *)pv_value;
 		break;
+	case UNIA_CHAN_MAP_TABLE:
+		memcpy(&parameter.chan_map_tab, (u32 *)pv_value, sizeof(CHAN_TABLE));
+		break;
 	default:
 		break;
 	}
