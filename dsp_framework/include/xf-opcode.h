@@ -173,6 +173,29 @@ struct __attribute__((__packed__)) xf_start_msg {
 };
 
 /*******************************************************************************
+ * bascial message
+ ******************************************************************************/
+typedef union DATA {
+	u32                 value;
+
+	struct {
+		u32 size;
+		u32 channel_table[10];
+	} chan_map_tab;
+
+	struct {
+		u32 samplerate;
+		u32 width;
+		u32 depth;
+		u32 channels;
+		u32 endian;
+		u32 interleave;
+		u32 layout[12];
+		u32 chan_pos_set;  // indicate if channel position is set outside or use codec default
+	} outputFormat;
+} data_t;
+
+/*******************************************************************************
  * XF_GET_PARAM message
  ******************************************************************************/
 
@@ -182,7 +205,7 @@ struct __attribute__((__packed__)) xf_get_param_msg {
 	u32                 id;
 
 	/* ...array of parameters values */
-	u32                 value;
+	data_t                 mixData;
 
 };
 
@@ -193,17 +216,6 @@ struct __attribute__((__packed__)) xf_get_param_msg {
 /*******************************************************************************
  * XF_SET_PARAM message
  ******************************************************************************/
-
-/* ...component initialization parameter */
-
-typedef union DATA {
-	u32                 value;
-
-	struct {
-		u32 size;
-		u32* channel_table[10];
-	} chan_map_tab;
-} data_t;
 
 struct __attribute__((__packed__)) xf_set_param_msg {
 	/* ...index of parameter passed to SET_CONFIG_PARAM call */
