@@ -310,7 +310,6 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 		}
 	}
 
-
 	ret = d->WrapFun.SetPara(d->pWrpHdl, i_idx, &parameter);
 
 	return ret;
@@ -340,6 +339,7 @@ static UA_ERROR_TYPE xf_uniacodec_getparam(struct XFUniaCodec *d,
 		*(u32 *)pv_value = param.channels;
 		break;
 	case UNIA_OUTPUT_PCM_FORMAT:
+		memcpy(pv_value, &param.outputFormat, sizeof(UniAcodecOutputPCMFormat));
 		break;
 	case UNIA_CODEC_DESCRIPTION:
 		break;
