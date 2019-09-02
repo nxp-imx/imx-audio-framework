@@ -179,7 +179,7 @@ int xaf_comp_get_config(struct xaf_comp *p_comp, u32 num_param, void *p_param)
 	}
 
 	for (i = 0; i < num_param; i++)
-		param[i].value = smsg[i].value;
+		param[i].mixData = smsg[i].mixData;
 
 	return 0;
 }
