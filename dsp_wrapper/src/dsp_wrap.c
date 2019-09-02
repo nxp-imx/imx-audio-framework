@@ -409,19 +409,18 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		break;
 	case UNIA_CHAN_MAP_TABLE:
 		pDSP_handle->chan_map_tab = parameter->chan_map_tab;
-		memcpy(&param.mixData.chan_map_tab, &parameter->chan_map_tab, sizeof(CHAN_TABLE));
-
+		param.mixData.chan_map_tab.size = parameter->chan_map_tab.size;
 		{
 			int i;
 			u32 *channel_map;
 			u32 *dest;
-			u32 *dest_phy;
+			u32 dest_phy;
 			dest = pDSP_handle->component.paramptr;
 			for(i = 1; i < 10; i++) {
 				channel_map = parameter->chan_map_tab.channel_table[i];
 				if (channel_map) {
 					memcpy(dest, channel_map, sizeof(uint32) * i);
-					dest_phy =  xf_proxy_b2a(&pDSP_handle->adev.proxy, dest);
+					dest_phy =  (int)(intptr_t)xf_proxy_b2a(&pDSP_handle->adev.proxy, dest);
 					param.mixData.chan_map_tab.channel_table[i] = dest_phy;
 					dest += i;
 				}
@@ -582,25 +581,27 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle,
 	case UNIA_SAMPLERATE:
 		msg.id = UNIA_SAMPLERATE;
 		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
-		parameter->samplerate = msg.value;
+		parameter->samplerate = msg.mixData.value;
 		break;
 	case UNIA_CHANNEL:
 		msg.id = UNIA_CHANNEL;
 		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
-		parameter->channels = msg.value;
+		parameter->channels = msg.mixData.value;
 		break;
 	case UNIA_DEPTH:
 		msg.id = UNIA_DEPTH;
 		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
-		parameter->depth = msg.value;
+		parameter->depth = msg.mixData.value;
 		break;
 	case UNIA_CONSUMED_LENGTH:
 		msg.id = UNIA_CONSUMED_LENGTH;
 		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
-		parameter->consumed_length = msg.value;
+		parameter->consumed_length = msg.mixData.value;
 		break;
 	case UNIA_OUTPUT_PCM_FORMAT:
-		parameter->outputFormat = pDSP_handle->outputFormat;
+		msg.id = UNIA_OUTPUT_PCM_FORMAT;
+		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
+		memcpy(&parameter->outputFormat, &msg.mixData.outputFormat, sizeof(UniAcodecOutputPCMFormat));
 		break;
 	case UNIA_CODEC_DESCRIPTION:
 		pDSP_handle->codcDesc = "dsp codec version";
@@ -679,21 +680,12 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	uint32 in_size = 0, in_off = 0, out_size = 0;
 	unsigned int *codecoffset = &pDSP_handle->codecoffset;
 	static int offset_copy = 0;
-	int sync_buf_flag = 0;
 
 	if (*OutputBuf)
 		buf_from_out = TRUE;
 
 	if (pDSP_handle->stream_type == STREAM_ADIF)
 		pDSP_handle->framed = 0;
-	if (pDSP_handle->codec_type == WMA) {
-		pDSP_handle->framed = 1;
-		sync_buf_flag = 1;
-	}
-	if (pDSP_handle->codec_type == AC3) {
-		pDSP_handle->framed = 1;
-		sync_buf_flag = 1;
-	}
 
 #ifdef DEBUG
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
@@ -705,30 +697,23 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 						pDSP_handle->codecData.buf,
 						pDSP_handle->codecData.size,
 						codecoffset,
-						pDSP_handle->framed);
+						0);
 		}
 	} else
 		pDSP_handle->codecdata_copy = TRUE;
 
 	if (pDSP_handle->codecdata_copy == TRUE) {
-		if (sync_buf_flag) {
-			if (!pDSP_handle->inptr_busy) {
-						ret = InputBufHandle(&pDSP_handle->inner_buf,
-									 InputBuf,
-									 InputSize,
-									 &offset_copy,
-									 pDSP_handle->framed);
-						if (ret != ACODEC_SUCCESS)
-							return ret;
-						}
-		} else {
+		if (!pDSP_handle->inptr_busy) {
 			ret = InputBufHandle(&pDSP_handle->inner_buf,
-							 InputBuf,
-							 InputSize,
-							 offset,
-							 pDSP_handle->framed);
-			if (ret != ACODEC_SUCCESS)
+						 InputBuf,
+						 InputSize,
+						 &offset_copy,
+						 pDSP_handle->framed);
+			if (ret != ACODEC_SUCCESS) {
+				*offset = offset_copy;
+				offset_copy = 0;
 				return ret;
+			}
 		}
 	}
 
@@ -824,13 +809,13 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 
 	*inner_size -= in_off;
 	*inner_offset += in_off;
-	if ((pDSP_handle->codec_type == WMA || pDSP_handle->codec_type == AC3) && sync_buf_flag == 1) {
-		if (pDSP_handle->inptr_busy == FALSE) {
-			*offset = offset_copy;
-			if (offset_copy >= InputSize)
-				offset_copy = 0;
-		}
+
+	if (pDSP_handle->inptr_busy == FALSE) {
+		*offset = offset_copy;
+		if (offset_copy >= InputSize)
+			offset_copy = 0;
 	}
+
 	if (buf_from_out)
 		memcpy(*OutputBuf, pOut, out_size);
 	*OutputSize = out_size;
@@ -849,9 +834,10 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 
 		xaf_comp_get_config(&pDSP_handle->component, 3, &param[0]);
 
-		pDSP_handle->samplerate = param[0].value;
-		pDSP_handle->channels = param[1].value;
-		pDSP_handle->depth = param[2].value;
+		pDSP_handle->samplerate = param[0].mixData.value;
+		pDSP_handle->channels = param[1].mixData.value;
+		pDSP_handle->depth = param[2].mixData.value;
+
 		if (pDSP_handle->component.comp_type < CODEC_FSL_OGG_DEC) {
 			if ((pDSP_handle->channels == 1) &&
 				((pDSP_handle->codec_type == AAC)      ||
@@ -865,81 +851,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			}
 		}
 
-		if ((pDSP_handle->codec_type != SBCENC) &&
-		    (pDSP_handle->chan_map_tab.size != 0) &&
-			(pDSP_handle->outputFormat.chan_pos_set == FALSE)) {
-			if (pDSP_handle->channels <=
-					pDSP_handle->chan_map_tab.size) {
-				int channel;
-
-				channel = pDSP_handle->channels;
-				channel_map = pDSP_handle->chan_map_tab.channel_table[channel];
-				if (channel_map) {
-					memcpy(pDSP_handle->outputFormat.layout,
-					       channel_map, sizeof(uint32) * channel);
-					pDSP_handle->outputFormat.chan_pos_set = TRUE;
-				}
-			} else {
-				if (*OutputSize ==  0) {
-					if (*OutputBuf && (buf_from_out == FALSE)) {
-						pDSP_handle->sMemOps.Free(*OutputBuf);
-						pDSP_handle->dsp_out_buf = NULL;
-						*OutputBuf = NULL;
-					}
-				}
-
-				return ACODEC_ERROR_STREAM;
-			}
-		}
-
-		if ((pDSP_handle->codec_type != SBCENC) &&
-		    ((pDSP_handle->outputFormat.samplerate != pDSP_handle->samplerate) ||
-			 (pDSP_handle->outputFormat.channels != pDSP_handle->channels) ||
-			 (memcmp(pDSP_handle->outputFormat.layout,
-					 pDSP_handle->layout_bak,
-					 sizeof(uint32) * pDSP_handle->channels))) &&
-			(pDSP_handle->channels != 0) && *OutputSize > 0) {
-#ifdef DEBUG
-			TRACE("output format changed\n");
-#endif
-
-			pDSP_handle->outputFormat.width = pDSP_handle->depth;
-			pDSP_handle->outputFormat.depth = pDSP_handle->depth;
-			pDSP_handle->outputFormat.channels = pDSP_handle->channels;
-			pDSP_handle->outputFormat.interleave = TRUE;
-			pDSP_handle->outputFormat.samplerate = pDSP_handle->samplerate;
-
-			if ((*OutputSize > 0) && (pDSP_handle->channels > 0))
-				channel_pos_convert(pDSP_handle,
-						    (uint8 *)(*OutputBuf),
-						    *OutputSize,
-						    pDSP_handle->channels,
-						    pDSP_handle->depth);
-
-			if ((pDSP_handle->channels > 2)  &&
-			    (pDSP_handle->channels <= 8) &&
-				(!pDSP_handle->outputFormat.chan_pos_set)) {
-				if (pDSP_handle->codec_type != AC3) {
-					if (aacd_channel_layouts[pDSP_handle->channels])
-						memcpy(pDSP_handle->outputFormat.layout,
-								aacd_channel_layouts[pDSP_handle->channels],
-								sizeof(uint32) * pDSP_handle->channels);
-				}
-				else {
-					if (ac3d_channel_layouts[pDSP_handle->channels])
-						memcpy(pDSP_handle->outputFormat.layout,
-								ac3d_channel_layouts[pDSP_handle->channels],
-								sizeof(uint32) * pDSP_handle->channels);
-				}
-			}
-
-			memcpy(pDSP_handle->layout_bak,
-			       pDSP_handle->outputFormat.layout,
-				   sizeof(uint32) * pDSP_handle->channels);
-
-			ret =  ACODEC_CAPIBILITY_CHANGE;
-		}
-
 		if (*OutputSize ==  0) {
 			if (*OutputBuf && (buf_from_out == FALSE)) {
 				pDSP_handle->sMemOps.Free(*OutputBuf);
@@ -947,13 +858,19 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 				*OutputBuf = NULL;
 			}
 		}
-		return ret;
+		return err;
 	}
 
 #ifdef DEBUG
 	TRACE("HAS_ERROR: err = 0x%x\n", (int)err);
 #endif
 
+	if (err == XA_NOT_ENOUGH_DATA) {
+		if (InputBuf && InputSize > *offset)
+			err = XA_SUCCESS;
+		else
+			err = ACODEC_NOT_ENOUGH_DATA;
+	}
 	switch (pDSP_handle->codec_type) {
 	case AAC:
 	case AAC_PLUS:
