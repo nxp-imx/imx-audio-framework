@@ -151,7 +151,7 @@ UA_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 		/* translate addr saved in param to local addr when special command */
 		if (command == UNIA_CHAN_MAP_TABLE) {
 			value.chan_map_tab.size = cmd[i].mixData.chan_map_tab.size;
-			for(j = 1; j < 2 * value.chan_map_tab.size; j = j+2) {
+			for(j = 0; j < value.chan_map_tab.size; j++) {
 				if (cmd[i].mixData.chan_map_tab.channel_table[j]) {
 					value.chan_map_tab.channel_table[pos] = xf_ipc_a2b(dsp_config, cmd[i].mixData.chan_map_tab.channel_table[j]);
 				}
@@ -160,7 +160,7 @@ UA_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 		}
 
 		/* ...apply parameter; pass to codec-specific function */
-		LOG2("set-param: [%d], %d\n", command, value);
+		LOG2("set-param: [%d], %d\n", command, value.value);
 
 		ret = XA_API(base, XF_API_CMD_SET_PARAM, command, &value);
 		if (ret != ACODEC_SUCCESS) {
@@ -180,7 +180,8 @@ UA_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 UA_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m)
 {
 	struct xf_get_param_msg *cmd = m->buffer;
-	u32 command, value;
+	u32 command;
+	data_t value;
 	u32 n, i;
 	UA_ERROR_TYPE ret = 0;
 
@@ -195,7 +196,7 @@ UA_ERROR_TYPE xa_base_get_param(struct XACodecBase *base, struct xf_message *m)
 			m->ret = ret;
 			break;
 		}
-		cmd[i].value = value;
+		cmd[i].mixData = value;
 	}
 
 	LOG1("Codec get parameter completed, ret = %d\n", ret);
