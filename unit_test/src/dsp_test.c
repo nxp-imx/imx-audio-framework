@@ -586,66 +586,66 @@ int main(int ac, char *av[])
 
 	if (AOption.SampleRate > 0) {
 		s_param.id = XA_SAMPLERATE;
-		s_param.value = AOption.SampleRate;
+		s_param.mixData.value = AOption.SampleRate;
 		err = xaf_comp_set_config(&component[0], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
-						s_param.id, s_param.value, err);
+						s_param.id, s_param.mixData.value, err);
 			goto Fail;
 		}
 	}
 
 	if (AOption.Width > 0) {
 		s_param.id = XA_DEPTH;
-		s_param.value = AOption.Width;
+		s_param.mixData.value = AOption.Width;
 		err = xaf_comp_set_config(&component[0], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
-						s_param.id, s_param.value, err);
+						s_param.id, s_param.mixData.value, err);
 			goto Fail;
 		}
 	}
 
 	if (AOption.Channel > 0) {
 		s_param.id = XA_CHANNEL;
-		s_param.value = AOption.Channel;
+		s_param.mixData.value = AOption.Channel;
 		err = xaf_comp_set_config(&component[0], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
-						s_param.id, s_param.value, err);
+						s_param.id, s_param.mixData.value, err);
 			goto Fail;
 		}
 	}
 
 	if (AOption.Bitrate > 0) {
 		s_param.id = XA_BITRATE;
-		s_param.value = AOption.Bitrate;
+		s_param.mixData.value = AOption.Bitrate;
 		err = xaf_comp_set_config(&component[0], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
-						s_param.id, s_param.value, err);
+						s_param.id, s_param.mixData.value, err);
 			goto Fail;
 		}
 	}
 
 	if (AOption.streamtype >= 0) {
 		s_param.id = XA_STREAM_TYPE;
-		s_param.value = AOption.streamtype;
+		s_param.mixData.value = AOption.streamtype;
 		err = xaf_comp_set_config(&component[0], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
-						s_param.id, s_param.value, err);
+						s_param.id, s_param.mixData.value, err);
 			goto Fail;
 		}
 	}
 
 	if ((AOption.channel_mode >= 0) && (type == CODEC_SBC_ENC)) {
 		s_param.id = XA_SBC_ENC_CHMODE;
-		s_param.value = AOption.channel_mode;
+		s_param.mixData.value = AOption.channel_mode;
 		err = xaf_comp_set_config(&component[0], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
-						s_param.id, s_param.value, err);
+						s_param.id, s_param.mixData.value, err);
 			goto Fail;
 		}
 	}
@@ -653,11 +653,11 @@ int main(int ac, char *av[])
 	/* relax the standard validity checks for mp3_dec in default */
 	if (type == CODEC_MP3_DEC) {
 		s_param.id = XA_MP3_DEC_NONSTD_STRM_SUPPORT;
-		s_param.value = 1;
+		s_param.mixData.value = 1;
 		err = xaf_comp_set_config(&component[0], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
-						s_param.id, s_param.value, err);
+						s_param.id, s_param.mixData.value, err);
 			goto Fail;
 		}
 	}
