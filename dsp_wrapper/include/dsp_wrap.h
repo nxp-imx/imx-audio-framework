@@ -92,133 +92,9 @@
 #define PURPLE_STR(format, ...) COLORFUL_STR(COLOR_PURPLE, format, ##__VA_ARGS__)
 #define CYAN_STR(format, ...)   COLORFUL_STR(COLOR_CYAN, format, ##__VA_ARGS__)
 
-static uint32 aacd_1channel_layout[] = {
-	/* FC */
-	UA_CHANNEL_FRONT_CENTER,
-};
-
-static uint32 aacd_2channel_layout[] = {
-	/* FL,FR */
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_RIGHT,
-};
-
-static uint32 aacd_3channel_layout[] = {
-	/* FC,FL,FR */
-	UA_CHANNEL_FRONT_CENTER,
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_RIGHT,
-};
-
-static uint32 aacd_4channel_layout[] = {
-	/* FC,FCL,FCR,BC */
-	UA_CHANNEL_FRONT_CENTER,
-	UA_CHANNEL_FRONT_LEFT_CENTER,
-	UA_CHANNEL_FRONT_RIGHT_CENTER,
-	UA_CHANNEL_REAR_CENTER
-};
-
-static uint32 aacd_5channel_layout[] = {
-	/* FC,FL,FR,BL,BR */
-	UA_CHANNEL_FRONT_CENTER,
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_RIGHT,
-	UA_CHANNEL_REAR_LEFT,
-	UA_CHANNEL_REAR_RIGHT
-};
-
-static uint32 aacd_6channel_layout[] = {
-	/* FC,FL,FR,BL,BR,LFE */
-	UA_CHANNEL_FRONT_CENTER,
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_RIGHT,
-	UA_CHANNEL_REAR_LEFT,
-	UA_CHANNEL_REAR_RIGHT,
-	UA_CHANNEL_LFE
-};
-
-static uint32 aacd_8channel_layout[] = {
-	/* FC,FCL,FCR,SL,SR,BL,BR,LFE */
-	UA_CHANNEL_FRONT_CENTER,
-	UA_CHANNEL_FRONT_LEFT_CENTER,
-	UA_CHANNEL_FRONT_RIGHT_CENTER,
-	UA_CHANNEL_SIDE_LEFT,
-	UA_CHANNEL_SIDE_RIGHT,
-	UA_CHANNEL_REAR_LEFT,
-	UA_CHANNEL_REAR_RIGHT,
-	UA_CHANNEL_LFE
-};
-
-static uint32 *aacd_channel_layouts[] = {
-	NULL,
-	aacd_1channel_layout, // 1
-	aacd_2channel_layout, // 2
-	aacd_3channel_layout,
-	aacd_4channel_layout,
-	aacd_5channel_layout,
-	aacd_6channel_layout,
-	NULL,
-	aacd_8channel_layout,
-};
-
 struct lastErr {
 	int32 ErrType;
 	char *ErrMsg;
-};
-
-static uint32 ac3d_1channel_layout[] = {
-	/* FC */
-	UA_CHANNEL_FRONT_CENTER,
-};
-
-static uint32 ac3d_2channel_layout[] = {
-	/* FL,FR */
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_RIGHT,
-};
-
-static uint32 ac3d_3channel_layout[] = {
-	/* FL,FC,FR */
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_CENTER,
-	UA_CHANNEL_FRONT_RIGHT,
-};
-
-static uint32 ac3d_4channel_layout[] = {
-	/* FL,FR,BL,BR */
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_RIGHT,
-	UA_CHANNEL_REAR_LEFT,
-	UA_CHANNEL_REAR_RIGHT,
-};
-
-static uint32 ac3d_5channel_layout[] = {
-	/* FL,FC,FR,BL,BR */
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_CENTER,
-	UA_CHANNEL_FRONT_RIGHT,
-	UA_CHANNEL_REAR_LEFT,
-	UA_CHANNEL_REAR_RIGHT
-};
-
-static uint32 ac3d_6channel_layout[] = {
-	/* FC,FL,FR,BL,BR,LFE */
-	UA_CHANNEL_FRONT_LEFT,
-	UA_CHANNEL_FRONT_CENTER,
-	UA_CHANNEL_FRONT_RIGHT,
-	UA_CHANNEL_REAR_LEFT,
-	UA_CHANNEL_REAR_RIGHT,
-	UA_CHANNEL_LFE
-};
-
-static uint32* ac3d_channel_layouts[] = {
-	NULL,
-	ac3d_1channel_layout, // 1
-	ac3d_2channel_layout, // 2
-	ac3d_3channel_layout,
-	ac3d_4channel_layout,
-	ac3d_5channel_layout,
-	ac3d_6channel_layout,
 };
 
 struct innerBuf {
@@ -286,11 +162,6 @@ UA_ERROR_TYPE ResetInnerBuf(struct innerBuf *inner_buf,
 			    uint32 buf_size,
 			    uint32 threshold);
 UA_ERROR_TYPE SetDefaultFeature(UniACodec_Handle pua_handle);
-void channel_pos_convert(UniACodec_Handle pua_handle,
-			 uint8 *data_in,
-			 int32 frameSize,
-			 int32 channels,
-			 int32 depth);
 void cancel_unused_channel_data(uint8 *data_in, int32 length, int32 depth);
 
 int comp_process(UniACodec_Handle pua_handle,
