@@ -151,6 +151,7 @@ struct DSP_Handle {
 	bool codecdata_copy;
 	unsigned int codecoffset;
 	int blockalign;
+	int offset_copy;
 };
 
 UA_ERROR_TYPE InputBufHandle(struct innerBuf *inner_buf,

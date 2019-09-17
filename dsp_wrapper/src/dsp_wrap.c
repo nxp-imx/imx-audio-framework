@@ -679,7 +679,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	uint32 *channel_map = NULL;
 	uint32 in_size = 0, in_off = 0, out_size = 0;
 	unsigned int *codecoffset = &pDSP_handle->codecoffset;
-	static int offset_copy = 0;
+	int *offset_copy = &pDSP_handle->offset_copy;
 
 	if (*OutputBuf)
 		buf_from_out = TRUE;
@@ -707,11 +707,11 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			ret = InputBufHandle(&pDSP_handle->inner_buf,
 						 InputBuf,
 						 InputSize,
-						 &offset_copy,
+						 offset_copy,
 						 pDSP_handle->framed);
 			if (ret != ACODEC_SUCCESS) {
-				*offset = offset_copy;
-				offset_copy = 0;
+				*offset = *offset_copy;
+				*offset_copy = 0;
 				return ret;
 			}
 		}
@@ -811,9 +811,9 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	*inner_offset += in_off;
 
 	if (pDSP_handle->inptr_busy == FALSE) {
-		*offset = offset_copy;
-		if (offset_copy >= InputSize)
-			offset_copy = 0;
+		*offset = *offset_copy;
+		if (*offset_copy >= InputSize)
+			*offset_copy = 0;
 	}
 
 	if (buf_from_out)
