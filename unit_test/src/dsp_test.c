@@ -757,7 +757,7 @@ int main(int ac, char *av[])
 		}
 	}
 	TRACE("prop: samplerate = %d, channel = %d, width = %d\n",
-	      r_param[0].value, r_param[1].value, r_param[2].value);
+	      r_param[0].mixData.value, r_param[1].mixData.value, r_param[2].mixData.value);
 
 	/* ...disconnect component when routed */
 	if (AOption.comp_routed) {
