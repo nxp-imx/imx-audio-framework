@@ -151,7 +151,7 @@ UA_ERROR_TYPE xa_base_set_param(struct XACodecBase *base, struct xf_message *m)
 		/* translate addr saved in param to local addr when special command */
 		if (command == UNIA_CHAN_MAP_TABLE) {
 			value.chan_map_tab.size = cmd[i].mixData.chan_map_tab.size;
-			for(j = 0; j < value.chan_map_tab.size; j++) {
+			for(j = 0; j < value.chan_map_tab.size + 1; j++) {
 				if (cmd[i].mixData.chan_map_tab.channel_table[j]) {
 					value.chan_map_tab.channel_table[pos] = xf_ipc_a2b(dsp_config, cmd[i].mixData.chan_map_tab.channel_table[j]);
 				}
