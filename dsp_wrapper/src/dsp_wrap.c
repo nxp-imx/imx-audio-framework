@@ -969,6 +969,8 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	case AC3:
 		if (err == XA_END_OF_STREAM)
 			ret = ACODEC_END_OF_STREAM;
+		if (err == XA_NOT_ENOUGH_DATA)
+			ret = ACODEC_NOT_ENOUGH_DATA;
 		break;
 	case DD_PLUS:
 		if (err == XA_END_OF_STREAM)
