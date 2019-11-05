@@ -58,6 +58,7 @@ endif
 
 ifeq ($(PLATF), imx8m)
 	XTENSA_CORE = hifi4_mscale_v0_0_2_prod
+	CFLAGS += -DPLATF_8M
 endif
 
 export CC CPLUS OBJCOPY XTENSA_CORE PKG_LOADLIB TOOL_PATH CFLAGS
