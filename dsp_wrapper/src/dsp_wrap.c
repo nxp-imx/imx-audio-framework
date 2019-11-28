@@ -979,6 +979,8 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	case NBAMR:
 		if (err == XA_END_OF_STREAM)
 			ret = ACODEC_END_OF_STREAM;
+		else if (err == XA_ERROR_STREAM)
+			ret = ACODEC_ERROR_STREAM;
 		break;
 	case WBAMR:
 		if (err == XA_END_OF_STREAM)
