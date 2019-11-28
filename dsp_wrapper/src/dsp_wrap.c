@@ -812,10 +812,9 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	*inner_size -= in_off;
 	*inner_offset += in_off;
 
-	if (pDSP_handle->inptr_busy == FALSE) {
+	if (pDSP_handle->inptr_busy == FALSE && (*offset_copy >= InputSize)) {
 		*offset = *offset_copy;
-		if (*offset_copy >= InputSize)
-			*offset_copy = 0;
+		*offset_copy = 0;
 	}
 
 	if (buf_from_out)
