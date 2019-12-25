@@ -31,8 +31,15 @@
 #include "xf-core.h"
 #include "xf-hal.h"
 
-#define I_CACHE_ATTRIBUTE  0x2224224F     //write back mode
-#define D_CACHE_ATTRIBUTE  0x2221224F     //write through mode
+/*
+ * Every 512M in 4GB space has dedicate cache attribute.
+ * 1: write through
+ * 2: cache bypass
+ * 4: write back
+ * F: invalid access
+ */
+#define I_CACHE_ATTRIBUTE  0x2224222F     //write back mode
+#define D_CACHE_ATTRIBUTE  0x2221222F     //write through mode
 #define INT_NUM_MU	7
 
 /* ...define a global pointer, used in xf-msg.c */
