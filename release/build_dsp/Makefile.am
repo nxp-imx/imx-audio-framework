@@ -16,7 +16,8 @@ fsldspwraplib = \
 	$(TOPDIR)/release/wrapper/lib_dsp_wrap_arm_elinux.so
 
 fsldspfirmware = \
-	$(TOPDIR)/release/hifi4.bin
+	$(TOPDIR)/release/hifi4_imx8mp.bin \
+	$(TOPDIR)/release/hifi4_imx8qmqxp.bin
 
 endif
 endif
