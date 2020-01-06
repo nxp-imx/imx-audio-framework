@@ -60,10 +60,16 @@ C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
 			  $(SRC_DIR)/runtime/xf-sched.o                              \
 			  $(SRC_DIR)/runtime/util/rbtree.o
 
+TARGET = hifi4_imx8qmqxp.bin
+
+ifeq ($(PLATF), imx8m)
+	TARGET = hifi4_imx8mp.bin
+endif
+
 
 all: $(C_OBJS)
 	$(CPLUS) $(CPLUS_FLAGS) $(C_OBJS) -o dsp_framework
-	$(OBJCOPY) --xtensa-core=$(XTENSA_CORE) -Ibinary -Obinary dsp_framework hifi4.bin
+	$(OBJCOPY) --xtensa-core=$(XTENSA_CORE) -Ibinary -Obinary dsp_framework $(TARGET)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<

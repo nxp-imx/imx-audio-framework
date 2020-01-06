@@ -69,7 +69,7 @@ all: DSP_WRAPPER DSP_FRAMEWORK UNIT_TEST
 DSP_FRAMEWORK: $(FRAMEWORK_DIR)
 	echo "--- Build DSP framework ---"
 	make -C $(FRAMEWORK_DIR)
-	cp ./$(FRAMEWORK_DIR)/hifi4.bin $(RELEASE_DIR)
+	cp ./$(FRAMEWORK_DIR)/*.bin $(RELEASE_DIR)
 
 DSP_WRAPPER: $(WRAPPER_DIR)
 	echo "--- Build DSP wrapper ---"
