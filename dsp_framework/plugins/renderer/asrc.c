@@ -92,6 +92,8 @@ void asrc_init(volatile void * asrc_addr, int mode, int channels, int rate,
 	int clk_index, ideal;
 	int pre_proc, post_proc;
 
+	if (asrc_addr == NULL)
+		return;
 	/* initialize ASRC */
 
 	/* Halt ASRC internal FP when input FIFO needs data for pair A, B, C */
@@ -189,6 +191,8 @@ void asrc_start(volatile void *asrc_addr, int tx) {
 	int reg, retry = 10, i;
 	int index = 0;
 
+	if (asrc_addr == NULL)
+		return;
 	/* Enable the current pair */
 	write32_bit(asrc_addr + REG_ASRCTR, ASRCTR_ASRCEi_MASK(index),
 		    ASRCTR_ASRCE(index));
@@ -211,16 +215,22 @@ void asrc_start(volatile void *asrc_addr, int tx) {
 
 void asrc_stop(volatile void *asrc_addr, int tx) {
 	int index = 0;
+	if (asrc_addr == NULL)
+		return;
 	/* stop the current pair */
 	write32_bit(asrc_addr + REG_ASRCTR, ASRCTR_ASRCEi_MASK(index), 0);
 }
 
 void asrc_irq_handler(volatile void *asrc_addr) {
 	/* clear overload error */
+	if (asrc_addr == NULL)
+		return;
 	write32(asrc_addr + REG_ASRSTR, ASRSTR_AOLE);
 }
 
 void asrc_suspend(volatile void *asrc_addr,  u32 *cache_addr) {
+	if (asrc_addr == NULL)
+		return;
 
 	cache_addr[0] = read32(asrc_addr + REG_ASRCTR);
 	cache_addr[1] = read32(asrc_addr + REG_ASRIER);
@@ -257,6 +267,9 @@ void asrc_suspend(volatile void *asrc_addr,  u32 *cache_addr) {
 }
 
 void asrc_resume(volatile void *asrc_addr,  u32 *cache_addr) {
+	if (asrc_addr == NULL)
+		return;
+
 	write32(asrc_addr + REG_ASRCTR,  cache_addr[0]);
 	write32(asrc_addr + REG_ASRIER,  cache_addr[1]);
 	write32(asrc_addr + REG_ASRCNCR, cache_addr[2]);
@@ -288,5 +301,8 @@ void asrc_resume(volatile void *asrc_addr,  u32 *cache_addr) {
 	write32(asrc_addr + REG_ASRMCR1C, cache_addr[34]);
 }
 
-void asrc_dump(volatile void *asrc_addr) { }
+void asrc_dump(volatile void *asrc_addr) {
 
+	if (asrc_addr == NULL)
+		return;
+}
