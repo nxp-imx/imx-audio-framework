@@ -17,6 +17,10 @@
 #define FSL_SAI_TFR0    0x40 /* SAI Transmit FIFO */
 #define FSL_SAI_TFR1    0x44 /* SAI Transmit FIFO */
 #define FSL_SAI_TMR     0x60 /* SAI Transmit Mask */
+#define FSL_SAI_TTCTL	0x70 /* SAI Transmit Timestamp Control Register */
+#define FSL_SAI_TTCTN	0x74 /* SAI Transmit Timestamp Counter Register */
+#define FSL_SAI_TBCTN	0x78 /* SAI Transmit Bit Counter Register */
+#define FSL_SAI_TTCAP	0x7C /* SAI Transmit Timestamp Capture */
 #define FSL_SAI_RCSR(offset) (0x80 + offset) /* SAI Receive Control */
 #define FSL_SAI_RCR1(offset) (0x84 + offset) /* SAI Receive Configuration 1 */
 #define FSL_SAI_RCR2(offset) (0x88 + offset) /* SAI Receive Configuration 2 */
@@ -29,7 +33,12 @@
 #define FSL_SAI_RFR1    0xc4 /* SAI Receive FIFO */
 #define FSL_SAI_RFR     0xc0 /* SAI Receive FIFO */
 #define FSL_SAI_RMR     0xe0 /* SAI Receive Mask */
-
+#define FSL_SAI_RTCTL	0xf0 /* SAI Receive Timestamp Control Register */
+#define FSL_SAI_RTCTN	0xf4 /* SAI Receive Timestamp Counter Register */
+#define FSL_SAI_RBCTN	0xf8 /* SAI Receive Bit Counter Register */
+#define FSL_SAI_RTCAP	0xfc /* SAI Receive Timestamp Capture */
+#define FSL_SAI_MCTL	0x100 /* SAI MCLK Control Register */
+#define FSL_SAI_MDIV	0x104 /* SAI MCLK Divide Register */
 
 #define FSL_SAI_xCSR(tx, off)   (tx ? FSL_SAI_TCSR(off) : FSL_SAI_RCSR(off))
 #define FSL_SAI_xCR1(tx, off)   (tx ? FSL_SAI_TCR1(off) : FSL_SAI_RCR1(off))
@@ -111,10 +120,23 @@
 #define FSL_SAI_CR5_FBT(x)      ((x) << 8)
 #define FSL_SAI_CR5_FBT_MASK    (0x1f << 8)
 
+/* SAI MCLK Control Register */
+#define FSL_SAI_MCTL_MCLK_EN	BIT(30)	/* MCLK Enable */
+#define FSL_SAI_MCTL_MSEL_MASK	(0x3 << 24)
+#define FSL_SAI_MCTL_MSEL(ID)   ((ID) << 24)
+#define FSL_SAI_MCTL_MSEL_BUS	0
+#define FSL_SAI_MCTL_MSEL_MCLK1	BIT(24)
+#define FSL_SAI_MCTL_MSEL_MCLK2	BIT(25)
+#define FSL_SAI_MCTL_MSEL_MCLK3	(BIT(24) | BIT(25))
+#define FSL_SAI_MCTL_DIV_EN	BIT(23)
+#define FSL_SAI_MCTL_DIV_MASK	0xFF
 
 void sai_init(volatile void * sai_addr, int mode, int channel, int rate, int width, int mclk_rate);
 void sai_start(volatile void * sai_addr, int tx);
 void sai_stop(volatile void * sai_addr, int tx);
 void sai_dump(volatile void * sai_addr);
+void sai_irq_handler(volatile void * sai_addr);
+void sai_suspend(volatile void *sai_addr,  u32 *cache_addr);
+void sai_resume(volatile void *sai_addr, u32 * cache_addr);
 
 #endif
