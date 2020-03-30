@@ -111,6 +111,7 @@ struct dsp_main_struct {
 enum {
 	DSP_IMX8QXP_TYPE = 0,
 	DSP_IMX8QM_TYPE,
+	DSP_IMX8MP_TYPE,
 };
 
 #endif

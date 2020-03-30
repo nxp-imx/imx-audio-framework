@@ -45,7 +45,8 @@ enum xa_config_param_renderer {
     XA_RENDERER_CONFIG_PARAM_CHANNELS       = 3,
     XA_RENDERER_CONFIG_PARAM_SAMPLE_RATE    = 4,
     XA_RENDERER_CONFIG_PARAM_FRAME_SIZE     = 5,
-    XA_RENDERER_CONFIG_PARAM_NUM            = 6
+    XA_RENDERER_CONFIG_PARAM_CONSUMED        = 6,
+    XA_RENDERER_CONFIG_PARAM_NUM            = 7
 };
 
 /* ...XA_RENDERER_CONFIG_PARAM_CB: compound parameters data structure */

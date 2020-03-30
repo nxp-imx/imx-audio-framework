@@ -31,139 +31,12 @@
 #include "dsp_codec_interface.h"
 #include "dsp_renderer_interface.h"
 #include "xf-audio-apicmd.h"
-#include "audio/xa-renderer-api.h"
 #include "sai.h"
 #include "esai.h"
-#include "edma.h"
 #include "asrc.h"
 #include "irqstr.h"
 #include "io.h"
-
-/*******************************************************************************
- * Internal functions definitions
- ******************************************************************************/
-#define MAX_PERIOD_COUNT  8
-
-#define SAI_INT_NUM       314
-#define EDMA_SAI_INT_NUM  315
-
-
-#define ESAI_INT_NUM       409
-#define EDMA_ESAI_INT_NUM  410
-
-#define ASRC_INT_NUM      372
-#define EDMA_ASRC_INT_NUM 374
-
-/* ...API structure */
-struct XADevRenderer
-{
-	/* Run-time data */
-
-	/* ...number of frames in ring-buffer; always power-of-two */
-	u32                     ring_num;
-
-	u32		        ring_size;
-
-	/* ...size of PCM sample (respects channels and PCM width) */
-	u32                     sample_size;
-
-	/* ...total number of rendered samples */
-	u32                     rendered;
-
-	/* ...total number of submitted samples */
-	u32                     submitted;
-
-	/***************************************************************************
-	 * Internal stuff
-	 **************************************************************************/
-
-	/* ...identifier of the core we are running on */
-	u32                     core;
-
-	/* ...component state */
-	u32                     state;
-	/* ...component state */
-	u32                     suspend_state;
-	/* ...notification callback pointer */
-	xa_renderer_cb_t       *cdata;
-
-	/* ...input buffer pointer */
-	void                    *input;
-
-	/* ...number of samples consumed */
-	u32                     consumed;
-
-	u32                     avail;
-
-	/***************************************************************************
-	 * Renderer configuration data
-	 **************************************************************************/
-
-	/* ...period size (in samples - power-of-two) */
-	u32                    frame_size;
-
-	/* ...number of channels */
-	u32                    channels;
-
-	/* ...current sampling rate */
-	u32                    rate;
-
-	/* ...sample width */
-	u32                    pcm_width;
-
-	u32                    threshold;
-	/* ...private data pointer */
-	void                  *private_data;
-
-	void                  *dma_buf;
-
-	void                  *dev_addr;
-	void                  *fe_dev_addr;
-
-	void                  *edma_addr;
-	void                  *fe_edma_addr;
-
-	void                  *irqstr_addr;
-
-	/* struct nxp_edma_hw_tcd  tcd[MAX_PERIOD_COUNT];*/
-	void                  *tcd;
-	void                  *tcd_align32;
-
-	void                  *fe_tcd;
-	void                  *fe_tcd_align32;
-
-	void                  (*dev_init)(volatile void * dev_addr, int mode,
-					  int channel, int rate, int width, int mclk_rate);
-	void                  (*dev_start)(volatile void * dev_addr, int tx);
-	void                  (*dev_stop)(volatile void * dev_addr, int tx);
-	void                  (*dev_isr)(volatile void * dev_addr);
-	void                  (*dev_suspend)(volatile void * dev_addr, u32 *cache_addr);
-	void                  (*dev_resume)(volatile void * dev_addr, u32 *cache_addr);
-	void                  (*fe_dev_isr)(volatile void * dev_addr);
-
-
-	void                  (*fe_dev_init)(volatile void * dev_addr, int mode,
-					     int channel, int rate, int width, int mclk_rate);
-	void                  (*fe_dev_start)(volatile void * dev_addr, int tx);
-	void                  (*fe_dev_stop)(volatile void * dev_addr, int tx);
-	void                  (*fe_dev_suspend)(volatile void * dev_addr, u32 *cache_addr);
-	void                  (*fe_dev_resume)(volatile void * dev_addr, u32 *cache_addr);
-
-
-	u32                   dev_Int;
-	u32                   dev_fifo_off;
-	u32                   dma_Int;
-
-	u32                   fe_dev_Int;
-	u32                   fe_dma_Int;
-	u32                   fe_dev_fifo_in_off;
-	u32                   fe_dev_fifo_out_off;
-
-	u32                   dev_cache[40];
-	u32                   fe_dev_cache[40];
-	u32                   edma_cache[40];
-	u32                   fe_edma_cache[40];
-};
+#include "wrap_dma.h"
 
 /*******************************************************************************
  * Renderer state flags
@@ -209,10 +82,8 @@ static inline int xa_hw_renderer_start(struct XADevRenderer *d)
 {
 	LOG(("HW-renderer started\n"));
 
-	irqstr_start(d->irqstr_addr);
-	edma_start(d->fe_edma_addr, 0);
-	edma_start(d->edma_addr, 0);
-
+	irqstr_start(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+	xdma_start(d);
 	d->fe_dev_start(d->fe_dev_addr, 1);
 	d->dev_start(d->dev_addr, 1);
 
@@ -224,9 +95,8 @@ static inline void xa_hw_renderer_pause(struct XADevRenderer *d)
 {
 	/* ...stop updating software write index; that makes it to output silence */
 	LOG(("HW-renderer paused\n"));
-	irqstr_stop(d->irqstr_addr);
-	edma_stop(d->edma_addr);
-	edma_stop(d->fe_edma_addr);
+	irqstr_stop(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+	xdma_stop(d);
 	d->dev_stop(d->dev_addr, 1);
 	d->fe_dev_stop(d->fe_dev_addr, 1);
 }
@@ -236,11 +106,8 @@ static inline void xa_hw_renderer_resume(struct XADevRenderer *d)
 {
 	/* ...rethink it - tbd */
 	LOG(("HW-renderer resumed\n"));
-	irqstr_start(d->irqstr_addr);
-
-	edma_start(d->fe_edma_addr, 0);
-	edma_start(d->edma_addr,  0);
-
+	irqstr_start(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+	xdma_start(d);
 	d->fe_dev_start(d->fe_dev_addr, 1);
 	d->dev_start(d->dev_addr, 1);
 }
@@ -249,9 +116,8 @@ static inline void xa_hw_renderer_resume(struct XADevRenderer *d)
 static inline void xa_hw_renderer_close(struct XADevRenderer *d)
 {
 	LOG(("HW-renderer closed\n"));
-	irqstr_stop(d->irqstr_addr);
-	edma_stop(d->edma_addr);
-	edma_stop(d->fe_edma_addr);
+	irqstr_stop(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+	xdma_stop(d);
 	d->dev_stop(d->dev_addr, 1);
 	d->fe_dev_stop(d->fe_dev_addr, 1);
 }
@@ -271,7 +137,7 @@ static void xa_hw_renderer_isr(struct XADevRenderer *d)
 		d->fe_dev_isr(d->fe_dev_addr);
 
 	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dma_Int+32))) {
-		edma_irq_handler(d->fe_edma_addr);
+		xdma_irq_handler(d);
 
 		d->rendered = d->rendered + d->frame_size;
 		/* ...notify user on input-buffer (idx = 0) consumption */
@@ -292,10 +158,11 @@ static void xa_hw_renderer_isr(struct XADevRenderer *d)
 static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 {
 	int             r;
-
+	int             board_type;
 	struct dsp_main_struct *dsp_config =
 		(struct dsp_main_struct *)d->private_data;
 
+	board_type = dsp_config->dpu_ext_msg.dsp_board_type;
 	/* ...make sure ring buffer size is a power-of-two */
 	XF_CHK_ERR(xf_is_power_of_two(d->ring_num), -EINVAL);
 
@@ -332,62 +199,92 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 
 	d->fe_tcd_align32 = (void *)(((u32)d->fe_tcd + 31) & ~31);
 
+	d->sdma = MEM_scratch_malloc(&dsp_config->scratch_mem_info, sizeof(struct SDMA));
 	/*It is better to send address through the set_param */
-	d->dev_addr    =  (void *)ESAI_ADDR;
-	d->dev_Int     =  ESAI_INT_NUM;
-	d->dev_fifo_off=  REG_ESAI_ETDR;
+	if ((board_type == DSP_IMX8QXP_TYPE) || (board_type ==DSP_IMX8QM_TYPE)) {
+		d->dev_addr    =  (void *)ESAI_ADDR;
+		d->dev_Int     =  ESAI_INT_NUM;
+		d->dev_fifo_off=  REG_ESAI_ETDR;
 
-	d->dma_Int     =   EDMA_ESAI_INT_NUM;
-	d->edma_addr   =  (void *)EDMA_ADDR_ESAI_TX;
+		d->dma_Int     =   EDMA_ESAI_INT_NUM;
+		d->edma_addr   =  (void *)EDMA_ADDR_ESAI_TX;
 
-	d->fe_dma_Int  =   EDMA_ASRC_INT_NUM;
-	d->fe_dev_Int  =   ASRC_INT_NUM;
-	d->fe_dev_addr = (void *)ASRC_ADDR;
-	d->fe_edma_addr = (void *)EDMA_ADDR_ASRC_RXA;
-	d->fe_dev_fifo_in_off = REG_ASRDIA;
-	d->fe_dev_fifo_out_off = REG_ASRDOA;
+		d->fe_dma_Int  =   EDMA_ASRC_INT_NUM;
+		d->fe_dev_Int  =   ASRC_INT_NUM;
+		d->fe_dev_addr = (void *)ASRC_ADDR;
+		d->fe_edma_addr = (void *)EDMA_ADDR_ASRC_RXA;
+		d->fe_dev_fifo_in_off = REG_ASRDIA;
+		d->fe_dev_fifo_out_off = REG_ASRDOA;
 
-	if (dsp_config->dpu_ext_msg.dsp_board_type == DSP_IMX8QXP_TYPE)
-		d->irqstr_addr =  (void *)IRQSTR_QXP_ADDR;
-	else
-		d->irqstr_addr =  (void *)IRQSTR_QM_ADDR;
+		if (board_type == DSP_IMX8QXP_TYPE)
+			d->irqstr_addr =  (void *)IRQSTR_QXP_ADDR;
+		else if (board_type == DSP_IMX8QM_TYPE)
+			d->irqstr_addr =  (void *)IRQSTR_QM_ADDR;
 
-	d->dev_init     = esai_init;
-	d->dev_start    = esai_start;
-	d->dev_stop     = esai_stop;
-	d->dev_isr      = esai_irq_handler;
-	d->dev_suspend  = esai_suspend;
-	d->dev_resume   = esai_resume;
+		d->dev_init     = esai_init;
+		d->dev_start    = esai_start;
+		d->dev_stop     = esai_stop;
+		d->dev_isr      = esai_irq_handler;
+		d->dev_suspend  = esai_suspend;
+		d->dev_resume   = esai_resume;
 
-	d->fe_dev_init  = asrc_init;
-	d->fe_dev_start = asrc_start;
-	d->fe_dev_stop  = asrc_stop;
-	d->fe_dev_isr   = asrc_irq_handler;
-	d->fe_dev_suspend  = asrc_suspend;
-	d->fe_dev_resume   = asrc_resume;
+		d->fe_dev_init  = asrc_init;
+		d->fe_dev_start = asrc_start;
+		d->fe_dev_stop  = asrc_stop;
+		d->fe_dev_isr   = asrc_irq_handler;
+		d->fe_dev_suspend  = asrc_suspend;
+		d->fe_dev_resume   = asrc_resume;
+
+		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_6;
+	} else {
+		d->dev_addr    =  (void *)SAI_MP_ADDR;
+		d->dev_Int     =  SAI_MP_INT_NUM;
+		d->dev_fifo_off=  FSL_SAI_TDR0;
+
+		d->sdma_Int     =   SDMA3_INT_NUM;
+		d->sdma_addr   =  (void *)SDMA3_ADDR;
+
+		/* Not use ASRC on mp board so far
+		 * set fe_dma_Int ,fe_dev_Int for
+		 * don't need modify interrupt service*/
+		d->fe_dma_Int  =   SDMA3_INT_NUM;
+		d->fe_dev_Int  =   SDMA3_INT_NUM;
+		d->fe_dev_addr =   NULL;
+		d->fe_edma_addr =  NULL;
+		d->fe_dev_fifo_in_off = 0;
+		d->fe_dev_fifo_out_off = 0;
+
+		d->irqstr_addr =  (void *)IRQSTR_MP_ADDR;
+
+		d->dev_init     = sai_init;
+		d->dev_start    = sai_start;
+		d->dev_stop     = sai_stop;
+		d->dev_isr      = sai_irq_handler;
+		d->dev_suspend  = sai_suspend;
+		d->dev_resume   = sai_resume;
+
+		d->fe_dev_init  = asrc_init;
+		d->fe_dev_start = asrc_start;
+		d->fe_dev_stop  = asrc_stop;
+		d->fe_dev_isr   = asrc_irq_handler;
+		d->fe_dev_suspend  = asrc_suspend;
+		d->fe_dev_resume   = asrc_resume;
+
+		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_1;
+	}
 
 	/*init hw device*/
-
-	edma_init(d->fe_edma_addr, DMA_MEM_TO_DEV, d->fe_tcd_align32,
-		  d->fe_dev_addr + d->fe_dev_fifo_in_off, 0, d->dma_buf,
-		  d->frame_size * d->sample_size,
-		  2);
-	edma_init(d->edma_addr, DMA_DEV_TO_DEV, d->tcd_align32,
-		  d->dev_addr + d->dev_fifo_off,
-		  d->fe_dev_addr + d->fe_dev_fifo_out_off, 0,
-		  d->frame_size * d->sample_size,
-		  2);
+	xdma_init(d);
 
 	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
 
 	d->fe_dev_init(d->fe_dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
 	d->dev_init(d->dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
 
-	edma_set_tcd(d->fe_edma_addr, d->fe_tcd_align32);
-	edma_set_tcd(d->edma_addr, d->tcd_align32);
+	xdma_config(d);
 
-	_xtos_set_interrupt_handler_arg(INT_NUM_IRQSTR_DSP_6, xa_hw_renderer_isr, d);
-	_xtos_ints_on((1 << INT_NUM_IRQSTR_DSP_6) | (1 << 7));
+	_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);
+	_xtos_ints_on((1 << d->irq_2_dsp) | (1 << 7));
 
 	LOG("hw_init finished\n");
 	return 0;
@@ -446,7 +343,6 @@ static inline u32 xa_hw_renderer_submit(struct XADevRenderer *d, void *b, u32 n)
 	d->submitted += k;
 
 	LOG4("submit %d, %d, %d, %d\n", n, avail, k, d->submitted);
-
 	if ((d->state & XA_RENDERER_FLAG_IDLE) && ((d->submitted - d->rendered) >= d->threshold))
 	{
 		/* trigger start*/
@@ -700,7 +596,10 @@ static UA_ERROR_TYPE xa_renderer_get_config_param(struct XADevRenderer *d, u32 i
 		/* ...return current audio frame length (in samples) */
 		*(u32 *)pv_value = d->frame_size;
 		return ACODEC_SUCCESS;
-
+	case XA_RENDERER_CONFIG_PARAM_CONSUMED:
+		/* ...return current execution state */
+		*(u32 *)pv_value = d->rendered;
+		return ACODEC_SUCCESS;
 	case XA_RENDERER_CONFIG_PARAM_STATE:
 		/* ...return current execution state */
 		*(u32 *)pv_value = xa_hw_renderer_get_state(d);
@@ -922,6 +821,9 @@ static UA_ERROR_TYPE xf_renderer_cleanup(struct XADevRenderer *d,
 	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->fe_tcd);
 	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->tcd);
 
+	xdma_clearup(d);
+	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->sdma);
+
 	LOG("xf_renderer_cleanup\n");
 	return ret;
 }
@@ -945,8 +847,7 @@ static UA_ERROR_TYPE xf_renderer_suspend(struct XADevRenderer *d,
 	if (d->state & XA_RENDERER_FLAG_POSTINIT_DONE) {
 		d->dev_suspend(d->dev_addr, d->dev_cache);
 		d->fe_dev_suspend(d->fe_dev_addr, d->fe_dev_cache);
-		edma_suspend(d->edma_addr, d->edma_cache);
-		edma_suspend(d->fe_edma_addr, d->fe_edma_cache);
+		xdma_suspend(d);
 	}
 
 	return ret;
@@ -964,11 +865,10 @@ static UA_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
 		irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
 		d->dev_resume(d->dev_addr, d->dev_cache);
 		d->fe_dev_resume(d->fe_dev_addr, d->fe_dev_cache);
-		edma_resume(d->edma_addr, d->edma_cache);
-		edma_resume(d->fe_edma_addr, d->fe_edma_cache);
+		xdma_resume(d);
 
-		_xtos_set_interrupt_handler_arg(INT_NUM_IRQSTR_DSP_6, xa_hw_renderer_isr, d);
-		_xtos_ints_on((1 << INT_NUM_IRQSTR_DSP_6) | (1 << 7));
+		_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);
+		_xtos_ints_on((1 << d->irq_2_dsp) | (1 << 7));
 	}
 
 	if (d->suspend_state & XA_RENDERER_FLAG_RUNNING) {
