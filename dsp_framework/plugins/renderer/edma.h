@@ -76,20 +76,7 @@
 #define DMA_DEV_TO_MEM 1
 #define DMA_DEV_TO_DEV 2
 
-#define IRQSTR_QXP_ADDR       0x51080000
-#define IRQSTR_QM_ADDR        0x510A0000
-
-#define SAI_ADDR              0x59040000
-#define EDMA_ADDR_SAI_TX      0x592d0000
-#define EDMA_ADDR_SAI_RX      0x592c0000
-
-#define ESAI_ADDR             0x59010000
-#define EDMA_ADDR_ESAI_TX     0x59270000
-#define EDMA_ADDR_ESAI_RX     0x59260000
-
-#define ASRC_ADDR		0x59000000
-#define EDMA_ADDR_ASRC_RXA	0x59200000
-#define EDMA_ADDR_ASRC_TXA	0x59230000
+#define MAX_PERIOD_COUNT  8
 
 struct nxp_edma_hw_tcd {
 	u32  saddr;
