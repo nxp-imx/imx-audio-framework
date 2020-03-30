@@ -23,6 +23,7 @@
  *****************************************************************/
 
 #include "peripheral.h"
+#include "mydefs.h"
 #include <stdarg.h>
 
 /* Enable the specific receive interrupt */
@@ -63,6 +64,24 @@ static void lpuart_putc(struct nxp_lpuart *base, const char c)
 		;
 
 	base->data = c;
+}
+
+static void uart_putc(const char c)
+{
+	volatile char *uart_base = (volatile char *)UART_BASE;
+	unsigned int status;
+	unsigned int count = 0;
+
+	if (c == '\n')
+		uart_putc('\r');
+
+	//drain
+	do {
+		status = read32(uart_base + USR1);
+		count++;
+	} while (count <= 600);
+
+	write32(uart_base + URTX0, c);
 }
 
 static int lpuart_init(struct nxp_lpuart *base)
@@ -127,12 +146,41 @@ static int lpuart_init(struct nxp_lpuart *base)
 	return 0;
 }
 
+static int uart_init()
+{
+	volatile char *uart_base = (volatile char *)UART_BASE;
+
+	//enbale UART
+	write32(uart_base + UCR1, 0x0001);
+
+	write32(uart_base + UCR2, 0x5027);
+
+	//Set UCR3[RXDMUXSEL] = 1.
+	write32(uart_base + UCR3, 0x0084);
+
+	write32(uart_base + UCR4, 0x4002);
+
+	//Set internal clock divider = 1
+	write32(uart_base + UFCR, 0x0A81);
+
+	write32(uart_base + UBIR, 0x3E7);
+	write32(uart_base + UBMR, 0x32DC);
+
+	write32(uart_base + UCR1, 0x2201);
+	write32(uart_base + UMCR, 0x0000);
+}
+
 int enable_log(void)
 {
 	volatile int *lpuart1 = (volatile int *)LPUART_BASE;
 	struct nxp_lpuart *base = (struct nxp_lpuart *)lpuart1;
+	int i = 0;
 
+#ifdef PLATF_8M
+	uart_init();
+#else
 	lpuart_init(base);
+#endif
 
 	return 0;
 }
@@ -142,7 +190,11 @@ void dsp_putc(const char c)
 	volatile int *lpuart1 = (volatile int *)LPUART_BASE;
 	struct nxp_lpuart *base = (struct nxp_lpuart *)lpuart1;
 
+#ifdef PLATF_8M
+	uart_putc(c);
+#else
 	lpuart_putc(base, c);
+#endif
 }
 
 void dsp_puts(const char *s)
