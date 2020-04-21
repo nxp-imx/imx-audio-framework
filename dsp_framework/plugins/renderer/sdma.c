@@ -34,7 +34,7 @@ static void sdma_enable_channel(struct SDMA *sdma, int channel)
 	 * the bit in the HSTART[i] register will remain cleared and
 	 * the HE[i] bit will be set. */
 
-	write32(sdma->regs + SDMA_H_START, BIT(channel));
+	write32_bit(sdma->regs + SDMA_H_START, BIT(channel), BIT(channel));
 }
 
 /*
@@ -69,12 +69,22 @@ static int sdma_run_channel0(struct SDMA *sdma)
 	return ret;
 }
 
+static void sdma_channel_attach_bd(struct SDMA* sdma, int channel, int bdnum)
+{
+	sdma->chan_info[channel].bdnum = bdnum;
+	if (!channel)
+		sdma->bd0 = (struct sdma_buffer_descriptor *)MEM_scratch_ua_malloc(PAGE_SIZE);
+	else
+		sdma->chan_info[channel].bd = (struct sdma_buffer_descriptor *)MEM_scratch_ua_malloc(sizeof(struct sdma_buffer_descriptor) * bdnum);
+}
+
 static int sdma_request_channel0(struct SDMA *sdma)
 {
 	int ret = 0;
 	int channel = 0;
 
-	sdma->bd0 = (struct sdma_buffer_descriptor *)MEM_scratch_ua_malloc(PAGE_SIZE);
+	sdma_channel_attach_bd(sdma, 0, 1);
+
 	if (!sdma->bd0) {
 		ret = -1;
 		goto out;
@@ -203,11 +213,13 @@ int sdma_pre_init(struct SDMA *sdma, void *sdma_addr)
 	return 0;
 }
 
-static void sdma_event_enable(struct SDMA *sdma, unsigned int event, unsigned int channel, unsigned int sw_done, unsigned int done_cfg)
+static void sdma_event_enable(struct SDMA *sdma, int event, unsigned int channel, unsigned int sw_done, unsigned int done_cfg)
 {
 	unsigned int chnenbl;
 	unsigned int val;
 
+	if (event < 0)
+		return;
 	chnenbl = SDMA_CHNENBL0_IMX35 + 4 * event;
 	val = read32(sdma->regs + chnenbl);
 	__set_bit(channel, &val);
@@ -226,28 +238,100 @@ static int sdma_disable_channel(struct SDMA *sdma, unsigned int channel)
 	return 0;
 }
 
-int sdma_init(struct SDMA * sdma, void *dest_addr, void *src_addr, int period_len) {
+int sdma_init(struct SDMA * sdma, int type, void *dest_addr, void *src_addr, int channel, int period_len) {
 	unsigned int ret;
 	unsigned int val;
-	unsigned int channel = 1;
 	unsigned int chnenbl;
-	unsigned int event = 5;
+	int event, event2;
 	unsigned int done_cfg;
 	struct sdma_buffer_descriptor *bd0 = sdma->bd0;
 	struct sdma_buffer_descriptor *bd1;
-	struct sdma_buffer_descriptor *bd2;
 	struct sdma_context_data *context;
 	unsigned int context_phys;
+	unsigned int script_addr;
+	unsigned int r0, r1, r2, r6, r7;
 
-	LOG("sdma init start\n");
-	/* set channel 1 priority: 1 */
+	event = -1;
+	event2 = -1;
+
+	if (type == DMA_MEM_TO_DEV) {
+		/* event 16: ASRC Context 0 receive DMA request */
+		event = 16;
+		script_addr = mcu_2_app_ADDR;
+		r0 = 0;
+		r1 = BIT(event);
+		r2 = 0;
+		r6 = (unsigned int)dest_addr;
+		r7 = 0xc;
+	}
+	else if (type == DMA_DEV_TO_DEV) {
+		/* event 5:  SAI-3 transmit DMA request
+		 * event 17: ASRC Context 0 transmit DMA request */
+		event = 17;
+		event2 = 5;
+		script_addr = p_2_p_ADDR;
+		r0 = BIT(event2);
+		r1 = BIT(event);
+		r2 = (unsigned int)src_addr;
+		r6 = (unsigned int)dest_addr;
+		/*0-7 Lower WML Watermark Level
+		8 PS 1 : Pad Swallowing
+		0 : No Pad swallowing
+		9 PA 1 : Pad Adding
+		0 : No Pad swallowing
+		10 SPDIF If this bit is set both source and destination are on SPBA
+		11 Source Bit(SP) 1 : Source on SPBA
+		0 : Source on AIPS
+		12 Destination Bit (DP) 1 : Destination on SPBA
+		0 : Destination on AIPS
+		13-15 ------------ MUST BE 0
+		16-23 Higher WML HWML
+		24-27 N Total number of samples after which Pad adding/Swallowing must be
+		done. It must be odd.
+		28 Lower WML Event (LWE) SDMA events reg to check for LWML event mask
+		0 : LWE in EVENTS register
+		1 : LWE in EVENTS2 register
+		29 Higher WML Event(HWE) SDMA events reg to check for HWML event mask
+		0 : HWE in EVENTS register
+		1 : HWE in EVENTS2 register
+		30 ------------ MUST BE 0
+		31 CONT 1 : Amount of samples to be transferred is unknown and script will keep
+		on transferring samples as long as both events are detected and script
+		must be manually stopped by the application
+		0 : The amount of samples to be is equal to the count field of mode word
+		*/
+		r7 = 0x80061806;
+	}
+	/* set channel priority: 1 */
 	write32(sdma->regs + SDMA_CHNPRI_0 + 4 * channel, 1);
 
 	/* cfg for PDM, not used for audio */
 	done_cfg = 0x00;
 	sdma_event_enable(sdma, event, channel, 0, done_cfg);
-	bd1 = sdma->bd1 = (struct sdma_buffer_descriptor *)MEM_scratch_ua_malloc(sizeof(struct sdma_buffer_descriptor) * 2);
-	bd2 = (struct sdma_buffer_descriptor *)&bd1[1];
+	sdma_event_enable(sdma, event2, channel, 0, done_cfg);
+
+	if (type == DMA_MEM_TO_DEV) {
+		sdma_channel_attach_bd(sdma, channel, 2);
+		/* set 2 bds for transmite data */
+		bd1 = sdma->chan_info[channel].bd;
+		bd1->mode.command = 2;
+		bd1->mode.status = BD_DONE | BD_INTR | BD_CONT;
+		bd1->mode.count = period_len;
+		bd1->buffer_addr = (unsigned int)src_addr;
+
+		bd1 = &bd1[1];
+		bd1->mode.command = 2;
+		bd1->mode.status = BD_DONE | BD_WRAP | BD_CONT + BD_INTR;
+		bd1->mode.count = period_len;
+		bd1->buffer_addr = (unsigned int)(src_addr + period_len);
+	} else {
+		sdma_channel_attach_bd(sdma, channel, 1);
+		bd1 = sdma->chan_info[channel].bd;
+
+		bd1->mode.command = 2;
+		bd1->mode.status = BD_DONE | BD_WRAP | BD_CONT;
+		bd1->mode.count = 64;
+	}
 
 	sdma_disable_channel(sdma, channel);
 
@@ -258,12 +342,12 @@ int sdma_init(struct SDMA * sdma, void *dest_addr, void *src_addr, int period_le
 	memset(sdma->context, 0, sizeof(*sdma->context));
 	context = sdma->context;
 	context_phys = (unsigned int)context;
-	context->channel_state.pc = mcu_2_app_ADDR;
-	context->gReg[0] = 0;
-	context->gReg[1] = 0x20;
-	context->gReg[2] = 0;
-	context->gReg[6] = (unsigned int)dest_addr;
-	context->gReg[7] = 8;
+	context->channel_state.pc = script_addr;
+	context->gReg[0] = r0;
+	context->gReg[1] = r1;
+	context->gReg[2] = r2;
+	context->gReg[6] = r6;
+	context->gReg[7] = r7;
 
 	bd0->mode.command = C0_SETDM;
 	bd0->mode.status = BD_DONE | BD_WRAP | BD_EXTD;
@@ -272,19 +356,8 @@ int sdma_init(struct SDMA * sdma, void *dest_addr, void *src_addr, int period_le
 	bd0->ext_buffer_addr = 2048 + (sizeof(*context) / 4) * channel;
 	ret = sdma_run_channel0(sdma);
 
-	/* set 2 bds for transmite data */
-	bd1->mode.command = 2;
-	bd1->mode.status = BD_DONE | BD_INTR | BD_CONT;
-	bd1->mode.count = period_len;
-	bd1->buffer_addr = (unsigned int)src_addr;
-
-	bd2->mode.command = 2;
-	bd2->mode.status = BD_DONE | BD_WRAP | BD_CONT + BD_INTR;
-	bd2->mode.count = period_len;
-	bd2->buffer_addr = (unsigned int)(src_addr + period_len);
-
-	sdma->ccb[channel].base_bd_ptr = (unsigned int)sdma->bd1;
-	sdma->ccb[channel].current_bd_ptr = (unsigned int)sdma->bd1;
+	sdma->ccb[channel].base_bd_ptr = (unsigned int)sdma->chan_info[channel].bd;
+	sdma->ccb[channel].current_bd_ptr = (unsigned int)sdma->chan_info[channel].bd;
 
 	return 0;
 }
@@ -421,27 +494,36 @@ void sdma_suspend(struct SDMA* sdma)
 
 void sdma_change_bd_status(struct SDMA* sdma, unsigned int period_len)
 {
-	struct sdma_buffer_descriptor *bd1 = sdma->bd1;
-	struct sdma_buffer_descriptor *bd2;
-	bd2 = (struct sdma_buffer_descriptor *)&bd1[1];
+	struct sdma_buffer_descriptor *bd;
+	int chan_num, bdnum, i;
 
-	if (!(bd1->mode.status & BD_DONE)) {
-		bd1->mode.status |= BD_DONE;
-		bd1->mode.count = period_len;
-	}
-	if (!(bd2->mode.status & BD_DONE)) {
-		bd2->mode.status |= BD_DONE;
-		bd2->mode.count = period_len;
+	for (chan_num = 1; chan_num < 32; chan_num++) {
+		bd = sdma->chan_info[chan_num].bd;
+		bdnum = sdma->chan_info[chan_num].bdnum;
+		if (!bd)
+			continue;
+		for (i = 0; i < bdnum; i++) {
+			if (!(bd[i].mode.status & BD_DONE)) {
+				bd[i].mode.status |= BD_DONE;
+				bd[i].mode.count = period_len;
+			}
+		}
 	}
 	return;
 }
 void sdma_clearup(struct SDMA* sdma)
 {
+	int bdnum;
+	struct sdma_buffer_descriptor *bd;
+	int num;
+
 	if (sdma->ccb)
 		MEM_scratch_ua_mfree(sdma->ccb);
 	if (sdma->bd0)
 		MEM_scratch_ua_mfree(sdma->bd0);
-	if (sdma->bd0)
-		MEM_scratch_ua_mfree(sdma->bd1);
-	return;
+
+	for (num = 0; num < 32; num++) {
+		if (sdma->chan_info[num].bd)
+			MEM_scratch_ua_mfree(sdma->chan_info[num].bd);
+	}
 }

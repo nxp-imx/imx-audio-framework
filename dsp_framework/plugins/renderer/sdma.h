@@ -155,9 +155,8 @@
 #define MXC_SDMA_MIN_PRIORITY 1
 #define MXC_SDMA_MAX_PRIORITY 7
 
-
-
 #include "sdma_script_code_imx7d_4_5.h"
+#include "uni_dma.h"
 
 /*
  * 0x78(SDMA_XTRIG_CONF2+4)~0x100(SDMA_CHNPRI_O) registers are reserved and
@@ -305,6 +304,11 @@ __set_bit(unsigned long nr, volatile void * addr)
 	*m |= 1 << (nr & 31);
 }
 
+struct sdma_chan_info {
+	int bdnum;
+	struct sdma_buffer_descriptor	*bd;
+};
+
 struct SDMA {
 	//regs base addr
 	volatile void			*regs;
@@ -313,6 +317,7 @@ struct SDMA {
 	struct sdma_context_data	*context;
 	struct sdma_buffer_descriptor	*bd0;
 	struct sdma_buffer_descriptor	*bd1;
+	struct sdma_chan_info           chan_info[32];
 
 	u32				save_regs[MXC_SDMA_SAVED_REG_NUM];
 	u32				fw_loaded;
@@ -320,7 +325,7 @@ struct SDMA {
 };
 
 int sdma_pre_init(struct SDMA* sdma, void *sdma_addr);
-int sdma_init(struct SDMA *sdma, void *dest_addr, void *src_addr, int perioid_len);
+int sdma_init(struct SDMA * sdma, int type, void *dest_addr, void *src_addr, int channel, int period_len);
 int sdma_start(struct SDMA *sdma, int channel);
 int sdma_stop(struct SDMA *sdma, int channel);
 void sdma_irq_handler(struct SDMA * sdma, int period_len);
@@ -328,5 +333,4 @@ void sdma_resume(struct SDMA* sdma);
 void sdma_suspend(struct SDMA* sdma);
 void sdma_clearup(struct SDMA* sdma);
 void sdma_change_bd_status(struct SDMA* sdma, unsigned int perioid_len);
-
 #endif

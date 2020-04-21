@@ -72,9 +72,7 @@
 #define EDMA_TCD_CSR_ACTIVE             BIT(6)
 #define EDMA_TCD_CSR_DONE               BIT(7)
 
-#define DMA_MEM_TO_DEV 0
-#define DMA_DEV_TO_MEM 1
-#define DMA_DEV_TO_DEV 2
+#include "uni_dma.h"
 
 #define MAX_PERIOD_COUNT  8
 
