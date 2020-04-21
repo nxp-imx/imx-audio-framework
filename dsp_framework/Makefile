@@ -47,6 +47,7 @@ C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
 			  $(SRC_DIR)/plugins/renderer/xa-renderer-xsai.o             \
 			  $(SRC_DIR)/plugins/renderer/io.o                           \
 			  $(SRC_DIR)/plugins/renderer/asrc.o                         \
+			  $(SRC_DIR)/plugins/renderer/easrc.o                         \
 			  $(SRC_DIR)/plugins/renderer/wrap_dma.o                     \
 			  $(SRC_DIR)/plugins/renderer/edma.o                         \
 			  $(SRC_DIR)/plugins/renderer/sdma.o                         \
