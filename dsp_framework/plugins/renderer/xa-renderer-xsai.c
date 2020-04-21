@@ -34,6 +34,7 @@
 #include "sai.h"
 #include "esai.h"
 #include "asrc.h"
+#include "easrc.h"
 #include "irqstr.h"
 #include "io.h"
 #include "wrap_dma.h"
@@ -86,7 +87,6 @@ static inline int xa_hw_renderer_start(struct XADevRenderer *d)
 	xdma_start(d);
 	d->fe_dev_start(d->fe_dev_addr, 1);
 	d->dev_start(d->dev_addr, 1);
-
 	return 0;
 }
 
@@ -127,11 +127,15 @@ static void xa_hw_renderer_isr(struct XADevRenderer *d)
 {
 	s32     avail;
 	u32     status;
+	u32     status2;
 
 	/* period elapse */
 	status = read32(d->irqstr_addr + IRQSTEER_CHnSTATUS(IRQ_TO_MASK_OFFSET(d->fe_dev_Int+32)));
 
 	LOG2("xa_hw_renderer_isr status %x, %d\n", status, d->rendered);
+
+	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->dev_Int+32)))
+		d->dev_isr(d->dev_addr);
 
 	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dev_Int+32)))
 		d->fe_dev_isr(d->fe_dev_addr);
@@ -234,25 +238,26 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 		d->fe_dev_isr   = asrc_irq_handler;
 		d->fe_dev_suspend  = asrc_suspend;
 		d->fe_dev_resume   = asrc_resume;
+		d->fe_dev_hw_params = asrc_hw_params;
 
 		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_6;
 	} else {
+		d->easrc = MEM_scratch_malloc(&dsp_config->scratch_mem_info, sizeof(struct fsl_easrc));
+		d->ctx = MEM_scratch_malloc(&dsp_config->scratch_mem_info, sizeof(struct fsl_easrc_context));
+
 		d->dev_addr    =  (void *)SAI_MP_ADDR;
 		d->dev_Int     =  SAI_MP_INT_NUM;
 		d->dev_fifo_off=  FSL_SAI_TDR0;
 
-		d->sdma_Int     =   SDMA3_INT_NUM;
 		d->sdma_addr   =  (void *)SDMA3_ADDR;
 
-		/* Not use ASRC on mp board so far
-		 * set fe_dma_Int ,fe_dev_Int for
-		 * don't need modify interrupt service*/
 		d->fe_dma_Int  =   SDMA3_INT_NUM;
-		d->fe_dev_Int  =   SDMA3_INT_NUM;
-		d->fe_dev_addr =   NULL;
+		/* not enable easrc Int and enable sai Int */
+		d->fe_dev_Int  =   SAI_MP_INT_NUM;
+		d->fe_dev_addr =   d->easrc;
 		d->fe_edma_addr =  NULL;
-		d->fe_dev_fifo_in_off = 0;
-		d->fe_dev_fifo_out_off = 0;
+		d->fe_dev_fifo_in_off =  (unsigned char*)EASRC_MP_ADDR + REG_EASRC_WRFIFO(0);
+		d->fe_dev_fifo_out_off = (unsigned char*)EASRC_MP_ADDR + REG_EASRC_RDFIFO(0);
 
 		d->irqstr_addr =  (void *)IRQSTR_MP_ADDR;
 
@@ -262,13 +267,13 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 		d->dev_isr      = sai_irq_handler;
 		d->dev_suspend  = sai_suspend;
 		d->dev_resume   = sai_resume;
-
-		d->fe_dev_init  = asrc_init;
-		d->fe_dev_start = asrc_start;
-		d->fe_dev_stop  = asrc_stop;
-		d->fe_dev_isr   = asrc_irq_handler;
-		d->fe_dev_suspend  = asrc_suspend;
-		d->fe_dev_resume   = asrc_resume;
+		d->fe_dev_init  = easrc_init;
+		d->fe_dev_start = easrc_start;
+		d->fe_dev_stop  = easrc_stop;
+		d->fe_dev_isr   = easrc_irq_handler;
+		d->fe_dev_suspend  = easrc_suspend;
+		d->fe_dev_resume   = easrc_resume;
+		d->fe_dev_hw_params = fsl_easrc_hw_params;
 
 		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_1;
 	}
@@ -279,6 +284,8 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
 
 	d->fe_dev_init(d->fe_dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
+	d->fe_dev_hw_params(d->easrc, 1, d->rate, 2, d->ctx);
+
 	d->dev_init(d->dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
 
 	xdma_config(d);
@@ -823,6 +830,8 @@ static UA_ERROR_TYPE xf_renderer_cleanup(struct XADevRenderer *d,
 
 	xdma_clearup(d);
 	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->sdma);
+	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->easrc);
+	MEM_scratch_mfree(&dsp_config->scratch_mem_info, d->ctx);
 
 	LOG("xf_renderer_cleanup\n");
 	return ret;

@@ -306,3 +306,8 @@ void asrc_dump(volatile void *asrc_addr) {
 	if (asrc_addr == NULL)
 		return;
 }
+
+int asrc_hw_params(volatile void *asrc_addr, int channels, int rate, int format, volatile void *context)
+{
+	return 0;
+}

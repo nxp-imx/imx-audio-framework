@@ -275,4 +275,5 @@ void asrc_irq_handler(volatile void * asrc_addr);
 
 void asrc_suspend(volatile void *asrc_addr,  u32 *cache_addr);
 void asrc_resume(volatile void *asrc_addr,  u32 *cache_addr);
+int asrc_hw_params(volatile void *asrc_addr, int channels, int rate, int format, volatile void *context);
 #endif

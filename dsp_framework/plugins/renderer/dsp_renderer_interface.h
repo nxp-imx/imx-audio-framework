@@ -114,6 +114,8 @@ struct XADevRenderer
 	void                  *irqstr_addr;
 
 	void                  *sdma;
+	void                  *easrc;
+	void                  *ctx;
 	/* struct nxp_edma_hw_tcd  tcd[MAX_PERIOD_COUNT];*/
 	void                  *tcd;
 	void                  *tcd_align32;
@@ -137,12 +139,13 @@ struct XADevRenderer
 	void                  (*fe_dev_stop)(volatile void * dev_addr, int tx);
 	void                  (*fe_dev_suspend)(volatile void * dev_addr, u32 *cache_addr);
 	void                  (*fe_dev_resume)(volatile void * dev_addr, u32 *cache_addr);
+	int                   (*fe_dev_hw_params)(volatile void * dev_addr, int channel,
+						  int rate, int in_format, volatile void * private_data);
 
 
 	u32                   dev_Int;
 	u32                   dev_fifo_off;
 	u32                   dma_Int;
-	u32                   sdma_Int;
 
 	u32                   fe_dev_Int;
 	u32                   fe_dma_Int;
@@ -151,7 +154,7 @@ struct XADevRenderer
 	u32                   irq_2_dsp;
 
 	u32                   dev_cache[40];
-	u32                   fe_dev_cache[40];
+	u32                   fe_dev_cache[120];
 	u32                   edma_cache[40];
 	u32                   fe_edma_cache[40];
 };
