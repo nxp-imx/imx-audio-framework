@@ -21,6 +21,9 @@ void irqstr_start(volatile void *irqstr_addr, int dev_Int, int dma_Int) {
 #ifndef PLATF_8M
 	write32(irqstr_addr + IRQSTEER_CHnCTL, 0x1);
 #else
+	write32_bit(irqstr_addr + IRQSTEER_CHnMASK(IRQ_TO_MASK_OFFSET(dev_Int + 32)),
+			1 << IRQ_TO_MASK_SHIFT(dev_Int + 32),
+			1 << IRQ_TO_MASK_SHIFT(dev_Int + 32));
 	write32_bit(irqstr_addr + IRQSTEER_CHnMASK(IRQ_TO_MASK_OFFSET(dma_Int + 32)),
 			1 << IRQ_TO_MASK_SHIFT(dma_Int + 32),
 			1 << IRQ_TO_MASK_SHIFT(dma_Int + 32));
@@ -31,6 +34,9 @@ void irqstr_stop(volatile void *irqstr_addr, int dev_Int, int dma_Int) {
 #ifndef PLATF_8M
 	write32(irqstr_addr + IRQSTEER_CHnCTL, 0x0);
 #else
+	write32_bit(irqstr_addr + IRQSTEER_CHnMASK(IRQ_TO_MASK_OFFSET(dev_Int + 32)),
+			1 << IRQ_TO_MASK_SHIFT(dev_Int + 32),
+			0);
 	write32_bit(irqstr_addr + IRQSTEER_CHnMASK(IRQ_TO_MASK_OFFSET(dma_Int + 32)),
 			1 << IRQ_TO_MASK_SHIFT(dma_Int + 32),
 			0);
