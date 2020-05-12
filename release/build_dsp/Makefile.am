@@ -8,9 +8,7 @@ if HAS_LIB_FSL_DSP
 
 if HAS_LIB_FSL_UNI_AUDIO
 if FSL_USE_ARMV8
-libuniaaudioinclude = \
-	$(TOPDIR)/ghdr/uni_audio/fsl_types.h \
-	$(TOPDIR)/ghdr/uni_audio/fsl_unia.h
+libuniaaudioinclude =
 
 fsldspwraplib = \
 	$(TOPDIR)/release/wrapper/lib_dsp_wrap_arm_elinux.so
