@@ -1,12 +1,12 @@
 NXP Software Content Register
 
 Package:            imx-audio-framework
-Outgoing License:   LA_OPT_BASE_LICENSE
+Outgoing License:   LA_OPT_NXP_Software_License v11 February 2020 - Production Use, Section 2.3 applies
 Release Location:   Moderated download
 
 
 Component:          dsp_framework
-Outgoing License:   LA_OPT_BASE_LICENSE
+Outgoing License:   LA_OPT_NXP_Software_License v11 February 2020 - Production Use, Section 2.3 applies
 Type of Content:    source
 Description:        The firmware running on the DSP core
 Origin:             NXP (proprietary)
@@ -15,13 +15,13 @@ Origin:             NXP (proprietary)
                     Cadence (MIT)
 
 Component:          dsp_wrapper
-Outgoing License:   LA_OPT_BASE_LICENSE
+Outgoing License:   LA_OPT_NXP_Software_License v11 February 2020 - Production Use, Section 2.3 applies
 Type of Content:    source
 Description:        User space application providing a unified calling interface for GStreamer
 Origin:             NXP (proprietary)
 
 Component:          unit_test
-Outgoing License:   LA_OPT_BASE_LICENSE
+Outgoing License:   LA_OPT_NXP_Software_License v11 February 2020 - Production Use, Section 2.3 applies
 Type of Content:    source
 Description:        User space test application
 Origin:             NXP (proprietary)
@@ -29,7 +29,7 @@ Origin:             NXP (proprietary)
 
 
 Component:          include
-Outgoing License:   LA_OPT_BASE_LICENSE
+Outgoing License:   LA_OPT_NXP_Software_License v11 February 2020 - Production Use, Section 2.3 applies
 Type of Content:    source
 Description:        Interface command definitions
 Origin:             NXP (BSD-2-clause)
