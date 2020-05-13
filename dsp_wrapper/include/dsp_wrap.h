@@ -152,6 +152,7 @@ struct DSP_Handle {
 	unsigned int codecoffset;
 	int blockalign;
 	int offset_copy;
+	int wrap_consumed;
 };
 
 UA_ERROR_TYPE InputBufHandle(struct innerBuf *inner_buf,
