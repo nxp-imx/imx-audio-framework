@@ -869,12 +869,21 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	TRACE("HAS_ERROR: err = 0x%x\n", (int)err);
 #endif
 
+	if (err == XA_ERROR_STREAM) {
+		if (InputBuf && InputSize > *offset)
+			err = XA_SUCCESS;
+		else
+			err = XA_ERROR_STREAM;
+	}
 	if (err == XA_NOT_ENOUGH_DATA) {
 		if (InputBuf && InputSize > *offset)
 			err = XA_SUCCESS;
 		else
 			err = ACODEC_NOT_ENOUGH_DATA;
 	}
+#ifdef DEBUG
+	TRACE("HAS_ERROR: err = 0x%x\n", (int)err);
+#endif
 	switch (pDSP_handle->codec_type) {
 	case AAC:
 	case AAC_PLUS:
