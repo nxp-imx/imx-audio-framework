@@ -269,6 +269,8 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		p_comp->dec_id = "audio-decoder/mp3ext";
 	} else if (comp_type == CODEC_FSL_AAC_DEC) {
 		p_comp->dec_id = "audio-decoder/aacext";
+	} else if (comp_type == CODEC_FSL_AAC_PLUS_DEC) {
+		p_comp->dec_id = "audio-decoder/nxpaacplus";
 	} else if (comp_type == CODEC_FSL_AC3_DEC) {
 		p_comp->dec_id = "audio-decoder/ac3";
 	} else if (comp_type == CODEC_FSL_DDP_DEC) {
@@ -290,6 +292,8 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		strcat(lib_wrap_path, "lib_mp3d_wrap_dsp.so");
 	else if (comp_type == CODEC_FSL_AAC_DEC)
 		strcat(lib_wrap_path, "lib_aacd_wrap_dsp.so");
+	else if (comp_type == CODEC_FSL_AAC_PLUS_DEC)
+		strcat(lib_wrap_path, "lib_aacplusd_wrap_dsp.so");
 	else if (comp_type == CODEC_FSL_AC3_DEC)
 		strcat(lib_wrap_path, "lib_ac3d_wrap_dsp.so");
 	else if (comp_type == CODEC_FSL_DDP_DEC)
