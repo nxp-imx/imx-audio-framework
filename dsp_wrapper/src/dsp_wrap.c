@@ -344,7 +344,10 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle)
 		      pDSP_handle->inner_buf.threshold);
 
 	pDSP_handle->offset_copy = 0;
+	pDSP_handle->wrap_consumed = 0;
 
+	pDSP_handle->codecdata_copy = FALSE;
+	pDSP_handle->codecoffset = 0;
 Fail:
 	return ret;
 }
