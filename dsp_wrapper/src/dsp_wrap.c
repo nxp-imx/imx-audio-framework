@@ -344,7 +344,6 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle)
 		      pDSP_handle->inner_buf.threshold);
 
 	pDSP_handle->offset_copy = 0;
-	pDSP_handle->wrap_consumed = 0;
 
 	pDSP_handle->codecdata_copy = FALSE;
 	pDSP_handle->codecoffset = 0;
@@ -600,7 +599,8 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle,
 		break;
 	case UNIA_CONSUMED_LENGTH:
 		msg.id = UNIA_CONSUMED_LENGTH;
-		parameter->consumed_length = pDSP_handle->wrap_consumed;
+		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
+		parameter->consumed_length = msg.mixData.value;
 		break;
 	case UNIA_OUTPUT_PCM_FORMAT:
 		msg.id = UNIA_OUTPUT_PCM_FORMAT;
@@ -684,8 +684,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	uint32 in_size = 0, in_off = 0, out_size = 0;
 	unsigned int *codecoffset = &pDSP_handle->codecoffset;
 	int *offset_copy = &pDSP_handle->offset_copy;
-	int *wrap_consumed = &pDSP_handle->wrap_consumed;
-	*wrap_consumed = 0;
 
 	if (*OutputBuf)
 		buf_from_out = TRUE;
@@ -715,7 +713,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			if (ret != ACODEC_SUCCESS) {
 				*offset = *offset_copy;
 				*offset_copy = 0;
-				*wrap_consumed = *offset;
 				return ret;
 			}
 		}
@@ -817,7 +814,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	if (pDSP_handle->inptr_busy == FALSE && (*offset_copy >= InputSize)) {
 		*offset = *offset_copy;
 		*offset_copy = 0;
-		*wrap_consumed = *offset;
 	}
 
 	if (buf_from_out)
