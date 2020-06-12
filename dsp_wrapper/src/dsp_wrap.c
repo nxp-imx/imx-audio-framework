@@ -149,8 +149,6 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 		comp_type = CODEC_FSL_MP3_DEC;
 		break;
 	case AAC:
-		comp_type = CODEC_FSL_AAC_DEC;
-		break;
 	case AAC_PLUS:
 		comp_type = CODEC_FSL_AAC_PLUS_DEC;
 		break;
