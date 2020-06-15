@@ -315,10 +315,21 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 	}
 
 	/* ...load codec wrapper lib */
+reload:
 	ret = xf_load_lib(p_handle, &p_comp->codec_wrap_lib);
 	if (ret) {
-		TRACE("load codec wrapper lib error: %d\n", ret);
-		return ret;
+		/* if aacplus decoder not exist, try to load aac decoder */
+		if (comp_type == CODEC_FSL_AAC_PLUS_DEC) {
+			printf("aacplus decoder not exist, forback to aac decoder\n");
+			memset(lib_wrap_path, 0 , 200);
+			strcpy(lib_wrap_path, CORE_LIB_PATH);
+			p_comp->dec_id = "audio-decoder/aacext";
+			strcat(lib_wrap_path, "lib_aacd_wrap_dsp.so");
+			goto reload;
+		} else {
+			TRACE("load codec wrapper lib error: %d\n", ret);
+			return ret;
+		}
 	}
 	/* ...load codec lib */
 	if (comp_type < CODEC_FSL_OGG_DEC) {
