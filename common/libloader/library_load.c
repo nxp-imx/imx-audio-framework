@@ -498,7 +498,7 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 	/* Load DPU's main program to System memory */
 	fpInfile = fopen(lib_info->filename, "r");
 	if (!fpInfile) {
-		printf("Error: %s not exist\n", lib_info->filename);
+		TRACE("Error: %s not exist\n", lib_info->filename);
 		return -ENOENT;
 	}
 
