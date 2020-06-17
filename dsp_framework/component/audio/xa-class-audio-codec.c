@@ -97,6 +97,24 @@ struct XAAudioCodec {
 /* ...output port setup condition */
 #define XA_CODEC_FLAG_OUTPUT_SETUP      __XA_BASE_FLAG(1 << 1)
 
+#ifdef PLATF_8MP_LPA
+#define INPUT_BUFFER_LEN (32*1024)
+/* ...SRC GPR10, indicate ATF control power, 0xD for LPA, 0x1D for LPA with */
+/* ...DRAM. 0x0 for DSP idle */
+#define FLAG_ADDRESS     0x30390098
+#define FLAG_IDLE        0x0
+#define FLAG_LPA         0xD
+#define FLAG_LPA_DRAM    0x1D
+#define DSP_IDLE         {write32(FLAG_ADDRESS, FLAG_IDLE);}
+#define DSP_LPA          {write32(FLAG_ADDRESS, FLAG_LPA);}
+#define DSP_LPA_DRAM     {write32(FLAG_ADDRESS, FLAG_LPA_DRAM);}
+#else
+#define INPUT_BUFFER_LEN (4096)
+#define DSP_IDLE         {}
+#define DSP_LPA          {}
+#define DSP_LPA_DRAM     {}
+#endif
+
 /*******************************************************************************
  * Data processing scheduling
  ******************************************************************************/
@@ -113,6 +131,8 @@ static UA_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 	struct icm_xtlib_pil_info  *cmd = m->buffer;
 	struct dpu_lib_stat_t *lib_stat;
 	void *lib_interface;
+
+	DSP_LPA;
 
 	switch(cmd->lib_type) {
 	case DSP_CODEC_LIB:
@@ -751,6 +771,8 @@ static int xa_audio_codec_cleanup(struct xf_component *component, struct xf_mess
 	 */
 	xf_input_port_purge(&codec->input);
 
+	DSP_IDLE;
+
 	/* ...propagate unregister command to connected component */
 	if (xf_output_port_flush(&codec->output, XF_FLUSH)) {
 		/* ...flushing sequence is not needed; destroy audio codec */
@@ -796,7 +818,7 @@ struct xf_component *xa_audio_codec_factory(struct dsp_main_struct *dsp_config,
 	codec->base.component.exit = xa_audio_codec_cleanup;
 
 	/* ...initialize input and output port */
-	CODEC_API(&codec->base, memtab, 4096, 0);
+	CODEC_API(&codec->base, memtab, INPUT_BUFFER_LEN, 0);
 
 	LOG1("Codec[%d] initialized\n", codec->base.codec_id);
 	return (struct xf_component *)codec;

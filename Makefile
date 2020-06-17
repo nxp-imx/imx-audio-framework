@@ -61,6 +61,12 @@ ifeq ($(PLATF), imx8m)
 	CFLAGS += -DPLATF_8M
 endif
 
+ifeq ($(PLATF), imx8mp_lpa)
+	XTENSA_CORE = hifi4_mscale_v0_0_2_prod
+	CFLAGS += -DPLATF_8M
+	CFLAGS += -DPLATF_8MP_LPA
+endif
+
 export CC CPLUS OBJCOPY XTENSA_CORE PKG_LOADLIB TOOL_PATH CFLAGS
 
 all: DSP_WRAPPER DSP_FRAMEWORK UNIT_TEST

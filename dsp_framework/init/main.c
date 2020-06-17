@@ -38,8 +38,8 @@
  * 4: write back
  * F: invalid access
  */
-#define I_CACHE_ATTRIBUTE  0x2224222F     //write back mode
-#define D_CACHE_ATTRIBUTE  0x2221222F     //write through mode
+#define I_CACHE_ATTRIBUTE  0x22242224     //write back mode
+#define D_CACHE_ATTRIBUTE  0x22212221     //write through mode
 #define INT_NUM_MU	7
 
 /* ...define a global pointer, used in xf-msg.c */
