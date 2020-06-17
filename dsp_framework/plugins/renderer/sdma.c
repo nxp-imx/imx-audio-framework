@@ -8,7 +8,7 @@
 
 #define BIT(nr)			(1 << (nr))
 
-#define PAGE_SIZE 0x4000
+#define PAGE_SIZE 0x400
 #define SDMA_H_CONFIG_DSPDMA	BIT(12) /* indicates if the DSPDMA is used */
 #define SDMA_H_CONFIG_RTD_PINS	BIT(11) /* indicates if Real-Time Debug pins are enabled */
 #define SDMA_H_CONFIG_ACR	BIT(4)  /* indicates if AHB freq /core freq = 2 or 1 */
