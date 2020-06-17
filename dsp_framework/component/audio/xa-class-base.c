@@ -54,7 +54,7 @@ static UA_ERROR_TYPE xa_base_preinit(struct XACodecBase *base)
 	XA_API(base, XF_API_CMD_GET_API_SIZE, 0, &size);
 
 	/* ...allocate memory for codec API structure (8-bytes aligned) */
-	base->api = MEM_scratch_malloc(&dsp_config->scratch_mem_info, size);
+	base->api = MEM_scratch_ua_malloc(size);
 	memset(base->api, 0, size);
 
 	/* ...codec pre-initialization */
@@ -341,10 +341,10 @@ void xa_base_destroy(struct XACodecBase *base)
 	UA_ERROR_TYPE    ret;
 
 	/* ...deallocate all resources */
-	MEM_scratch_mfree(&dsp_config->scratch_mem_info, base->api);
+	MEM_scratch_ua_mfree(base->api);
 
 	/* ...destroy codec structure (and task) itself */
-	MEM_scratch_mfree(&dsp_config->scratch_mem_info, base);
+	MEM_scratch_ua_mfree(base);
 
 	LOG1("codec[%d]: destroyed\n", base->codec_id);
 }
@@ -361,7 +361,7 @@ struct XACodecBase *xa_base_factory(struct dsp_main_struct *dsp_config,
 	XF_CHK_ERR(size >= sizeof(struct XACodecBase), NULL);
 
 	/* ...allocate local memory for codec structure */
-	XF_CHK_ERR(base = MEM_scratch_malloc(&dsp_config->scratch_mem_info,
+	XF_CHK_ERR(base = MEM_scratch_ua_malloc(
 					     size), NULL);
 
 	/* ...reset codec memory */

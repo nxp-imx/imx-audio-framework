@@ -49,7 +49,7 @@ int xf_msg_pool_init(struct xf_msg_pool *pool,
 	u32 i;
 
 	/* ...allocate shared memory from global pool */
-	pool->p = MEM_scratch_malloc(mem_info, sizeof(*pool->p) * n);
+	pool->p = MEM_scratch_ua_malloc(sizeof(*pool->p) * n);
 
 	/* ...place all messages into single-liked list */
 	for (pool->head = &pool->p[i = 0]; i < n - 1; i++) {
@@ -71,7 +71,7 @@ void xf_msg_pool_destroy(struct xf_msg_pool *pool,
 			 struct dsp_mem_info *mem_info)
 {
 	/* ...release pool memory (from shared local-IPC memory) */
-	MEM_scratch_mfree(mem_info, pool->p);
+	MEM_scratch_ua_mfree(pool->p);
 
 	pool->p = NULL;
 	pool->head = NULL;
