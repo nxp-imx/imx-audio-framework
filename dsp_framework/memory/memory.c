@@ -1,5 +1,5 @@
 /*****************************************************************
- * Copyright 2018 NXP
+ * Copyright 2018-2020 NXP
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -27,6 +27,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include "xf-types.h"
+#include "xf-debug.h"
+
 #include "memory.h"
 
 /* for one block, its size is 8 bytes */
@@ -36,7 +39,14 @@
  */
 #define  BTOU(nb)  ((((nb) + ABLKSIZE - 1) / ABLKSIZE) + 1)
 
+#define OCRAM_A_OFFSET (0x30000)
+#define OCRAM_A_PTR    (0x3b700000+OCRAM_A_OFFSET)
+#define OCRAM_A_SIZE   (256*1024-OCRAM_A_OFFSET)
+#define OCRAM_A_END    (OCRAM_A_PTR + OCRAM_A_SIZE)
+
 struct dsp_mem_info *DSP_mem_info;
+struct dsp_mem_info OCRAM_A_mem_info_t;
+struct dsp_mem_info *OCRAM_A_mem_info = &OCRAM_A_mem_info_t;
 
 void MEM_scratch_init(struct dsp_mem_info *mem_info, u32 ptr, u32 size)
 {
@@ -44,11 +54,19 @@ void MEM_scratch_init(struct dsp_mem_info *mem_info, u32 ptr, u32 size)
 	mem_info->scratch_total_size = size;
 	mem_info->scratch_remaining = size;
 	DSP_mem_info = mem_info;
+
+	OCRAM_A_mem_info->scratch_buf_ptr = (char *)OCRAM_A_PTR;
+	OCRAM_A_mem_info->scratch_total_size = OCRAM_A_SIZE;
+	OCRAM_A_mem_info->scratch_remaining = OCRAM_A_SIZE;
 }
 
 void *MEM_scratch_ua_malloc(int size)
 {
+#ifdef PLATF_8MP_LPA
+	return MEM_scratch_malloc(OCRAM_A_mem_info, size);
+#else
 	return MEM_scratch_malloc(DSP_mem_info, size);
+#endif
 }
 /* sample implementation for memory allocation,
  * This always to allocates 8-byte aligned buffers
@@ -132,12 +150,18 @@ void *MEM_scratch_malloc(struct dsp_mem_info *mem_info, int nb)
 	if (p)
 		memset((void *)p, 0, nb);
 
+	LOG3("alloc size out: %p %d avail mem: %d\n", (void *)(p-1), nb+8, ptr->Availmem*8);
+
 	return (void *)p;
 }
 
 void MEM_scratch_ua_mfree(void *ptr)
 {
+#ifdef PLATF_8MP_LPA
+	MEM_scratch_mfree(OCRAM_A_mem_info, ptr);
+#else
 	MEM_scratch_mfree(DSP_mem_info, ptr);
+#endif
 }
 /* Note: This function free up the memory allocations done using
  * function MEM_heap_malloc
@@ -158,7 +182,10 @@ void MEM_scratch_mfree(struct dsp_mem_info *mem_info, void *blk)
 	/* check whether this blocks is allocated reasonably or not */
 	if (p->s.ptr != p)
 		return;
+
 	ptr->Availmem += p->s.size;
+
+	LOG3("free size: %p %d   %d\n",p, ptr->Availmem*8, p->s.size*8);
 
 	/* the freed buffer need to be inserted into the free list, so
 	 * this place is used to find the inserting point.
