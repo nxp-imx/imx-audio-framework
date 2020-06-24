@@ -40,7 +40,7 @@ OBJCOPY     = xt-objcopy
 PKG_LOADLIB = xt-pkg-loadlib
 XTENSA_CORE = hifi4_nxp_v3_3_1_2_dev
 
-TOOL_PATH   := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))imx-audio-toolchain/Xtensa_Tool
+TOOL_PATH   := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../imx-audio-toolchain/Xtensa_Tool
 FRAMEWORK_DIR = dsp_framework
 WRAPPER_DIR   = dsp_wrapper
 UNIT_TEST_DIR = unit_test
