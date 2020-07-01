@@ -27,32 +27,62 @@
 #include <stdarg.h>
 
 /* Enable the specific receive interrupt */
-void mu_enableinterrupt_rx(struct mu_regs *regs, u32 idx)
+void mu_enableinterrupt_rx(u32 start_addr, u32 idx)
 {
+#ifdef PLATF_8ULP
+	volatile u32 *reg_rcr = (volatile u32 *)(start_addr + MX8ULP_MU_RCR);
+	*reg_rcr = 1 << idx;
+#else
+	struct mu_regs *regs = (struct mu_regs *)start_addr;
+
 	u32 reg_cr = (regs->MU_CR & ~MU_CR_GIRn_NMI_MASK);
 
 	regs->MU_CR = reg_cr | (MU_CR_RIE0_MASK >> idx);
+#endif
 }
 
 /* Receive the message for specify registers */
-void mu_msg_receive(struct mu_regs *regs, u32 regidx, u32 *msg)
+void mu_msg_receive(u32 start_addr, u32 regidx, u32 *msg)
 {
+#ifdef PLATF_8ULP
+	volatile u32 *reg_rsr = (volatile u32 *)(start_addr + MX8ULP_MU_RSR);
+	volatile u32 *reg_rr = (volatile u32 *)(start_addr + MX8ULP_MU_RR0 + (regidx << 2));
+
+	while (!(*reg_rsr & (1 << regidx)))
+                ;
+
+	*msg = *reg_rr;
+#else
+	struct mu_regs *regs = (struct mu_regs *)start_addr;
+
 	u32 mask = MU_SR_RF0_MASK >> regidx;
 
 	while (!(regs->MU_SR & mask))
 		;
 
 	*msg = regs->MU_RR[regidx];
+#endif
 }
 
-void mu_msg_send(struct mu_regs *regs, u32 regidx, u32 msg)
+void mu_msg_send(u32 start_addr, u32 regidx, u32 msg)
 {
+#ifdef PLATF_8ULP
+	volatile u32 *reg_tsr = (volatile u32 *)(start_addr + MX8ULP_MU_TSR);
+	volatile u32 *reg_tr = (volatile u32 *)(start_addr + MX8ULP_MU_TR0 + (regidx << 2));
+
+	while (!(*reg_tsr & (1 << regidx)));
+
+	*reg_tr = msg;
+#else
+	struct mu_regs *regs = (struct mu_regs *)start_addr;
+
 	u32 mask = MU_SR_TE0_MASK >> regidx;
 
 	while (!(regs->MU_SR & mask))
 		;
 
 	regs->MU_TR[regidx] = msg;
+#endif
 }
 
 static void lpuart_putc(struct nxp_lpuart *base, const char c)

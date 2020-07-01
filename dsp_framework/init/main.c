@@ -38,9 +38,19 @@
  * 4: write back
  * F: invalid access
  */
+#ifdef PLATF_8ULP
+#define I_CACHE_ATTRIBUTE  0x22222224     //write back mode
+#define D_CACHE_ATTRIBUTE  0x22222221     //write through mode
+#else
 #define I_CACHE_ATTRIBUTE  0x22242224     //write back mode
 #define D_CACHE_ATTRIBUTE  0x22212221     //write through mode
+#endif
+
+#ifdef PLATF_8ULP
+#define INT_NUM_MU	15
+#else
 #define INT_NUM_MU	7
+#endif
 
 /* ...define a global pointer, used in xf-msg.c */
 struct dsp_main_struct *dsp_global_data;

@@ -81,9 +81,7 @@ void *xf_ipc_a2b(struct dsp_main_struct *dsp_config, u32 address)
 
 u32 icm_intr_send(u32 msg)
 {
-	struct mu_regs *base = (struct mu_regs *)MU_PADDR;
-
-	mu_msg_send(base, 0, msg);
+	mu_msg_send(MU_PADDR, 0, msg);
 
 	return 0;
 }
@@ -92,8 +90,6 @@ void xf_mu_init(struct dsp_main_struct *dsp_config)
 {
 	int i = 0;
 
-	volatile int *mu = (volatile int *)MU_PADDR;
-	struct mu_regs *base = (struct mu_regs *)MU_PADDR;
 	union icm_header_t icm_msg;
 	struct xf_msg_pool *pool = &dsp_config->pool;
 
@@ -108,7 +104,7 @@ void xf_mu_init(struct dsp_main_struct *dsp_config)
 	/* ...save pool size */
 	pool->n = XF_CFG_MESSAGE_POOL_SIZE;
 
-	mu_enableinterrupt_rx(base, 0);
+	mu_enableinterrupt_rx(MU_PADDR, 0);
 
 	icm_msg.allbits = 0;
 	icm_msg.intr = 1;
@@ -118,7 +114,6 @@ void xf_mu_init(struct dsp_main_struct *dsp_config)
 
 void interrupt_handler_icm(void *arg)
 {
-	struct mu_regs *base = (struct mu_regs *)MU_PADDR;
 	volatile union icm_header_t recd_msg;
 	struct dsp_main_struct *dsp_config = (struct dsp_main_struct *)arg;
 	struct xf_message *m;
@@ -126,12 +121,12 @@ void interrupt_handler_icm(void *arg)
 	u32 ext_msg_size = 0;
 	u32 msg;
 
-	mu_msg_receive(base, 0, &msg);
+	mu_msg_receive(MU_PADDR, 0, &msg);
 	recd_msg.allbits = msg;
 
 	if (recd_msg.size == 8) {
-		mu_msg_receive(base, 1, &ext_msg_addr);
-		mu_msg_receive(base, 2, &ext_msg_size);
+		mu_msg_receive(MU_PADDR, 1, &ext_msg_addr);
+		mu_msg_receive(MU_PADDR, 2, &ext_msg_size);
 	}
 
 	if (recd_msg.msg == ICM_CORE_INIT) {
@@ -306,7 +301,6 @@ static u32 xf_shmem_process_input(struct dsp_main_struct *dsp_config)
 static u32 xf_shmem_process_output(struct dsp_main_struct *dsp_config)
 {
 	struct dsp_main_struct *core = dsp_config;
-	struct mu_regs *base = (struct mu_regs *)MU_PADDR;
 	union icm_header_t dpu_icm;
 	struct xf_message *m;
 	volatile u32 read_idx, write_idx;
@@ -384,7 +378,7 @@ static u32 xf_shmem_process_output(struct dsp_main_struct *dsp_config)
 		xthal_icache_all_invalidate();
 		xthal_icache_sync();
 
-		mu_msg_send(base, 0, dpu_icm.allbits);
+		mu_msg_send(MU_PADDR, 0, dpu_icm.allbits);
 	}
 
 	return status;

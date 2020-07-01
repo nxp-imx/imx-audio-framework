@@ -67,6 +67,11 @@ ifeq ($(PLATF), imx8mp_lpa)
 	CFLAGS += -DPLATF_8MP_LPA
 endif
 
+ifeq ($(PLATF), imx8ulp)
+	XTENSA_CORE = hifi4_nxp2_s7_v1_1a_prod
+	CFLAGS += -DPLATF_8ULP
+endif
+
 export CC CPLUS OBJCOPY XTENSA_CORE PKG_LOADLIB TOOL_PATH CFLAGS
 
 all: DSP_WRAPPER DSP_FRAMEWORK UNIT_TEST

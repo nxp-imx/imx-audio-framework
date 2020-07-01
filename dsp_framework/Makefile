@@ -74,6 +74,9 @@ ifeq ($(PLATF), imx8mp_lpa)
 	TARGET = hifi4_imx8mp_lpa.bin
 endif
 
+ifeq ($(PLATF), imx8ulp)
+	TARGET = hifi4_imx8ulp.bin
+endif
 
 all: $(C_OBJS)
 	$(CPLUS) $(CPLUS_FLAGS) $(C_OBJS) -o dsp_framework
