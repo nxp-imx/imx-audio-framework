@@ -596,7 +596,7 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 	}
 
 	/* ...output buffer maintenance; check if we have produced anything */
-	if (produced || ret) {
+	if (produced || ret || consumed) {
 		/* ...immediately complete output buffer
 		 * (don't wait until it gets filled)
 		 */
