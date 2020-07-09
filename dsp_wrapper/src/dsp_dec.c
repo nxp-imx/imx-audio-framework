@@ -300,15 +300,7 @@ int comp_process(UniACodec_Handle pua_handle,
 			if ((p_info.opcode == XF_EMPTY_THIS_BUFFER) &&
 			    (p_info.buf == p_comp->inptr)) {
 				pDSP_handle->inptr_busy = FALSE;
-
-				/* ...get message count in pipe */
-				count = xaf_comp_get_msg_count(p_comp);
-				if (count > 0) {
-					continue;
-				} else {
-					ret = XA_SUCCESS;
-					break;
-				}
+				continue;
 			} else {
 				ret = XA_ERR_UNKNOWN;
 				break;
