@@ -302,7 +302,7 @@ static UA_ERROR_TYPE xa_codec_fill_this_buffer(struct XACodecBase *base,
 		XF_CHK_ERR(base->state & (XA_BASE_FLAG_RUNTIME_INIT |
 					XA_BASE_FLAG_EXECUTION), XA_PARA_ERROR);
 
-		if (xf_input_port_ready(&codec->input)) {
+		if (xf_input_port_ready(&codec->input) || xf_input_port_level(&codec->input)) {
 			/* ...schedule data processing instantly */
 			xa_base_schedule(base, 0);
 		}
@@ -594,22 +594,20 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 		/* ...consume specified number of bytes from input port */
 		xf_input_port_consume(&codec->input, consumed);
 
-		if (codec->input.filled) {
-			if (codec->input.remaining)
-				xf_input_port_fill(&codec->input);
+		if (codec->input.remaining)
+			xf_input_port_fill(&codec->input);
 
 		/* ...set input buffer pointer as needed */
-			XA_API(base, XF_API_CMD_SET_INPUT_PTR, 0, codec->input.buffer);
+		XA_API(base, XF_API_CMD_SET_INPUT_PTR, 0, codec->input.buffer);
 
 		/* ...specify number of bytes available in the input buffer */
-			XA_API(base,
-				   XF_API_CMD_SET_INPUT_BYTES,
-				   0,
-				   &codec->input.filled);
-		}
+		XA_API(base,
+			   XF_API_CMD_SET_INPUT_BYTES,
+			   0,
+			   &codec->input.filled);
 
 	}
-	if (!xf_input_port_done(&codec->input) && xf_input_port_ready(&codec->input) && (ret == ACODEC_NOT_ENOUGH_DATA || !codec->input.filled) && !codec->input.remaining) {
+	if (xf_input_port_ready(&codec->input) && !codec->input.remaining && (!xf_input_port_done(&codec->input) || (xf_input_port_done(&codec->input) && ret == ACODEC_END_OF_STREAM))) {
 		xf_input_port_complete(&codec->input);
 		/* ...clear input-setup flag */
 		base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
@@ -652,7 +650,7 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 	}
 
 	/* ...reschedule processing if needed */
-	if (xf_input_port_ready(&codec->input) &&
+	if ((xf_input_port_ready(&codec->input) || xf_input_port_level(&codec->input)) &&
 	    xf_output_port_ready(&codec->output)) {
 		/* ...schedule data processing with respect to its urgency */
 		xa_base_schedule(base, produced * codec->factor);
