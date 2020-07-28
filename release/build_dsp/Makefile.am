@@ -15,6 +15,7 @@ fsldspwraplib = \
 
 fsldspfirmware = \
 	$(TOPDIR)/release/hifi4_imx8mp.bin \
+	$(TOPDIR)/release/hifi4_imx8mp_lpa.bin \
 	$(TOPDIR)/release/hifi4_imx8qmqxp.bin
 
 endif
