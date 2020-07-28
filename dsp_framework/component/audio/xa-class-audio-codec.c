@@ -542,6 +542,10 @@ static UA_ERROR_TYPE xa_codec_preprocess(struct XACodecBase *base)
 				 * prevent further processing
 				 */
 			//    return XA_NO_OUTPUT;
+				if (!xf_msg_queue_head(&codec->input.queue)) {
+					LOG("No message ready\n");
+					return ACODEC_SUCCESS;
+				}
 			}
 		}
 
