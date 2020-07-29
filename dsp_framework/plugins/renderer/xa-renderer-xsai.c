@@ -284,7 +284,7 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
 
 	d->fe_dev_init(d->fe_dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
-	d->fe_dev_hw_params(d->easrc, 1, d->rate, 2, d->ctx);
+	d->fe_dev_hw_params(d->easrc, d->channels, d->rate, 2, d->ctx);
 
 	d->dev_init(d->dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
 
