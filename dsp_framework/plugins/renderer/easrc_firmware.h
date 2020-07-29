@@ -2,14 +2,15 @@
 
 struct asrc_firmware_hdr firm_hdr = {
 	0xdead,
+	1,
 #ifndef PLATF_8MP_LPA
 	35,
 #else
 	2,
 #endif
-	1, 1
-
+	1
 };
+
 struct interp_params interp_arr[] = {
 	{0xdead, 33, 128, 4606223298331925124ULL, {
 						4100577765513548836ULL,
