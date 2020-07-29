@@ -362,33 +362,28 @@ static int fsl_easrc_prefilter_config(struct fsl_easrc *easrc,
 			goto ctx_error;
 		}
 
-		write32_bit(easrc->paddr,
-					 REG_EASRC_CCE1(ctx_id),
+		write32_bit(easrc->paddr + REG_EASRC_CCE1(ctx_id),
 					 EASRC_CCE1_PF_TSEN_MASK,
 					 EASRC_CCE1_PF_TSEN);
 		/*
 		 * Enable prefilter stage1 writeback floating point
 		 * which is used for FLOAT_LE case
 		 */
-		write32_bit(easrc->paddr,
-					 REG_EASRC_CCE1(ctx_id),
+		write32_bit(easrc->paddr + REG_EASRC_CCE1(ctx_id),
 					 EASRC_CCE1_PF_ST1_WBFP_MASK,
 					 EASRC_CCE1_PF_ST1_WBFP);
 
-		write32_bit(easrc->paddr,
-					 REG_EASRC_CCE1(ctx_id),
+		write32_bit(easrc->paddr + REG_EASRC_CCE1(ctx_id),
 					 EASRC_CCE1_PF_EXP_MASK,
 					 EASRC_CCE1_PF_EXP(ctx->st1_num_exp - 1));
 
 		/* Update ctx ST2_NUM_TAPS in Context Control Extended 2 reg */
-		write32_bit(easrc->paddr,
-					 REG_EASRC_CCE2(ctx_id),
+		write32_bit(easrc->paddr + REG_EASRC_CCE2(ctx_id),
 					 EASRC_CCE2_ST2_TAPS_MASK,
 					 EASRC_CCE2_ST2_TAPS(ctx->st2_num_taps - 1));
 
 		/* Prefilter Coefficient Write Select to write in ST2 coeff */
-		write32_bit(easrc->paddr,
-					 REG_EASRC_CCE1(ctx_id),
+		write32_bit(easrc->paddr + REG_EASRC_CCE1(ctx_id),
 					 EASRC_CCE1_COEF_WS_MASK,
 					 EASRC_PF_ST2_COEFF_WR << EASRC_CCE1_COEF_WS_SHIFT);
 
