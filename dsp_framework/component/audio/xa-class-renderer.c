@@ -432,6 +432,9 @@ static int xa_renderer_destroy(struct xf_component *component, struct xf_message
 	/* ...destroy input port */
 	xf_input_port_destroy(&renderer->input, &dsp_config->scratch_mem_info);
 
+	/* ...cleanup renderer used mem */
+	XA_API(&renderer->base, XF_API_CMD_CLEANUP, 0, NULL);
+
 	/* ...destroy base object */
 	xa_base_destroy(&renderer->base);
 
