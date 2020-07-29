@@ -73,6 +73,10 @@ extern u32 xf_unia_codec(xf_codec_handle_t handle,
 			 u32 i_idx,
 			 void *pv_value);
 
+extern u32 xa_pcm_codec(xf_codec_handle_t handle,
+			 u32 i_cmd,
+			 u32 i_idx,
+			 void *pv_value);
 
 extern u32 xa_renderer(xf_codec_handle_t handle,
 			u32 i_cmd,
@@ -111,6 +115,7 @@ static const struct xf_component_id xf_component_id[] = {
 	{ "audio-decoder/nbamr",      CODEC_FSL_NBAMR_DEC,    xa_audio_codec_factory,     xf_unia_codec },
 	{ "audio-decoder/wbamr",      CODEC_FSL_WBAMR_DEC,    xa_audio_codec_factory,     xf_unia_codec },
 	{ "audio-decoder/wma",        CODEC_FSL_WMA_DEC,      xa_audio_codec_factory,     xf_unia_codec },
+	{ "audio-decoder/pcm",        CODEC_PCM_DEC,          xa_audio_codec_factory,     xa_pcm_codec },
 	{ "renderer/esai",            RENDER_ESAI,            xa_renderer_factory,        xa_renderer },
 	{ "renderer/sai",             RENDER_SAI,             xa_renderer_factory,        xa_renderer },
 };
