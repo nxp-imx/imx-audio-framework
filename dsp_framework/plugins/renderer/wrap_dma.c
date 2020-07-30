@@ -82,7 +82,7 @@ void xdma_config(struct XADevRenderer *d)
 }
 void xdma_clearup(struct XADevRenderer *d)
 {
-#ifdef PLAFT_8M
+#ifdef PLATF_8M
 	sdma_clearup(d->sdma);
 #endif
 	return;
