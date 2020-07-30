@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 NXP
+ * Copyright 2018-2020 NXP
  *
  * In order to avoid license problem of Cadence header files, this
  * header file is used to wrapper the Cadence codec's header files

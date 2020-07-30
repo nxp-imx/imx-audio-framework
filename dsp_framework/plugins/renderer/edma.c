@@ -1,4 +1,6 @@
 /*
+ * Copyright 2018-2020 NXP
+ *
  * edma.c - EDMA driver
  */
 #include "edma.h"

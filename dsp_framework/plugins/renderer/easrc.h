@@ -1,6 +1,5 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (C) 2020 NXP
+ * Copyright 2020 NXP
  */
 
 #ifndef _FSL_EASRC_H

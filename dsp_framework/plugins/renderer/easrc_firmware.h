@@ -1,3 +1,7 @@
+/*
+ * Copyright 2020 NXP
+ */
+
 #include "easrc.h"
 
 struct asrc_firmware_hdr firm_hdr = {

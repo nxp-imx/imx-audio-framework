@@ -1,3 +1,7 @@
+/*
+ * Copyright 2020 NXP
+ */
+
 #ifndef UNI_DMA_H
 #define UNI_DMA_H
 

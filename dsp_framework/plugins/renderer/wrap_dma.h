@@ -1,3 +1,7 @@
+/*
+ * Copyright 2020 NXP
+ */
+
 #ifndef   _WRAP_DMA_H
 #define   _WRAP_DMA_H
 

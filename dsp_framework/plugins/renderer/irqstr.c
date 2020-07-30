@@ -1,7 +1,7 @@
 /*
  * irqstr.c - IRQ steer driver
  *
- * Copyright 2018 NXP
+ * Copyright 2018-2020 NXP
  */
 #include "mydefs.h"
 #include "irqstr.h"

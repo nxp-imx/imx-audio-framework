@@ -1,3 +1,7 @@
+/*
+ * Copyright 2018-2020 NXP
+ */
+
 #include "mydefs.h"
 #include "esai.h"
 

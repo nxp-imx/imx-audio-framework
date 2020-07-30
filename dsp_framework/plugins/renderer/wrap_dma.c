@@ -1,4 +1,7 @@
-/* This file wrap different xdma, such as edma, sdma
+/*
+ * Copyright 2020 NXP
+ *
+ * This file wrap different xdma, such as edma, sdma
  * and so on */
 #include "wrap_dma.h"
 void xdma_init(struct XADevRenderer *d)

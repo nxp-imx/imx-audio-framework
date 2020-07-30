@@ -1,7 +1,7 @@
 /*
  * ASRC driver header file
  *
- * Copyright NXP 2018
+ * Copyright 2018-2020 NXP
  */
 #ifndef _ASRC_H
 #define _ASRC_H

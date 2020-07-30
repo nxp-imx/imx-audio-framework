@@ -1,3 +1,7 @@
+/*
+ * Copyright 2018-2020 NXP
+ */
+
 #ifndef _DSP_RENDER_INTERFACE_H_
 #define _DSP_RENDER_INTERFACE_H_
 

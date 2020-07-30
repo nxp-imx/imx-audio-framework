@@ -1,7 +1,7 @@
 /*
  * ASRC driver
  *
- * Copyright 2018 NXP
+ * Copyright 2018-2020 NXP
  */
 #include "mydefs.h"
 #include "asrc.h"

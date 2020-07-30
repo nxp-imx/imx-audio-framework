@@ -1,7 +1,7 @@
 /*
  * irqstr.h - IRQ steer header
  *
- * Copyright 2018 NXP
+ * Copyright 2018-2020 NXP
  */
 #ifndef _IRQSTR_H
 #define _IRQSTR_H

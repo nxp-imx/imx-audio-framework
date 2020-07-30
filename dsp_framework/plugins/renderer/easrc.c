@@ -1,3 +1,7 @@
+/*
+ * Copyright 2020 NXP
+ */
+
 #include "easrc.h"
 #include "easrc_firmware.h"
 #include "dsp_renderer_interface.h"

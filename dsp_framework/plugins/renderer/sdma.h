@@ -1,3 +1,7 @@
+/*
+ * Copyright 2020 NXP
+ */
+
 #ifndef   _SDMA_H
 #define   _SDMA_H
 /* SDMA registers */

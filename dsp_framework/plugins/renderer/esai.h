@@ -1,3 +1,7 @@
+/*
+ * Copyright 2018-2020 NXP
+ */
+
 #ifndef _ESAI_H
 #define _ESAI_H
 

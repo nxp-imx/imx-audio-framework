@@ -1,4 +1,6 @@
 /*
+ * Copyright 2020 NXP
+ *
  * sdma.c - SDMA driver
  */
 #include "sdma.h"

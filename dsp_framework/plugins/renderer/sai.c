@@ -1,4 +1,6 @@
 /*
+ * Copyright 2020 NXP
+ *
  * sai.c - SAI driver
  */
 
