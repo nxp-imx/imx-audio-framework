@@ -147,8 +147,9 @@
 /* ...component output eos operation */
 #define XF_OUTPUT_EOS                   __XF_OPCODE(0, 0, 18)
 
+#define XF_PAUSE_RELEASE                __XF_OPCODE(0, 0, 19)
 /* ...total amount of supported decoder commands */
-#define __XF_OP_NUM                     19
+#define __XF_OP_NUM                     20
 
 /*******************************************************************************
  * XF_START message definition
