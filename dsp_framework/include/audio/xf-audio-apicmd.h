@@ -60,6 +60,8 @@ enum xf_api_cmd_generic {
 	XF_API_CMD_SET_LIB_ENTRY      = 0x0010,
 	XF_API_CMD_SUSPEND            = 0x0011,
 	XF_API_CMD_RESUME             = 0x0012,
+	XF_API_CMD_PAUSE              = 0x0013,
+	XF_API_CMD_PAUSE_RELEASE      = 0x0014,
 
 };
 
