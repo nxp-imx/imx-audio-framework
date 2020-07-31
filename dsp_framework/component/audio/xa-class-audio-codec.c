@@ -674,6 +674,18 @@ static UA_ERROR_TYPE xa_codec_resume(struct XACodecBase *base, struct xf_message
 
 	return ACODEC_SUCCESS;
 }
+
+static UA_ERROR_TYPE xa_codec_pause(struct XACodecBase *base, struct xf_message *m) {
+
+	LOG1("Codec[%d] pause\n", base->codec_id);
+	return ACODEC_SUCCESS;
+}
+
+static UA_ERROR_TYPE xa_codec_pause_release(struct XACodecBase *base, struct xf_message *m) {
+
+	LOG1("Codec[%d] pause release\n", base->codec_id);
+	return ACODEC_SUCCESS;
+}
 /*******************************************************************************
  * Component entry point
  ******************************************************************************/
@@ -689,6 +701,8 @@ static UA_ERROR_TYPE (* const xa_codec_cmd[])(struct XACodecBase *, struct xf_me
 	[XF_OPCODE_TYPE(XF_FLUSH)] = xa_codec_flush,
 	[XF_OPCODE_TYPE(XF_RESUME)]  = xa_codec_resume,
 	[XF_OPCODE_TYPE(XF_SUSPEND)]  = xa_codec_suspend,
+	[XF_OPCODE_TYPE(XF_PAUSE)]  = xa_codec_pause,
+	[XF_OPCODE_TYPE(XF_PAUSE_RELEASE)]  = xa_codec_pause_release,
 	[XF_OPCODE_TYPE(XF_LOAD_LIB)] = xa_codec_lib_load,
 	[XF_OPCODE_TYPE(XF_UNLOAD_LIB)] = xa_codec_lib_unload,
 };

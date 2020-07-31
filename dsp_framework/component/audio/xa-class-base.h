@@ -96,6 +96,8 @@ struct XACodecBase {
 	/* ...codec control state */
 	u32                     state;
 
+	u32                     pause_state;
+
 	/***********************************************
 	 * Codec-specific methods
 	 **********************************************/

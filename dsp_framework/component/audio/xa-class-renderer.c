@@ -370,6 +370,33 @@ static UA_ERROR_TYPE xa_renderer_resume(struct XACodecBase *base, struct xf_mess
 	return ACODEC_SUCCESS;
 }
 
+static UA_ERROR_TYPE xa_renderer_pause(struct XACodecBase *base, struct xf_message *m) {
+
+	XF_CHK_ERR((base->state & XA_BASE_FLAG_POSTINIT), ACODEC_PARA_ERROR);
+
+	base->pause_state = base->state;
+
+	XA_API(base, XF_API_CMD_PAUSE, 0, NULL);
+
+	if (base->state & XA_BASE_FLAG_SCHEDULE)
+		xa_base_cancel(base);
+
+	LOG2("renderer[%d] pause, state: %d\n", base->codec_id, base->state);
+	return ACODEC_SUCCESS;
+}
+
+static UA_ERROR_TYPE xa_renderer_pause_release(struct XACodecBase *base, struct xf_message *m) {
+
+	XF_CHK_ERR((base->state & XA_BASE_FLAG_POSTINIT), ACODEC_PARA_ERROR);
+
+	XA_API(base, XF_API_CMD_PAUSE_RELEASE, 0, NULL);
+
+	if (base->pause_state & XA_BASE_FLAG_SCHEDULE)
+		xa_base_schedule(base, 0);
+
+	LOG2("renderer[%d] pause release, state: %d\n", base->codec_id, base->state);
+	return ACODEC_SUCCESS;
+}
 /*******************************************************************************
  * Command-processing function
  ******************************************************************************/
@@ -388,6 +415,8 @@ static UA_ERROR_TYPE (* const xa_renderer_cmd[])(struct XACodecBase *, struct xf
 
 	[XF_OPCODE_TYPE(XF_RESUME)]  = xa_renderer_resume,
 	[XF_OPCODE_TYPE(XF_SUSPEND)]  = xa_renderer_suspend,
+	[XF_OPCODE_TYPE(XF_PAUSE)]  = xa_renderer_pause,
+	[XF_OPCODE_TYPE(XF_PAUSE_RELEASE)]  = xa_renderer_pause_release,
 };
 
 /* ...total number of commands supported */
