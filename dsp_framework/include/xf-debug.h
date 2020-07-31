@@ -95,7 +95,8 @@
 	int __ret;                                          \
 	__ret = (int)(cond);                                \
 	if (!__ret) {                                       \
-		;                                               \
+		LOG1("Check error: %d\n", error);                 \
+		return (error);                                               \
 	}                                                   \
 	__ret;                                              \
 })

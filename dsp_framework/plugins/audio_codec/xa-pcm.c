@@ -125,7 +125,7 @@ static UA_ERROR_TYPE xa_pcm_do_execute_copy(XAPcmCodec *d)
     /*TRACE(PROCESS, _b("Copy PCM%d %p to %p (%u samples)"), d->in_pcm_width, input, output, n);*/
 
     /* ...check if we have all data setup */
-    XF_CHK_ERR(input && n && output, XA_PCM_EXEC_FATAL_STATE);
+    XF_CHK_ERR(input && n && output, ACODEC_PARA_ERROR);
 
     /* ...copy the samples without any processing */
     memcpy(output, input, length);
@@ -153,7 +153,7 @@ static UA_ERROR_TYPE xa_pcm_do_execute_pcm16_chmap(XAPcmCodec *d)
     /*TRACE(PROCESS, _b("Map PCM16 %p to %p (%u samples, map: %X)"), input, output, n, chmap);    */
 
     /* ...check if we have all data setup */
-    XF_CHK_ERR(input && n && output, XA_PCM_EXEC_FATAL_STATE);
+    XF_CHK_ERR(input && n && output, ACODEC_PARA_ERROR);
 
 #if 0
     /* ...convert individual samples (that function could be CPU-optimized - tbd) */
@@ -196,7 +196,7 @@ static UA_ERROR_TYPE xa_pcm_do_execute_pcm24_chmap(XAPcmCodec *d)
     /*TRACE(PROCESS, _b("Map PCM24 %p to %p (%u samples, map: %X)"), input, output, n, chmap);*/
 
     /* ...check if we have all data setup */
-    XF_CHK_ERR(input && n && output, XA_PCM_EXEC_FATAL_STATE);
+    XF_CHK_ERR(input && n && output, ACODEC_PARA_ERROR);
 
     /* ...convert individual samples (that function could be CPU-optimized - tbd) */
     for (i = 0; i < n; i++, input += k)
@@ -234,7 +234,7 @@ static UA_ERROR_TYPE xa_pcm_do_execute_pcm24_to_pcm16(XAPcmCodec *d)
     /*TRACE(PROCESS, _b("Convert PCM24 %p to PCM16 %p (%u samples, map: %X)"), input, output, n, chmap);*/
 
     /* ...check if we have all data setup */
-    XF_CHK_ERR(input && n && output, XA_PCM_EXEC_FATAL_STATE);
+    XF_CHK_ERR(input && n && output, ACODEC_PARA_ERROR);
 
     /* ...convert individual samples (that function could be CPU-optimized - tbd) */
     for (i = 0; i < n; i++, input += k)
@@ -276,7 +276,7 @@ static UA_ERROR_TYPE xa_pcm_do_execute_pcm16_to_pcm24(XAPcmCodec *d)
     /*TRACE(PROCESS, _b("Convert PCM16 %p to PCM24 %p (%u samples, map: %X)"), input, output, n, chmap);*/
 
     /* ...check if we have all data setup */
-    XF_CHK_ERR(input && n && output, XA_PCM_EXEC_FATAL_STATE);
+    XF_CHK_ERR(input && n && output, ACODEC_PARA_ERROR);
 
     /* ...convert individual samples (that function could be CPU-optimized - tbd) */
     for (i = 0; i < n; i++, input += k)
@@ -368,7 +368,7 @@ static UA_ERROR_TYPE xa_pcm_preinit(XAPcmCodec *d,
 					   void *pv_value)
 {
     /* ...sanity check */
-    XF_CHK_ERR(d, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d, ACODEC_PARA_ERROR);
 
     /* ...pre-configuration initialization; reset internal data */
     memset(d, 0, sizeof(*d));
@@ -393,10 +393,10 @@ static UA_ERROR_TYPE xa_pcm_preinit(XAPcmCodec *d,
 static UA_ERROR_TYPE xa_pcm_init(XAPcmCodec *d, u32 i_idx, void *pv_value)
 {
     /* ...sanity check */
-    XF_CHK_ERR(d, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d, ACODEC_PARA_ERROR);
 
     /* ...run-time initialization process; make sure post-init is complete */
-    /*XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);*/
+    /*XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);*/
 
     /* ...initialize runtime for specified transformation function */
     return ACODEC_SUCCESS;
@@ -407,10 +407,10 @@ static UA_ERROR_TYPE xa_pcm_postinit(struct XAPcmCodec *d,
 					    void *pv_value)
 {
     /* ...sanity check */
-    XF_CHK_ERR(d, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d, ACODEC_PARA_ERROR);
 
     /* ...post-configuration initialization (all parameters are set) */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_PREINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...calculate input sample stride size */
     d->in_stride = d->in_channels * (d->in_pcm_width == 16 ? 2 : 4);
@@ -428,10 +428,10 @@ static UA_ERROR_TYPE xa_pcm_set_config_param(XAPcmCodec *d, u32 i_idx, void *pv_
     s32      i_value;
 
     /* ...sanity check */
-    /*XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);*/
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...configuration is allowed only in PRE-CONFIG state */
-    XF_CHK_ERR(d->state == XA_PCM_FLAG_PREINIT_DONE, XA_PCM_CONFIG_NONFATAL_STATE);
+    XF_CHK_ERR(d->state == XA_PCM_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...get integer parameter value */
     if (pv_value)
@@ -447,25 +447,25 @@ static UA_ERROR_TYPE xa_pcm_set_config_param(XAPcmCodec *d, u32 i_idx, void *pv_
 
     case XA_PCM_CONFIG_PARAM_IN_PCM_WIDTH:
         /* ...return input sample bit-width */
-        XF_CHK_ERR(i_value == 16 || i_value == 32, XA_PCM_CONFIG_NONFATAL_RANGE);
+        XF_CHK_ERR(i_value == 16 || i_value == 32, ACODEC_PARA_ERROR);
         d->in_pcm_width = (u8)i_value;
         return ACODEC_SUCCESS;
 
     case XA_PCM_CONFIG_PARAM_IN_CHANNELS:
         /* ...support at most 8-channels stream */
-        XF_CHK_ERR(i_value > 0 && i_value <= 8, XA_PCM_CONFIG_NONFATAL_RANGE);
+        XF_CHK_ERR(i_value > 0 && i_value <= 8, ACODEC_PARA_ERROR);
         d->in_channels = (u8)i_value;
         return ACODEC_SUCCESS;
 
     case XA_PCM_CONFIG_PARAM_OUT_PCM_WIDTH:
         /* ...we only support PCM16 and PCM24 */
-        XF_CHK_ERR(i_value == 16 || i_value == 32, XA_PCM_CONFIG_NONFATAL_RANGE);
+        XF_CHK_ERR(i_value == 16 || i_value == 32, ACODEC_PARA_ERROR);
         d->out_pcm_width = (u8)i_value;
         return ACODEC_SUCCESS;
 
     case XA_PCM_CONFIG_PARAM_OUT_CHANNELS:
         /* ...support at most 8-channels stream */
-        XF_CHK_ERR(i_value > 0 && i_value <= 8, XA_API_FATAL_INVALID_CMD_TYPE);
+        XF_CHK_ERR(i_value > 0 && i_value <= 8, ACODEC_PARA_ERROR);
         d->out_channels = (u8)i_value;
         return ACODEC_SUCCESS;
 
@@ -479,7 +479,7 @@ static UA_ERROR_TYPE xa_pcm_set_config_param(XAPcmCodec *d, u32 i_idx, void *pv_
 
     default:
         /* ...unrecognized parameter */
-        return XF_CHK_ERR(0, XA_API_FATAL_INVALID_CMD_TYPE);
+        return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
     }
 }
 
@@ -487,10 +487,10 @@ static UA_ERROR_TYPE xa_pcm_set_config_param(XAPcmCodec *d, u32 i_idx, void *pv_
 static UA_ERROR_TYPE xa_pcm_get_config_param(XAPcmCodec *d, u32 i_idx, void *pv_value)
 {
     /* ...sanity check */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...make sure pre-configuration is completed */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_PREINIT_DONE, XA_PCM_CONFIG_NONFATAL_STATE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...process individual parameter */
     switch (i_idx)
@@ -527,7 +527,7 @@ static UA_ERROR_TYPE xa_pcm_get_config_param(XAPcmCodec *d, u32 i_idx, void *pv_
 
     default:
         /* ...unrecognized parameter */
-        return XF_CHK_ERR(0, XA_API_FATAL_INVALID_CMD_TYPE);
+        return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
     }
 }
 
@@ -535,9 +535,9 @@ static UA_ERROR_TYPE xa_pcm_get_config_param(XAPcmCodec *d, u32 i_idx, void *pv_
 static UA_ERROR_TYPE xa_pcm_execute(XAPcmCodec *d, u32 i_idx, void *pv_value)
 {
     /* ...basic sanity check */
-    XF_CHK_ERR(d, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d, ACODEC_PARA_ERROR);
    /* ...codec must be in running state */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_RUNNING, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_RUNNING, ACODEC_PARA_ERROR);
 
     /* ...process individual command type */
     /* ...do data processing (tbd - result code is bad) */
@@ -545,7 +545,7 @@ static UA_ERROR_TYPE xa_pcm_execute(XAPcmCodec *d, u32 i_idx, void *pv_value)
 
     if (d->insize != 0)
     {
-        XF_CHK_ERR(!d->process(d), XA_PCM_EXEC_FATAL_STATE);
+        XF_CHK_ERR(!d->process(d), ACODEC_PARA_ERROR);
     }
 
     /* ...process end-of-stream condition */
@@ -564,22 +564,22 @@ static UA_ERROR_TYPE xa_pcm_set_input_bytes(XAPcmCodec *d, u32 i_idx, void *pv_v
     u32     insize;
 
     /* ...sanity check */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...track index must be valid */
-    XF_CHK_ERR(i_idx == 0, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(i_idx == 0, ACODEC_PARA_ERROR);
 
     /* ...component must be initialized */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...input buffer must exist */
-    XF_CHK_ERR(d->input, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->input, ACODEC_PARA_ERROR);
 
     /* ...convert bytes into samples (don't like division, but still...) */
     insize = *(s32 *)pv_value / in_stride;
 
     /* ...make sure we have integral amount of samples */
-    XF_CHK_ERR(*(s32 *)pv_value == insize * in_stride, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(*(s32 *)pv_value == insize * in_stride, ACODEC_PARA_ERROR);
 
     /* ...limit input buffer size to maximal value*/
     d->insize = (insize > XA_PCM_MAX_SAMPLES ? XA_PCM_MAX_SAMPLES : insize);
@@ -591,16 +591,16 @@ static UA_ERROR_TYPE xa_pcm_set_input_bytes(XAPcmCodec *d, u32 i_idx, void *pv_v
 static UA_ERROR_TYPE xa_pcm_get_output_bytes(XAPcmCodec *d, u32 i_idx, void *pv_value)
 {
     /* ...sanity check */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...buffer index must be sane */
-    XF_CHK_ERR(i_idx == 1, XA_API_FATAL_INVALID_CMD_TYPE);
+    /* XF_CHK_ERR(i_idx == 1, ACODEC_PARA_ERROR);*/
 
     /* ...component must be initialized */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...output buffer must exist */
-    XF_CHK_ERR(d->output, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->output, ACODEC_PARA_ERROR);
 
     /* ...return number of produced bytes (and reset instantly? - tbd) */
     *(s32 *)pv_value = d->produced;
@@ -612,13 +612,13 @@ static UA_ERROR_TYPE xa_pcm_get_output_bytes(XAPcmCodec *d, u32 i_idx, void *pv_
 static UA_ERROR_TYPE xa_pcm_get_curidx_input_buf(XAPcmCodec *d, u32 i_idx, void *pv_value)
 {
     /* ...sanity check */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...index must be valid */
-    XF_CHK_ERR(i_idx == 0, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(i_idx == 0, ACODEC_PARA_ERROR);
 
     /* ...input buffer must exist */
-    XF_CHK_ERR(d->input, XA_PCM_EXEC_NONFATAL_INPUT);
+    XF_CHK_ERR(d->input, ACODEC_PARA_ERROR);
 
     /* ...return number of bytes consumed */
     *(s32 *)pv_value = d->consumed;
@@ -630,7 +630,7 @@ static UA_ERROR_TYPE xa_pcm_get_curidx_input_buf(XAPcmCodec *d, u32 i_idx, void 
 static UA_ERROR_TYPE xa_pcm_input_over(XAPcmCodec *d, u32 i_idx, void *pv_value)
 {
     /* ...sanity check */
-    XF_CHK_ERR(d, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d, ACODEC_PARA_ERROR);
 
     /* ...put end-of-stream flag */
     d->state |= XA_PCM_FLAG_EOS;
@@ -675,10 +675,10 @@ static UA_ERROR_TYPE xf_pcm_runtime_init(XAPcmCodec *d,
 static UA_ERROR_TYPE xa_pcm_get_memtabs_size(XAPcmCodec *d, s32 i_idx, void *pv_value)
 {
     /* ...basic sanity checks */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...check mixer is pre-initialized */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_PREINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...we have all our tables inside API structure */
     *(s32 *)pv_value = 0;
@@ -690,7 +690,7 @@ static UA_ERROR_TYPE xa_pcm_get_memtabs_size(XAPcmCodec *d, s32 i_idx, void *pv_
 static UA_ERROR_TYPE xa_pcm_get_n_memtabs(XAPcmCodec *d, s32 i_idx, void *pv_value)
 {
     /* ...basic sanity checks */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...we have 1 input buffer and 1 output buffer */
     *(s32 *)pv_value = 1 + 1;
@@ -702,10 +702,10 @@ static UA_ERROR_TYPE xa_pcm_get_n_memtabs(XAPcmCodec *d, s32 i_idx, void *pv_val
 static UA_ERROR_TYPE xa_pcm_get_mem_info_type(XAPcmCodec *d, s32 i_idx, void *pv_value)
 {
     /* ...basic sanity check */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...codec must be in post-init state */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...check buffer type */
     switch (i_idx)
@@ -719,7 +719,7 @@ static UA_ERROR_TYPE xa_pcm_get_mem_info_type(XAPcmCodec *d, s32 i_idx, void *pv
         return ACODEC_SUCCESS;
 
     default:
-        return XF_CHK_ERR(0, XA_API_FATAL_INVALID_CMD_TYPE);
+        return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
     }
 }
 
@@ -727,10 +727,10 @@ static UA_ERROR_TYPE xa_pcm_get_mem_info_type(XAPcmCodec *d, s32 i_idx, void *pv
 static UA_ERROR_TYPE xa_pcm_get_mem_info_size(XAPcmCodec *d, s32 i_idx, void *pv_value)
 {
     /* ...basic sanity check */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...codec must be in post-init state */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...determine particular buffer */
     switch (i_idx)
@@ -747,7 +747,7 @@ static UA_ERROR_TYPE xa_pcm_get_mem_info_size(XAPcmCodec *d, s32 i_idx, void *pv
 
     default:
         /* ...invalid buffer index */
-        return XF_CHK_ERR(0, XA_API_FATAL_INVALID_CMD_TYPE);
+        return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
     }
 }
 
@@ -755,10 +755,10 @@ static UA_ERROR_TYPE xa_pcm_get_mem_info_size(XAPcmCodec *d, s32 i_idx, void *pv
 static UA_ERROR_TYPE xa_pcm_get_mem_info_alignment(XAPcmCodec *d, s32 i_idx, void *pv_value)
 {
     /* ...basic sanity check */
-    XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...codec must be in post-initialization state */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...all buffers are 4-bytes aligned */
     *(s32 *)pv_value = 4;
@@ -770,11 +770,11 @@ static UA_ERROR_TYPE xa_pcm_get_mem_info_alignment(XAPcmCodec *d, s32 i_idx, voi
 static UA_ERROR_TYPE xa_pcm_set_mem_ptr(XAPcmCodec *d, s32 i_idx, void *pv_value)
 {
     /* ...basic sanity check */
-    XF_CHK_ERR(d, XA_API_FATAL_INVALID_CMD_TYPE);
-    XF_CHK_ERR(pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d, ACODEC_PARA_ERROR);
+    XF_CHK_ERR(pv_value, ACODEC_PARA_ERROR);
 
     /* ...codec must be in post-initialized state */
-    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+    XF_CHK_ERR(d->state & XA_PCM_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
     /* ...select memory buffer */
     switch (i_idx)
@@ -791,7 +791,7 @@ static UA_ERROR_TYPE xa_pcm_set_mem_ptr(XAPcmCodec *d, s32 i_idx, void *pv_value
 
     default:
         /* ...invalid index */
-        return XF_CHK_ERR(0, XA_API_FATAL_INVALID_CMD_TYPE);
+        return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
     }
 }
 #endif
@@ -840,10 +840,10 @@ UA_ERROR_TYPE xa_pcm_codec(xf_codec_handle_t p_xa_module_obj, s32 i_cmd, s32 i_i
     XAPcmCodec *d = (XAPcmCodec *) p_xa_module_obj;
 
     /* ...check if command index is sane */
-    XF_CHK_ERR(i_cmd < XA_PCM_API_COMMANDS_NUM, XA_API_FATAL_INVALID_CMD);
+    XF_CHK_ERR(i_cmd < XA_PCM_API_COMMANDS_NUM, ACODEC_PARA_ERROR);
 
     /* ...see if command is defined */
-    XF_CHK_ERR(xa_pcm_api[i_cmd], XA_API_FATAL_INVALID_CMD);
+    XF_CHK_ERR(xa_pcm_api[i_cmd], ACODEC_PARA_ERROR);
 
     /* ...execute requested command */
     return xa_pcm_api[i_cmd](d, i_idx, pv_value);

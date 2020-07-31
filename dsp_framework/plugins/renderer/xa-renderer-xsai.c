@@ -380,7 +380,7 @@ static inline UA_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32 
 	{
 	case XA_RENDERER_STATE_RUN:
 		/* ...renderer must be in paused state */
-		XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PAUSED, XA_PARA_ERROR);
+		XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PAUSED, ACODEC_PARA_ERROR);
 
 		/* ...resume renderer operation */
 		xa_hw_renderer_resume(d);
@@ -392,7 +392,7 @@ static inline UA_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32 
 
 	case XA_RENDERER_STATE_PAUSE:
 		/* ...renderer must be in running state */
-		XF_CHK_ERR(d->state & XA_RENDERER_FLAG_RUNNING, XA_PARA_ERROR);
+		XF_CHK_ERR(d->state & XA_RENDERER_FLAG_RUNNING, ACODEC_PARA_ERROR);
 
 		/* ...pause renderer operation */
 		xa_hw_renderer_pause(d);
@@ -413,7 +413,7 @@ static inline UA_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32 
 
 	default:
 		/* ...unrecognized command */
-		return XF_CHK_ERR(0, XA_PARA_ERROR);
+		return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
 	}
 }
 
@@ -425,7 +425,7 @@ static inline UA_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32 
 static UA_ERROR_TYPE xa_renderer_get_api_size(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...check parameters are sane */
-	XF_CHK_ERR(pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(pv_value, ACODEC_PARA_ERROR);
 
 	/* ...retrieve API structure size */
 	*(u32 *)pv_value = sizeof(*d);
@@ -449,7 +449,7 @@ static UA_ERROR_TYPE xf_renderer_preinit(struct XADevRenderer *d, u32 i_idx, voi
 static UA_ERROR_TYPE xa_renderer_init(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...sanity check - pointer must be valid */
-	XF_CHK_ERR(d, XA_PARA_ERROR);
+	XF_CHK_ERR(d, ACODEC_PARA_ERROR);
 
 	/* ...process particular initialization type */
 
@@ -468,7 +468,7 @@ static UA_ERROR_TYPE xf_renderer_postinit(struct XADevRenderer *d, u32 i_idx, vo
 {
 	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
-	XF_CHK_ERR(xa_hw_renderer_init(d) == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(xa_hw_renderer_init(d) == 0, ACODEC_PARA_ERROR);
 
 	d->state |= XA_RENDERER_FLAG_POSTINIT_DONE;
 
@@ -481,10 +481,10 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 	u32     i_value;
 
 	/* ...sanity check - pointers must be sane */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...pre-initialization must be completed */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
 	LOG1("xa_renderer_set_config_param, %d\n", i_idx);
 	/* ...process individual configuration parameter */
@@ -492,13 +492,13 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 	{
 	case XA_RENDERER_CONFIG_PARAM_PCM_WIDTH:
 		/* ...command is valid only in configuration state */
-		XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE) == 0, XA_PARA_ERROR);
+		XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE) == 0, ACODEC_PARA_ERROR);
 
 		/* ...get requested PCM width */
 		i_value = (u32) *(u32 *)pv_value;
 
 		/* ...check value is permitted (16 bits only) */
-		XF_CHK_ERR(i_value == 16, XA_PARA_ERROR);
+		XF_CHK_ERR(i_value == 16, ACODEC_PARA_ERROR);
 
 		/* ...apply setting */
 		d->pcm_width = i_value;
@@ -507,13 +507,13 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 
 	case XA_RENDERER_CONFIG_PARAM_CHANNELS:
 		/* ...command is valid only in configuration state */
-		XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE) == 0, XA_PARA_ERROR);
+		XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE) == 0, ACODEC_PARA_ERROR);
 
 		/* ...get requested channel number */
 		i_value = (u32) *(u32 *)pv_value;
 
 		/* ...allow stereo only */
-		XF_CHK_ERR(i_value == 2 || i_value == 1, XA_PARA_ERROR);
+		XF_CHK_ERR(i_value == 2 || i_value == 1, ACODEC_PARA_ERROR);
 
 		/* ...apply setting */
 		d->channels = (u32)i_value;
@@ -522,13 +522,13 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 
 	case XA_RENDERER_CONFIG_PARAM_SAMPLE_RATE:
 		/* ...command is valid only in configuration state */
-		XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE) == 0, XA_PARA_ERROR);
+		XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE) == 0, ACODEC_PARA_ERROR);
 
 		/* ...get requested sampling rate */
 		i_value = (u32) *(u32 *)pv_value;
 
 		/* ...allow 44.1 and 48KHz only - tbd */
-		XF_CHK_ERR(i_value == 44100 || i_value == 48000, XA_PARA_ERROR);
+		/*XF_CHK_ERR(i_value == 44100 || i_value == 48000, ACODEC_PARA_ERROR);*/
 
 		/* ...apply setting */
 		d->rate = (u32)i_value;
@@ -537,13 +537,13 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 
 	case XA_RENDERER_CONFIG_PARAM_FRAME_SIZE:
 		/* ...command is valid only in configuration state */
-		XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE) == 0, XA_PARA_ERROR);
+		XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE) == 0, ACODEC_PARA_ERROR);
 
 		/* ...get requested frame size */
 		i_value = (u32) *(u32 *)pv_value;
 
 		/* ...check it is a power-of-two */
-		XF_CHK_ERR(xf_is_power_of_two(i_value), XA_PARA_ERROR);
+		XF_CHK_ERR(xf_is_power_of_two(i_value), ACODEC_PARA_ERROR);
 
 		/* ...apply setting */
 		d->frame_size = (u32)i_value;
@@ -558,7 +558,7 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 
 	case XA_RENDERER_CONFIG_PARAM_STATE:
 		/* ...runtime state control parameter valid only in execution state */
-		XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, XA_PARA_ERROR);
+		XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
 		/* ...get requested state */
 		i_value = (u32) *(u32 *)pv_value;
@@ -568,7 +568,7 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 
 	default:
 		/* ...unrecognized parameter */
-		return XF_CHK_ERR(0, XA_PARA_ERROR);
+		return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
 	}
 }
 
@@ -576,10 +576,10 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 static UA_ERROR_TYPE xa_renderer_get_config_param(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...sanity check - renderer must be initialized */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...make sure pre-initialization is completed */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
 	/* ...process individual configuration parameter */
 	switch (i_idx)
@@ -614,7 +614,7 @@ static UA_ERROR_TYPE xa_renderer_get_config_param(struct XADevRenderer *d, u32 i
 
 	default:
 		/* ...unrecognized parameter */
-		return XF_CHK_ERR(0, XA_PARA_ERROR);
+		return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
 	}
 }
 
@@ -623,10 +623,10 @@ static UA_ERROR_TYPE xa_renderer_execute(struct XADevRenderer *d, u32 i_idx, voi
 {
 
 	/* ...sanity check - pointer must be valid */
-	XF_CHK_ERR(d, XA_PARA_ERROR);
+	XF_CHK_ERR(d, ACODEC_PARA_ERROR);
 
 	/* ...renderer must be in running state */
-	XF_CHK_ERR(d->state & (XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE), XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & (XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE), ACODEC_PARA_ERROR);
 
 	LOG("xa_renderer_execute\n");
 	/* ...process individual command type */
@@ -639,22 +639,22 @@ static UA_ERROR_TYPE xa_renderer_set_input_bytes(struct XADevRenderer *d, u32 i_
 	u32     size;
 
 	/* ...sanity check - check parameters */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...make sure it is an input port  */
-	XF_CHK_ERR(i_idx == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(i_idx == 0, ACODEC_PARA_ERROR);
 
 	/* ...renderer must be initialized */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
 	/* ...input buffer pointer must be valid */
-	XF_CHK_ERR(d->input, XA_PARA_ERROR);
+	XF_CHK_ERR(d->input, ACODEC_PARA_ERROR);
 
 	/* ...check buffer size is sane */
-	XF_CHK_ERR((size = *(u32 *)pv_value / d->sample_size) > 0, XA_PARA_ERROR);
+	XF_CHK_ERR((size = *(u32 *)pv_value / d->sample_size) > 0, ACODEC_PARA_ERROR);
 
 	/* ...make sure we have integral amount of samples */
-	XF_CHK_ERR(size * d->sample_size == *(u32 *)pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(size * d->sample_size == *(u32 *)pv_value, ACODEC_PARA_ERROR);
 
 	/* ...submit chunk of data into our ring-buffer */
 	d->consumed = d->sample_size * xa_hw_renderer_submit(d, d->input, size);
@@ -667,16 +667,16 @@ static UA_ERROR_TYPE xa_renderer_set_input_bytes(struct XADevRenderer *d, u32 i_
 static UA_ERROR_TYPE xf_renderer_get_consumed_bytes(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...sanity check - check parameters */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...input buffer index must be valid */
-	XF_CHK_ERR(i_idx == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(i_idx == 0, ACODEC_PARA_ERROR);
 
 	/* ...renderer must be running */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_RUNNING, XA_PARA_ERROR);
+	/* XF_CHK_ERR(d->state & XA_RENDERER_FLAG_RUNNING, ACODEC_PARA_ERROR);*/
 
 	/* ...input buffer must exist */
-	XF_CHK_ERR(d->input, XA_PARA_ERROR);
+	XF_CHK_ERR(d->input, ACODEC_PARA_ERROR);
 
 	/* ...return number of bytes consumed */
 	*(u32 *)pv_value = d->consumed;
@@ -695,10 +695,10 @@ static UA_ERROR_TYPE xf_renderer_get_consumed_bytes(struct XADevRenderer *d, u32
 static UA_ERROR_TYPE xa_renderer_get_memtabs_size(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity checks */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...check renderer is pre-initialized */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
 	/* ...we have all our tables inside API structure */
 	*(u32 *)pv_value = 0;
@@ -710,10 +710,10 @@ static UA_ERROR_TYPE xa_renderer_get_memtabs_size(struct XADevRenderer *d, u32 i
 static UA_ERROR_TYPE xa_renderer_set_memtabs_ptr(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity checks */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...check renderer is pre-initialized */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
 	/* ...do not do anything; just return success - tbd */
 	return ACODEC_SUCCESS;
@@ -723,7 +723,7 @@ static UA_ERROR_TYPE xa_renderer_set_memtabs_ptr(struct XADevRenderer *d, u32 i_
 static UA_ERROR_TYPE xa_renderer_get_n_memtabs(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity checks */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...we have 1 input buffer */
 	*(u32 *)pv_value = 1;
@@ -737,10 +737,10 @@ static UA_ERROR_TYPE xa_renderer_get_mem_info_size(struct XADevRenderer *d, u32 
 	u32     i_value;
 
 	/* ...basic sanity check */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...command valid only after post-initialization step */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
 	switch (i_idx)
 	{
@@ -750,7 +750,7 @@ static UA_ERROR_TYPE xa_renderer_get_mem_info_size(struct XADevRenderer *d, u32 
 		break;
 	default:
 		/* ...invalid index */
-		return XF_CHK_ERR(0, XA_PARA_ERROR);
+		return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
 	}
 
 	/* ...return buffer size to caller */
@@ -763,10 +763,10 @@ static UA_ERROR_TYPE xa_renderer_get_mem_info_size(struct XADevRenderer *d, u32 
 static UA_ERROR_TYPE xa_renderer_get_mem_info_alignment(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity check */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...command valid only after post-initialization step */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 
 	/* ...all buffers are at least 4-bytes aligned */
 	*(u32 *)pv_value = 4;
@@ -778,20 +778,20 @@ static UA_ERROR_TYPE xa_renderer_get_mem_info_alignment(struct XADevRenderer *d,
 static UA_ERROR_TYPE xa_renderer_get_mem_info_type(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity check */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...command valid only after post-initialization step */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, XA_PARA_ERROR);
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
 }
 
 /* ...set memory pointer */
 static UA_ERROR_TYPE xa_renderer_set_input_ptr(struct XADevRenderer *d, u32 i_idx, void* pv_value)
 {
 	/* ...basic sanity check */
-	XF_CHK_ERR(d && pv_value, XA_PARA_ERROR);
+	XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
 	/* ...codec must be initialized */
-	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, XA_PARA_ERROR);
+	/* XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR); */
 
 	/* ...select memory buffer */
 	switch (i_idx)
@@ -803,7 +803,7 @@ static UA_ERROR_TYPE xa_renderer_set_input_ptr(struct XADevRenderer *d, u32 i_id
 
 	default:
 		/* ...invalid index */
-		return XF_CHK_ERR(0, XA_PARA_ERROR);
+		return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
 	}
 }
 
@@ -922,10 +922,10 @@ UA_ERROR_TYPE xa_renderer(xf_codec_handle_t handle, u32 i_cmd, u32 i_idx, void* 
 	struct XADevRenderer *renderer = (struct XADevRenderer *)handle;
 
 	/* ...check if command index is sane */
-	XF_CHK_ERR(i_cmd < XA_RENDERER_API_COMMANDS_NUM, XA_PARA_ERROR);
+	XF_CHK_ERR(i_cmd < XA_RENDERER_API_COMMANDS_NUM, ACODEC_PARA_ERROR);
 
 	/* ...see if command is defined */
-	XF_CHK_ERR(xa_renderer_api[i_cmd], XA_PARA_ERROR);
+	XF_CHK_ERR(xa_renderer_api[i_cmd], ACODEC_PARA_ERROR);
 
 	/* ...execute requested command */
 	return xa_renderer_api[i_cmd](renderer, i_idx, pv_value);

@@ -88,10 +88,12 @@ static UA_ERROR_TYPE xa_base_init(struct XACodecBase *base)
 		ret = XA_API(base, XF_API_CMD_SET_PARAM, UNIA_CODEC_ENTRY_ADDR, (void *)&base->codecinterface);
 		LOG3("Codec[%d] set codec entry[%p] completed, ret = %d\n", base->codec_id,
 				base->codecinterface, ret);
-	}
+
 #ifdef DEBUG
-	XA_API(base, XF_API_CMD_SET_PARAM, UNIA_FUNC_PRINT, NULL);
+		/* only for codec */
+		XA_API(base, XF_API_CMD_SET_PARAM, UNIA_FUNC_PRINT, NULL);
 #endif
+	}
 
 	LOG2("Codec[%d] initialization completed, ret = %d\n",
 	     base->codec_id, ret);
@@ -264,8 +266,8 @@ static int xa_base_command(struct xf_component *component, struct xf_message *m)
 
 	/* ...invoke data-processing function if message is null */
 	if (!m) {
-		XF_CHK_ERR((xa_base_process(base) != ACODEC_SUCCESS),
-			   XA_ERR_UNKNOWN);
+		XF_CHK_ERR((xa_base_process(base) == ACODEC_SUCCESS),
+			   ACODEC_ERR_UNKNOWN);
 		return 0;
 	}
 
@@ -281,13 +283,13 @@ static int xa_base_command(struct xf_component *component, struct xf_message *m)
 	}
 
 	/* ...check opcode is valid */
-	XF_CHK_ERR(cmd < base->command_num, XA_PARA_ERROR);
+	XF_CHK_ERR(cmd < base->command_num, ACODEC_PARA_ERROR);
 
 	/* ...and has a hook */
-	XF_CHK_ERR(base->command[cmd] != NULL, XA_PARA_ERROR);
+	XF_CHK_ERR(base->command[cmd] != NULL, ACODEC_PARA_ERROR);
 
 	/* ...pass control to specific command */
-	XF_CHK_ERR((base->command[cmd](base, m) != ACODEC_SUCCESS), XA_ERR_UNKNOWN);
+	XF_CHK_ERR((base->command[cmd](base, m) == ACODEC_SUCCESS), ACODEC_ERR_UNKNOWN);
 
 	/* ...execution completed successfully */
 	return 0;

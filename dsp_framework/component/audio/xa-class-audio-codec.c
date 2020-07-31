@@ -220,10 +220,10 @@ static UA_ERROR_TYPE xa_codec_empty_this_buffer(struct XACodecBase *base,
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 
 	/* ...make sure the port is sane */
-	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 0, ACODEC_PARA_ERROR);
 
 	/* ...command is allowed only in post-init state */
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, XA_PARA_ERROR);
+	/*XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR);*/
 
 	/* ...put message into input queue */
 	if (xf_input_port_put(&codec->input, m)) {
@@ -238,8 +238,8 @@ static UA_ERROR_TYPE xa_codec_empty_this_buffer(struct XACodecBase *base,
 		}
 
 		/* ...codec must be in one of these states */
-		XF_CHK_ERR(base->state & (XA_BASE_FLAG_RUNTIME_INIT |
-					XA_BASE_FLAG_EXECUTION), XA_PARA_ERROR);
+		/* XF_CHK_ERR(base->state & (XA_BASE_FLAG_RUNTIME_INIT |
+					XA_BASE_FLAG_EXECUTION), ACODEC_PARA_ERROR); */
 
 		/* ...schedule data processing if output is ready */
 		if (xf_output_port_ready(&codec->output))
@@ -258,10 +258,10 @@ static UA_ERROR_TYPE xa_codec_fill_this_buffer(struct XACodecBase *base,
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 
 	/* ...make sure the port is sane */
-	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 1, XA_PARA_ERROR);
+	/* XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 1, ACODEC_PARA_ERROR); */
 
 	/* ...command is allowed only in postinit state */
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, XA_PARA_ERROR);
+	/* XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR);*/
 
 	/* ...special handling of zero-length buffer */
 	if (base->state & XA_BASE_FLAG_RUNTIME_INIT) {
@@ -300,7 +300,7 @@ static UA_ERROR_TYPE xa_codec_fill_this_buffer(struct XACodecBase *base,
 	if (xf_output_port_put(&codec->output, m)) {
 		/* ...codec must be in one of these states */
 		XF_CHK_ERR(base->state & (XA_BASE_FLAG_RUNTIME_INIT |
-					XA_BASE_FLAG_EXECUTION), XA_PARA_ERROR);
+					XA_BASE_FLAG_EXECUTION), ACODEC_PARA_ERROR);
 
 		if (xf_input_port_ready(&codec->input) || xf_input_port_level(&codec->input)) {
 			/* ...schedule data processing instantly */
@@ -324,13 +324,13 @@ static UA_ERROR_TYPE xa_codec_port_route(struct XACodecBase *base,
 	u32                     dst = cmd->dst;
 
 	/* ...command is allowed only in "postinit" state */
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, XA_PARA_ERROR);
+	/* XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR);*/
 
 	/* ...make sure output port is addressed */
-	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 1, XA_PARA_ERROR);
+	/* XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 1, ACODEC_PARA_ERROR);*/
 
 	/* ...make sure port is not routed yet */
-	XF_CHK_ERR(!xf_output_port_routed(port), XA_PARA_ERROR);
+	XF_CHK_ERR(!xf_output_port_routed(port), ACODEC_PARA_ERROR);
 
 	/* ...route output port - allocate queue */
 	XF_CHK_ERR(xf_output_port_route(port,
@@ -339,7 +339,7 @@ static UA_ERROR_TYPE xa_codec_port_route(struct XACodecBase *base,
 					cmd->alloc_size,
 					cmd->alloc_align,
 					&dsp_config->scratch_mem_info) == 0,
-					XA_INSUFFICIENT_MEM);
+					ACODEC_INSUFFICIENT_MEM);
 
 	/* ...schedule processing instantly */
 	xa_base_schedule(base, 0);
@@ -359,10 +359,10 @@ static UA_ERROR_TYPE xa_codec_port_unroute(struct XACodecBase *base,
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 
 	/* ...command is allowed only in "postinit" state */
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, XA_PARA_ERROR);
+	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR);
 
 	/* ...make sure output port is addressed */
-	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 1, XA_PARA_ERROR);
+	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 1, ACODEC_PARA_ERROR);
 
 	/* ...cancel any pending processing */
 	xa_base_cancel(base);
@@ -399,10 +399,10 @@ static UA_ERROR_TYPE xa_codec_flush(struct XACodecBase *base, struct xf_message 
 	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	/* ...command is allowed only in "postinit" state */
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, XA_PARA_ERROR);
+	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR);
 
 	/* ...ensure input parameter length is zero */
-	XF_CHK_ERR(m->length == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(m->length == 0, ACODEC_PARA_ERROR);
 
 	LOG("flush command received\n");
 
@@ -488,11 +488,11 @@ static UA_ERROR_TYPE xa_codec_memtab(struct XACodecBase *base,
 	/* ...input port specification; allocate internal buffer */
 	XF_CHK_ERR(xf_input_port_init(&codec->input, size, align,
 				      &dsp_config->scratch_mem_info) == 0,
-				XA_INSUFFICIENT_MEM);
+				      ACODEC_INSUFFICIENT_MEM);
 
 	/* ...initialize output port queue (no allocation here yet) */
 	XF_CHK_ERR(xf_output_port_init(&codec->output, 16384) == 0,
-		   XA_INSUFFICIENT_MEM);
+		   ACODEC_INSUFFICIENT_MEM);
 
 	return ret;
 }

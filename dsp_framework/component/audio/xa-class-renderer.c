@@ -96,10 +96,10 @@ static UA_ERROR_TYPE xa_renderer_empty_this_buffer(struct XACodecBase *base, str
 	struct XARenderer *renderer = (struct XARenderer *) base;
 
 	/* ...make sure the port is valid (what about multi-channel renderer?) */
-	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 0, ACODEC_PARA_ERROR);
 
 	/* ...command is allowed only in "postinit" state */
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, XA_PARA_ERROR);
+	/* XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR); */
 
 	LOG2("received buffer [%p]:%u\n", m->buffer, m->length);
 
@@ -119,7 +119,7 @@ static UA_ERROR_TYPE xa_renderer_fill_this_buffer(struct XACodecBase *base, stru
 	struct XARenderer *renderer = (struct XARenderer *) base;
 
 	/* ...make sure message is our internal one */
-	XF_CHK_ERR(m == &renderer->msg, XA_PARA_ERROR);
+	XF_CHK_ERR(m == &renderer->msg, ACODEC_PARA_ERROR);
 
 	/* ...atomically clear callback message scheduling flag */
 	xf_atomic_clear(&renderer->schedule, 1);
@@ -147,13 +147,13 @@ static UA_ERROR_TYPE xa_renderer_flush(struct XACodecBase *base, struct xf_messa
 	struct XARenderer *renderer = (struct XARenderer *) base;
 
 	/* ...command is allowed only in "execution" state - not necessarily - tbd*/
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_EXECUTION, XA_PARA_ERROR);
+	XF_CHK_ERR(base->state & XA_BASE_FLAG_EXECUTION, ACODEC_PARA_ERROR);
 
 	/* ...ensure input parameter length is zero */
-	XF_CHK_ERR(m->length == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(m->length == 0, ACODEC_PARA_ERROR);
 
 	/* ...flush command must be addressed to input port */
-	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 0, ACODEC_PARA_ERROR);
 
 	/* ...cancel data processing if needed */
 	xa_base_cancel(base);
@@ -210,7 +210,7 @@ static UA_ERROR_TYPE xa_renderer_memtab(struct XACodecBase *base, u32 size, u32 
 	//    XF_CHK_ERR(idx == 0, XA_API_FATAL_INVALID_CMD_TYPE);
 
 	/* ...create input port for a track */
-	XF_CHK_ERR(xf_input_port_init(&renderer->input, size, align, &dsp_config->scratch_mem_info) == 0, XA_PARA_ERROR);
+	XF_CHK_ERR(xf_input_port_init(&renderer->input, size, align, &dsp_config->scratch_mem_info) == 0, ACODEC_PARA_ERROR);
 
 	/* ...well, we want to use buffers without copying them into interim buffer */
 	LOG1("renderer input port created - size=%u\n", size);
