@@ -888,6 +888,36 @@ static UA_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
 	return ret;
 }
 
+static UA_ERROR_TYPE xf_renderer_pause(struct XADevRenderer *d,
+					   u32 i_idx,
+					   void *pv_value)
+{
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
+
+	/* ...initialization must be completed */
+	XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE), ACODEC_SUCCESS);
+
+	xa_hw_renderer_control(d, XA_RENDERER_STATE_PAUSE);
+
+	LOG1("renderer_pause, state %d\n", d->state);
+	return ret;
+}
+
+static UA_ERROR_TYPE xf_renderer_pause_release(struct XADevRenderer *d,
+					   u32 i_idx,
+					   void *pv_value)
+{
+	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
+
+	/* ...initialization must be completed */
+	XF_CHK_ERR((d->state & XA_RENDERER_FLAG_POSTINIT_DONE), ACODEC_SUCCESS);
+
+	xa_hw_renderer_control(d, XA_RENDERER_STATE_RUN);
+
+	LOG1("renderer_pause_release, state: %d\n", d->state);
+	return ret;
+}
+
 /*******************************************************************************
  * API command hooks
  ******************************************************************************/
@@ -908,6 +938,8 @@ static UA_ERROR_TYPE (* const xa_renderer_api[])(struct XADevRenderer *, u32, vo
 	[XF_API_CMD_CLEANUP]                = xf_renderer_cleanup,
 	[XF_API_CMD_SUSPEND]                = xf_renderer_suspend,
 	[XF_API_CMD_RESUME]                 = xf_renderer_resume,
+	[XF_API_CMD_PAUSE]                  = xf_renderer_pause,
+	[XF_API_CMD_PAUSE_RELEASE]          = xf_renderer_pause_release,
 };
 
 /* ...total numer of commands supported */
