@@ -162,6 +162,38 @@ void interrupt_handler_icm(void *arg)
 
 		/* ...and schedule message execution on proper core */
 		xf_msg_submit(&dsp_config->queue, m);
+	} else if (recd_msg.msg == XF_PAUSE) {
+		/* ...allocate message; the call should not fail */
+		m = xf_msg_pool_get(&dsp_config->pool);
+		if (!m)
+			LOG("Error: ICM Queue full\n");
+
+		/* ...fill message parameters */
+		m->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
+		LOG1("=== msg pause id %x\n", m->id);
+		m->opcode = XF_PAUSE;
+		m->length = 0;
+		m->buffer = 0;
+		m->ret = 0;
+
+		/* ...and schedule message execution on proper core */
+		xf_msg_submit(&dsp_config->queue, m);
+	} else if (recd_msg.msg == XF_PAUSE_RELEASE) {
+		/* ...allocate message; the call should not fail */
+		m = xf_msg_pool_get(&dsp_config->pool);
+		if (!m)
+			LOG("Error: ICM Queue full\n");
+
+		/* ...fill message parameters */
+		m->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
+		m->opcode = XF_PAUSE_RELEASE;
+		LOG1("=== msg pause release id %x\n", m->id);
+		m->length = 0;
+		m->buffer = 0;
+		m->ret = 0;
+
+		/* ...and schedule message execution on proper core */
+		xf_msg_submit(&dsp_config->queue, m);
 	} else {
 		;
 	}
