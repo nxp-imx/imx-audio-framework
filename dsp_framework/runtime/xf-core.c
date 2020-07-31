@@ -253,6 +253,87 @@ static int xf_proxy_resume(struct dsp_main_struct *dsp_config,
 	return 0;
 }
 
+/* ...deal with resume command */
+static int xf_proxy_pause(struct dsp_main_struct *dsp_config,
+			   struct xf_message *m)
+{
+	union icm_header_t icm_msg;
+	struct xf_cmap_link     *link;
+	struct xf_component *component;
+	u32                 i;
+
+	LOG("Process XF_PAUSE command\n");
+
+	/* ...call pause of each component */
+	for (link = &dsp_config->cmap[i = 0]; i < XF_CFG_MAX_CLIENTS; i++, link++) {
+		if (link->c != NULL) {
+			component = link->c;
+
+			component->entry(component, m);
+		}
+	}
+
+	/* ...return message back to the pool */
+	xf_msg_pool_put(&dsp_config->pool, m);
+
+	/* ...send ack to dsp driver */
+	icm_msg.allbits = 0;
+	icm_msg.intr = 1;
+	icm_msg.msg  = XF_PAUSE;
+	icm_intr_send(icm_msg.allbits);
+
+	return 0;
+}
+
+/* ...deal with pause release command */
+static int xf_proxy_pause_release(struct dsp_main_struct *dsp_config,
+			   struct xf_message *m)
+{
+	union icm_header_t icm_msg;
+	struct xf_cmap_link     *link;
+	struct xf_component *component;
+	struct xf_message *m_tmp;
+	u32                 i;
+
+	LOG("Process XF_PAUSE_RELEASE command\n");
+
+	/* ...return message back to the pool */
+	xf_msg_pool_put(&dsp_config->pool, m);
+
+	m_tmp = xf_msg_pool_get(&dsp_config->pool);
+	if (!m_tmp) {
+		LOG("Error: ICM Queue full\n");
+		return -ENOMEM;
+	}
+	/* ...fill message parameters */
+	m_tmp->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
+	m_tmp->opcode = XF_PAUSE_RELEASE;
+	m_tmp->length = 0;
+	m_tmp->buffer = 0;
+	m_tmp->ret = 0;
+
+	/* ...call resume of each component */
+	for (link = &dsp_config->cmap[i = 0]; i < XF_CFG_MAX_CLIENTS; i++, link++) {
+		if (link->c != NULL) {
+			component = link->c;
+			component->entry(component, m_tmp);
+		}
+	}
+
+	xf_msg_pool_put(&dsp_config->pool, m_tmp);
+
+	/* ...set is_interrupt flag */
+	dsp_config->is_interrupt = 1;
+
+	/* ...send ack to dsp driver */
+	icm_msg.allbits = 0;
+	icm_msg.intr = 1;
+	icm_msg.msg  = XF_PAUSE_RELEASE;
+	icm_intr_send(icm_msg.allbits);
+
+	return 0;
+}
+
 /* ...proxy command processing table */
 static int (* const xf_proxy_cmd[])(struct dsp_main_struct *dsp_config, struct xf_message *) = {
 	[XF_OPCODE_TYPE(XF_REGISTER)] = xf_proxy_register,
@@ -260,6 +341,8 @@ static int (* const xf_proxy_cmd[])(struct dsp_main_struct *dsp_config, struct x
 	[XF_OPCODE_TYPE(XF_FREE)] = xf_proxy_free,
 	[XF_OPCODE_TYPE(XF_SUSPEND)] = xf_proxy_suspend,
 	[XF_OPCODE_TYPE(XF_RESUME)] = xf_proxy_resume,
+	[XF_OPCODE_TYPE(XF_PAUSE)] = xf_proxy_pause,
+	[XF_OPCODE_TYPE(XF_PAUSE_RELEASE)] = xf_proxy_pause_release,
 };
 
 /* ...total number of commands supported */
