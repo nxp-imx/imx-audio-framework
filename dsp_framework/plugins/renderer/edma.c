@@ -111,7 +111,7 @@ void edma_init(volatile void *edma_addr, u32 type,
 	}
 }
 
-void edma_irq_handler(volatile void * edma_addr) {
+int edma_irq_handler(volatile void * edma_addr) {
 
 	unsigned int intr;
 
@@ -119,8 +119,9 @@ void edma_irq_handler(volatile void * edma_addr) {
 	if (!intr)
 		return ;
 	write32(edma_addr + EDMA_CH_INT, 1);
-	/*one buffer finished*/
 
+	/*FIXME: return 1 for one buffer finished*/
+	return 1;
 }
 
 void edma_start(volatile void * edma_addr, u32 is_rx) {

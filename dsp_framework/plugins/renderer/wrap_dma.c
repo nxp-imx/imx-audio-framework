@@ -46,12 +46,12 @@ void xdma_stop(struct XADevRenderer *d)
 	edma_stop(d->fe_edma_addr);
 #endif
 }
-void xdma_irq_handler(struct XADevRenderer *d)
+int xdma_irq_handler(struct XADevRenderer *d)
 {
 #ifdef PLATF_8M
-	sdma_irq_handler(d->sdma, d->sample_size * d->frame_size);
+	return sdma_irq_handler(d->sdma, d->sample_size * d->frame_size);
 #else
-	edma_irq_handler(d->fe_edma_addr);
+	return edma_irq_handler(d->fe_edma_addr);
 #endif
 }
 void xdma_suspend(struct XADevRenderer *d)

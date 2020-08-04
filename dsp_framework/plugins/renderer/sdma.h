@@ -332,9 +332,9 @@ int sdma_pre_init(struct SDMA* sdma, void *sdma_addr);
 int sdma_init(struct SDMA * sdma, int type, void *dest_addr, void *src_addr, int channel, int period_len);
 int sdma_start(struct SDMA *sdma, int channel);
 int sdma_stop(struct SDMA *sdma, int channel);
-void sdma_irq_handler(struct SDMA * sdma, int period_len);
+int sdma_irq_handler(struct SDMA * sdma, int period_len);
 void sdma_resume(struct SDMA* sdma);
 void sdma_suspend(struct SDMA* sdma);
 void sdma_clearup(struct SDMA* sdma);
-void sdma_change_bd_status(struct SDMA* sdma, unsigned int perioid_len);
+int sdma_change_bd_status(struct SDMA* sdma, unsigned int perioid_len);
 #endif

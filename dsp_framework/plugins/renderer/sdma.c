@@ -376,7 +376,7 @@ int sdma_stop(struct SDMA* sdma, int channel)
 	return 0;
 }
 
-void sdma_irq_handler(struct SDMA * sdma, int period_len) {
+int sdma_irq_handler(struct SDMA * sdma, int period_len) {
 
 	unsigned long stat;
 	stat = read32(sdma->regs + SDMA_H_INTR);
@@ -387,8 +387,7 @@ void sdma_irq_handler(struct SDMA * sdma, int period_len) {
 
 	/* XXX: modify BD_DONE in here maybe cause sdma copy data
 	 * that not updated yet. */
-	sdma_change_bd_status(sdma, period_len);
-	return;
+	return sdma_change_bd_status(sdma, period_len);
 }
 
 static void sdma_reg_dump(struct SDMA* sdma)
@@ -494,10 +493,10 @@ void sdma_suspend(struct SDMA* sdma)
 	}
 }
 
-void sdma_change_bd_status(struct SDMA* sdma, unsigned int period_len)
+int sdma_change_bd_status(struct SDMA* sdma, unsigned int period_len)
 {
 	struct sdma_buffer_descriptor *bd;
-	int chan_num, bdnum, i;
+	int chan_num, bdnum, i, j = 0;
 
 	for (chan_num = 1; chan_num < 32; chan_num++) {
 		bd = sdma->chan_info[chan_num].bd;
@@ -508,10 +507,13 @@ void sdma_change_bd_status(struct SDMA* sdma, unsigned int period_len)
 			if (!(bd[i].mode.status & BD_DONE)) {
 				bd[i].mode.status |= BD_DONE;
 				bd[i].mode.count = period_len;
+				j++;
 			}
 		}
 	}
-	return;
+
+	/*FIXME: return how many BD is consumed */
+	return j;
 }
 void sdma_clearup(struct SDMA* sdma)
 {

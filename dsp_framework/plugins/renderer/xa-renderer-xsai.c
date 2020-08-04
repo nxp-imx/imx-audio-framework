@@ -128,6 +128,7 @@ static void xa_hw_renderer_isr(struct XADevRenderer *d)
 	s32     avail;
 	u32     status;
 	u32     status2;
+	u32     num;
 
 	/* period elapse */
 	status = read32(d->irqstr_addr + IRQSTEER_CHnSTATUS(IRQ_TO_MASK_OFFSET(d->fe_dev_Int+32)));
@@ -141,9 +142,9 @@ static void xa_hw_renderer_isr(struct XADevRenderer *d)
 		d->fe_dev_isr(d->fe_dev_addr);
 
 	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dma_Int+32))) {
-		xdma_irq_handler(d);
+		num = xdma_irq_handler(d);
 
-		d->rendered = d->rendered + d->frame_size;
+		d->rendered = d->rendered + d->frame_size * num;
 		/* ...notify user on input-buffer (idx = 0) consumption */
 		d->cdata->cb(d->cdata, 0);
 
