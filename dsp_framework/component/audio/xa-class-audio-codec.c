@@ -108,12 +108,16 @@ struct XAAudioCodec {
 #define DSP_IDLE         {write32(FLAG_ADDRESS, FLAG_IDLE);}
 #define DSP_LPA          {write32(FLAG_ADDRESS, FLAG_LPA);}
 #define DSP_LPA_DRAM     {write32(FLAG_ADDRESS, FLAG_LPA_DRAM);}
+#define input_sync 0
 #else
 #define INPUT_BUFFER_LEN (4096)
 #define DSP_IDLE         {}
 #define DSP_LPA          {}
 #define DSP_LPA_DRAM     {}
+#define input_sync 1
 #endif
+
+#define INPUT_SYNC 1
 
 /*******************************************************************************
  * Data processing scheduling
@@ -612,9 +616,11 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 
 	}
 	if (xf_input_port_ready(&codec->input) && !codec->input.remaining && (!xf_input_port_done(&codec->input) || (xf_input_port_done(&codec->input) && ret == ACODEC_END_OF_STREAM))) {
-		xf_input_port_complete(&codec->input);
-		/* ...clear input-setup flag */
-		base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
+		if ((input_sync != INPUT_SYNC) || ((input_sync == INPUT_SYNC) && !codec->input.filled)) {
+			xf_input_port_complete(&codec->input);
+			/* ...clear input-setup flag */
+			base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
+		}
 	}
 
 	/* ...output buffer maintenance; check if we have produced anything */
