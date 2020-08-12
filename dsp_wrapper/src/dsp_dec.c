@@ -302,8 +302,9 @@ int comp_process(UniACodec_Handle pua_handle,
 				pDSP_handle->inptr_busy = FALSE;
 				continue;
 			} else {
+				pDSP_handle->inptr_busy = FALSE;
 				ret = XA_ERR_UNKNOWN;
-				break;
+				continue;
 			}
 		}
 	} while (1);
