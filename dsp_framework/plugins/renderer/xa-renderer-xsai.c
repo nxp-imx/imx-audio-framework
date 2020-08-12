@@ -559,7 +559,7 @@ static UA_ERROR_TYPE xa_renderer_set_config_param(struct XADevRenderer *d, u32 i
 
 	case XA_RENDERER_CONFIG_PARAM_STATE:
 		/* ...runtime state control parameter valid only in execution state */
-		XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
+		/* XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR); */
 
 		/* ...get requested state */
 		i_value = (u32) *(u32 *)pv_value;

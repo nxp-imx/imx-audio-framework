@@ -147,10 +147,10 @@ static UA_ERROR_TYPE xa_renderer_flush(struct XACodecBase *base, struct xf_messa
 	struct XARenderer *renderer = (struct XARenderer *) base;
 
 	/* ...command is allowed only in "execution" state - not necessarily - tbd*/
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_EXECUTION, ACODEC_PARA_ERROR);
+	/* XF_CHK_ERR(base->state & XA_BASE_FLAG_EXECUTION, ACODEC_PARA_ERROR); */
 
 	/* ...ensure input parameter length is zero */
-	XF_CHK_ERR(m->length == 0, ACODEC_PARA_ERROR);
+	/* XF_CHK_ERR(m->length == 0, ACODEC_PARA_ERROR); */
 
 	/* ...flush command must be addressed to input port */
 	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 0, ACODEC_PARA_ERROR);

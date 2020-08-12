@@ -403,10 +403,10 @@ static UA_ERROR_TYPE xa_codec_flush(struct XACodecBase *base, struct xf_message 
 	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
 
 	/* ...command is allowed only in "postinit" state */
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR);
+	/* XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR); */
 
 	/* ...ensure input parameter length is zero */
-	XF_CHK_ERR(m->length == 0, ACODEC_PARA_ERROR);
+	/* XF_CHK_ERR(m->length == 0, ACODEC_PARA_ERROR); */
 
 	LOG("flush command received\n");
 
