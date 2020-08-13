@@ -43,10 +43,16 @@
 #define OCRAM_A_PTR    (0x3b700000+OCRAM_A_OFFSET)
 #define OCRAM_A_SIZE   (256*1024-OCRAM_A_OFFSET)
 #define OCRAM_A_END    (OCRAM_A_PTR + OCRAM_A_SIZE)
+#define RESERVED_OFFSET (0x0)
+#define RESERVED_PTR    (0x92400000+RESERVED_OFFSET)
+#define RESERVED_SIZE   (0x2000000-RESERVED_OFFSET)
+#define RESERVED_END    (RESERVED_PTR + RESERVED_SIZE)
 
 struct dsp_mem_info *DSP_mem_info;
 struct dsp_mem_info OCRAM_A_mem_info_t;
-struct dsp_mem_info *OCRAM_A_mem_info = &OCRAM_A_mem_info_t;
+struct dsp_mem_info *OCRAM_A_mem_info;
+struct dsp_mem_info RESERVED_mem_info_t;
+struct dsp_mem_info *RESERVED_mem_info;
 
 void MEM_scratch_init(struct dsp_mem_info *mem_info, u32 ptr, u32 size)
 {
@@ -55,9 +61,17 @@ void MEM_scratch_init(struct dsp_mem_info *mem_info, u32 ptr, u32 size)
 	mem_info->scratch_remaining = size;
 	DSP_mem_info = mem_info;
 
+#ifdef PLATF_8MP_LPA
+	OCRAM_A_mem_info = &OCRAM_A_mem_info_t;
 	OCRAM_A_mem_info->scratch_buf_ptr = (char *)OCRAM_A_PTR;
 	OCRAM_A_mem_info->scratch_total_size = OCRAM_A_SIZE;
 	OCRAM_A_mem_info->scratch_remaining = OCRAM_A_SIZE;
+
+	RESERVED_mem_info = &RESERVED_mem_info_t;
+	RESERVED_mem_info->scratch_buf_ptr = (char *)RESERVED_PTR;
+	RESERVED_mem_info->scratch_total_size = RESERVED_SIZE;
+	RESERVED_mem_info->scratch_remaining = RESERVED_SIZE;
+#endif
 }
 
 void *MEM_scratch_ua_malloc(int size)
@@ -78,6 +92,11 @@ void *MEM_scratch_malloc(struct dsp_mem_info *mem_info, int nb)
 	struct dsp_mem_info *ptr;
 
 	ptr = mem_info;
+
+#ifdef PLATF_8MP_LPA
+	if (nb > ptr->Availmem*8-8)
+		ptr = RESERVED_mem_info;
+#endif
 
 	if (nb == 0)
 		return NULL;
@@ -182,6 +201,11 @@ void MEM_scratch_mfree(struct dsp_mem_info *mem_info, void *blk)
 	/* check whether this blocks is allocated reasonably or not */
 	if (p->s.ptr != p)
 		return;
+
+#ifdef PLATF_8MP_LPA
+	if (p >= RESERVED_PTR)
+		ptr = RESERVED_mem_info;
+#endif
 
 	ptr->Availmem += p->s.size;
 

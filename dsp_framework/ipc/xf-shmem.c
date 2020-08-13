@@ -31,6 +31,7 @@
 #include <xtensa/config/system.h>
 
 extern int xf_core_init(struct dsp_main_struct *dsp_config);
+extern struct dsp_mem_info *RESERVED_mem_info;
 
 /* ...NULL-address specification */
 #define XF_PROXY_NULL           (~0U)
@@ -53,6 +54,10 @@ static inline u32 xf_ipc_b2a(struct dsp_main_struct *dsp_config, void *b)
 		return XF_PROXY_NULL;
 	else if ((s32)(b - start) < dsp_config->dpu_ext_msg.scratch_buf_size)
 		return (u32)(b - start);
+#ifdef PLATF_8MP_LPA
+	else if ((s32)(b - (void *)RESERVED_mem_info->scratch_buf_ptr) < RESERVED_mem_info->scratch_total_size)
+		return (u32)(b - (void *)RESERVED_mem_info->scratch_buf_ptr + dsp_config->dpu_ext_msg.scratch_buf_size);
+#endif
 	else
 		return XF_PROXY_BADADDR;
 }
@@ -64,6 +69,10 @@ void *xf_ipc_a2b(struct dsp_main_struct *dsp_config, u32 address)
 
 	if (address < dsp_config->dpu_ext_msg.scratch_buf_size)
 		return start + address;
+#ifdef PLATF_8MP_LPA
+	else if (address < RESERVED_mem_info->scratch_total_size + dsp_config->dpu_ext_msg.scratch_buf_size)
+		return RESERVED_mem_info->scratch_buf_ptr + address - dsp_config->dpu_ext_msg.scratch_buf_size;
+#endif
 	else if (address == XF_PROXY_NULL)
 		return NULL;
 	else
