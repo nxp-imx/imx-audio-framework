@@ -627,7 +627,7 @@ static UA_ERROR_TYPE xa_renderer_execute(struct XADevRenderer *d, u32 i_idx, voi
 	XF_CHK_ERR(d, ACODEC_PARA_ERROR);
 
 	/* ...renderer must be in running state */
-	XF_CHK_ERR(d->state & (XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE), ACODEC_PARA_ERROR);
+	XF_CHK_ERR(d->state & (XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE | XA_RENDERER_FLAG_BUSY), ACODEC_PARA_ERROR);
 
 	LOG("xa_renderer_execute\n");
 	/* ...process individual command type */
