@@ -189,7 +189,7 @@ static void xa_renderer_callback(xa_renderer_cb_t *cdata, u32 i_idx)
 		renderer->msg.length = 0;
 		renderer->msg.buffer = NULL;
 
-		xf_msg_submit(&dsp_config->queue, &renderer->msg);
+		xf_msg_enqueue(&dsp_config->queue, &renderer->msg);
 	}
 }
 
