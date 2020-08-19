@@ -34,6 +34,7 @@
 
 #include "mydefs.h"
 #include "xf-debug.h"
+#include "xf-hal.h"
 
 extern struct dsp_main_struct *dsp_global_data;
 
@@ -121,8 +122,11 @@ void xf_msg_pool_put(struct xf_msg_pool *pool, struct xf_message *m)
 int xf_msg_local_put(struct xf_msg_queue *queue, struct xf_message *m)
 {
 	int first;
+	u32             status;
 
+	status = xf_isr_disable(0);
 	first = xf_msg_enqueue(queue, m);
+	xf_isr_restore(0, status);
 
 	return first;
 }
@@ -131,8 +135,11 @@ int xf_msg_local_put(struct xf_msg_queue *queue, struct xf_message *m)
 struct xf_message *xf_msg_local_get(struct xf_msg_queue *queue)
 {
 	struct xf_message *m;
+	u32             status;
 
+	status = xf_isr_disable(0);
 	m = xf_msg_dequeue(queue);
+	xf_isr_restore(0, status);
 
 	return m;
 }
