@@ -48,7 +48,7 @@ struct dsp_main_struct *dsp_global_data;
 /* ...wake on when interrupt happens */
 void wake_on_ints(struct dsp_main_struct *dsp_config)
 {
-	_xtos_ints_on((1 << INT_NUM_MU) | (1 << INT_NUM_IRQSTR_DSP_6));
+	_xtos_ints_on((1 << INT_NUM_MU));
 
 	_xtos_set_intlevel(15);
 	if (!dsp_config->is_interrupt)
