@@ -292,7 +292,7 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	xdma_config(d);
 
 	_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);
-	_xtos_ints_on((1 << d->irq_2_dsp) | (1 << 7));
+	_xtos_ints_on((1 << d->irq_2_dsp));
 
 	LOG("hw_init finished\n");
 	return 0;
@@ -878,7 +878,7 @@ static UA_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
 		xdma_resume(d);
 
 		_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);
-		_xtos_ints_on((1 << d->irq_2_dsp) | (1 << 7));
+		_xtos_ints_on((1 << d->irq_2_dsp));
 	}
 
 	if (d->suspend_state & XA_RENDERER_FLAG_RUNNING) {
