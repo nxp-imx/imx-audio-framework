@@ -809,7 +809,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	*inner_size -= in_off;
 	*inner_offset += in_off;
 
-	if (pDSP_handle->inptr_busy == FALSE && (*offset_copy >= InputSize)) {
+	if (pDSP_handle->inptr_busy == FALSE && (*offset_copy >= InputSize) || err == XA_ERROR_STREAM) {
 		*offset = *offset_copy;
 		*offset_copy = 0;
 	}
@@ -863,12 +863,9 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	TRACE("HAS_ERROR: err = 0x%x\n", (int)err);
 #endif
 
-	if (err == XA_ERROR_STREAM) {
-		if (InputBuf && InputSize > *offset)
-			err = XA_SUCCESS;
-		else
-			err = XA_ERROR_STREAM;
-	}
+	if (err == XA_ERROR_STREAM && (*offset == 0))
+		err = XA_SUCCESS;
+
 	if (err == XA_NOT_ENOUGH_DATA) {
 		if (InputBuf && InputSize > *offset)
 			err = XA_SUCCESS;
