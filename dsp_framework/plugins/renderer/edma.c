@@ -117,7 +117,7 @@ int edma_irq_handler(volatile void * edma_addr) {
 
 	intr = read32(edma_addr + EDMA_CH_INT);
 	if (!intr)
-		return ;
+		return 0;
 	write32(edma_addr + EDMA_CH_INT, 1);
 
 	/*FIXME: return 1 for one buffer finished*/
