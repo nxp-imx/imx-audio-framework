@@ -301,7 +301,7 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 /* ...copy number of samples into ring-buffer  */
 static inline u32 xa_hw_copy_buffer(struct XADevRenderer *d, const void *b, u32 k)
 {
-	int     rc;
+	int     rc = 0;
 	int     off = (d->submitted % d->ring_size) * d->sample_size;
 
 	memcpy((char *)d->dma_buf + off,  b,  k * d->sample_size);
