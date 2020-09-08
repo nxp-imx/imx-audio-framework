@@ -144,8 +144,10 @@ void interrupt_handler_icm(void *arg)
 	} else if (recd_msg.msg == XF_SUSPEND) {
 		/* ...allocate message; the call should not fail */
 		m = xf_msg_pool_get(&dsp_config->pool);
-		if (!m)
+		if (!m) {
 			LOG("Error: ICM Queue full\n");
+			return;
+		}
 
 		/* ...fill message parameters */
 		m->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
@@ -159,8 +161,10 @@ void interrupt_handler_icm(void *arg)
 	} else if (recd_msg.msg == XF_RESUME) {
 		/* ...allocate message; the call should not fail */
 		m = xf_msg_pool_get(&dsp_config->pool);
-		if (!m)
+		if (!m) {
 			LOG("Error: ICM Queue full\n");
+			return;
+		}
 
 		/* ...fill message parameters */
 		m->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
@@ -174,8 +178,10 @@ void interrupt_handler_icm(void *arg)
 	} else if (recd_msg.msg == XF_PAUSE) {
 		/* ...allocate message; the call should not fail */
 		m = xf_msg_pool_get(&dsp_config->pool);
-		if (!m)
+		if (!m) {
 			LOG("Error: ICM Queue full\n");
+			return;
+		}
 
 		/* ...fill message parameters */
 		m->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
@@ -190,8 +196,10 @@ void interrupt_handler_icm(void *arg)
 	} else if (recd_msg.msg == XF_PAUSE_RELEASE) {
 		/* ...allocate message; the call should not fail */
 		m = xf_msg_pool_get(&dsp_config->pool);
-		if (!m)
+		if (!m) {
 			LOG("Error: ICM Queue full\n");
+			return;
+		}
 
 		/* ...fill message parameters */
 		m->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
