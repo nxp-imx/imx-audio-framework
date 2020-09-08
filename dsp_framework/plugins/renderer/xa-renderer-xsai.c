@@ -783,6 +783,8 @@ static UA_ERROR_TYPE xa_renderer_get_mem_info_type(struct XADevRenderer *d, u32 
 
 	/* ...command valid only after post-initialization step */
 	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, ACODEC_PARA_ERROR);
+
+	return ACODEC_SUCCESS;
 }
 
 /* ...set memory pointer */
