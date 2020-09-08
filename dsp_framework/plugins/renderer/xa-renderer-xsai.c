@@ -75,7 +75,7 @@
 /* ...underrun/suspend recovery */
 static inline int xa_hw_renderer_recover(struct XADevRenderer *d)
 {
-
+	return 0;
 }
 
 /* ...start HW-renderer operation */
