@@ -122,7 +122,7 @@ void interrupt_handler_icm(void *arg)
 	volatile union icm_header_t recd_msg;
 	struct dsp_main_struct *dsp_config = (struct dsp_main_struct *)arg;
 	struct xf_message *m;
-	u32 ext_msg_addr;
+	u32 ext_msg_addr = 0;
 	u32 ext_msg_size = 0;
 	u32 msg;
 
