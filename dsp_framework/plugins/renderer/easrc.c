@@ -1312,18 +1312,12 @@ int fsl_easrc_stop_context(struct fsl_easrc_context *ctx)
 
 	write32_bit(easrc->paddr + REG_EASRC_CC(ctx->index),
 				 EASRC_CC_EN_MASK | EASRC_CC_STOP_MASK, 0);
-	if (ret)
-		return ret;
 
 	write32_bit(easrc->paddr + REG_EASRC_CC(ctx->index),
 				 EASRC_CC_FWMDE_MASK, 0);
-	if (ret)
-		return ret;
 
 	write32_bit(easrc->paddr + REG_EASRC_COC(ctx->index),
 				 EASRC_COC_FWMDE_MASK, 0);
-	if (ret)
-		return ret;
 
 	return 0;
 }
