@@ -168,6 +168,8 @@ static int uart_init()
 
 	write32(uart_base + UCR1, 0x2201);
 	write32(uart_base + UMCR, 0x0000);
+
+	return 0;
 }
 
 int enable_log(void)
