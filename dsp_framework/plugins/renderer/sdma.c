@@ -256,6 +256,7 @@ int sdma_init(struct SDMA * sdma, int type, void *dest_addr, void *src_addr, int
 	event = -1;
 	event2 = -1;
 	r0 = r1 = r2 = r6 = r7 = 0;
+	script_addr = 0;
 
 	if (type == DMA_MEM_TO_DEV) {
 		/* event 16: ASRC Context 0 receive DMA request */
