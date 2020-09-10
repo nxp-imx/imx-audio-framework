@@ -1325,7 +1325,7 @@ int fsl_easrc_stop_context(struct fsl_easrc_context *ctx)
 void easrc_start(volatile void *asrc_addr, int tx)
 {
 	struct fsl_easrc *easrc = (struct fsl_easrc *)asrc_addr;
-	struct fsl_easrc_context *ctx;
+	struct fsl_easrc_context *ctx = NULL;
 	int i;
 
 	LOG("easrc start\n");
@@ -1335,6 +1335,8 @@ void easrc_start(volatile void *asrc_addr, int tx)
 		ctx = easrc->ctx[i];
 		break;
 	}
+	if (!ctx)
+		return;
 	fsl_easrc_start_context(ctx);
 }
 void easrc_stop(volatile void *asrc_addr, int tx)
