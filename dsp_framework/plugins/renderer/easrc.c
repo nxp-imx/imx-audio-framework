@@ -585,7 +585,7 @@ int fsl_easrc_set_ctx_format(struct fsl_easrc_context *ctx,
 	struct fsl_easrc *easrc = ctx->easrc;
 	struct fsl_easrc_data_fmt *in_fmt = &ctx->in_params.fmt;
 	struct fsl_easrc_data_fmt *out_fmt = &ctx->out_params.fmt;
-	int ret;
+	int ret = 0;
 
 	/* get the bitfield values for input data format */
 	if (in_raw_format && out_raw_format) {
