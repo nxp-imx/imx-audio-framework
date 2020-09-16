@@ -146,6 +146,7 @@ static UA_ERROR_TYPE xa_renderer_flush(struct XACodecBase *base, struct xf_messa
 {
 	struct XARenderer *renderer = (struct XARenderer *) base;
 
+	u32  state = XA_RENDERER_STATE_IDLE;
 	/* ...command is allowed only in "execution" state - not necessarily - tbd*/
 	/* XF_CHK_ERR(base->state & XA_BASE_FLAG_EXECUTION, ACODEC_PARA_ERROR); */
 
@@ -161,6 +162,11 @@ static UA_ERROR_TYPE xa_renderer_flush(struct XACodecBase *base, struct xf_messa
 	/* ...input port flushing; purge content of input buffer */
 	xf_input_port_purge(&renderer->input);
 
+	/* ...should mark state as begining */
+	base->state &= ~(XA_RENDERER_FLAG_RUNNING + XA_RENDERER_FLAG_SILENCE);
+	base->state |= XA_RENDERER_FLAG_OUTPUT_READY;
+
+	XA_API(base, XF_API_CMD_SET_PARAM, XA_RENDERER_CONFIG_PARAM_STATE, &state);
 	/* ...pass response to caller */
 	xf_response(m);
 
