@@ -408,7 +408,8 @@ static inline UA_ERROR_TYPE xa_hw_renderer_control(struct XADevRenderer *d, u32 
 		xa_hw_renderer_close(d);
 
 		/* ...reset renderer flags */
-		d->state &= ~(XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED);
+		d->state &= ~(XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED | XA_RENDERER_FLAG_BUSY);
+		d->state |= XA_RENDERER_FLAG_IDLE;
 
 		return ACODEC_SUCCESS;
 
