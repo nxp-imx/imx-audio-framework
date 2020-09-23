@@ -321,6 +321,10 @@ static inline UA_ERROR_TYPE xa_pcm_do_runtime_init(XAPcmCodec *d)
     u8      in_ch = d->in_channels, out_ch = d->out_channels;
     u32     chmap = d->chan_routing;
 
+    /* ...calculate input sample stride size */
+    d->in_stride = d->in_channels * (d->in_pcm_width == 16 ? 2 : 4);
+    d->out_stride = d->out_channels * (d->out_pcm_width == 16 ? 2 : 4);
+
     /* ...check for supported processing schemes */
     if (in_width == out_width)
     {
@@ -412,10 +416,6 @@ static UA_ERROR_TYPE xa_pcm_postinit(struct XAPcmCodec *d,
     /* ...post-configuration initialization (all parameters are set) */
     XF_CHK_ERR(d->state & XA_PCM_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
 
-    /* ...calculate input sample stride size */
-    d->in_stride = d->in_channels * (d->in_pcm_width == 16 ? 2 : 4);
-    d->out_stride = d->out_channels * (d->out_pcm_width == 16 ? 2 : 4);
-
     /* ...mark post-initialization is complete */
     d->state |= XA_PCM_FLAG_POSTINIT_DONE;
 
@@ -431,7 +431,7 @@ static UA_ERROR_TYPE xa_pcm_set_config_param(XAPcmCodec *d, u32 i_idx, void *pv_
     XF_CHK_ERR(d && pv_value, ACODEC_PARA_ERROR);
 
     /* ...configuration is allowed only in PRE-CONFIG state */
-    XF_CHK_ERR(d->state == XA_PCM_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR);
+    /* XF_CHK_ERR(d->state == XA_PCM_FLAG_PREINIT_DONE, ACODEC_PARA_ERROR); */
 
     /* ...get integer parameter value */
     if (pv_value)
@@ -443,44 +443,45 @@ static UA_ERROR_TYPE xa_pcm_set_config_param(XAPcmCodec *d, u32 i_idx, void *pv_
     case XA_PCM_CONFIG_PARAM_SAMPLE_RATE:
         /* ...accept any sampling rate */
         d->sample_rate = (u32)i_value;
-        return ACODEC_SUCCESS;
+	break;
 
     case XA_PCM_CONFIG_PARAM_IN_PCM_WIDTH:
         /* ...return input sample bit-width */
         XF_CHK_ERR(i_value == 16 || i_value == 32, ACODEC_PARA_ERROR);
         d->in_pcm_width = (u8)i_value;
-        return ACODEC_SUCCESS;
+	break;
 
     case XA_PCM_CONFIG_PARAM_IN_CHANNELS:
         /* ...support at most 8-channels stream */
         XF_CHK_ERR(i_value > 0 && i_value <= 8, ACODEC_PARA_ERROR);
         d->in_channels = (u8)i_value;
-        return ACODEC_SUCCESS;
+	break;
 
     case XA_PCM_CONFIG_PARAM_OUT_PCM_WIDTH:
         /* ...we only support PCM16 and PCM24 */
         XF_CHK_ERR(i_value == 16 || i_value == 32, ACODEC_PARA_ERROR);
         d->out_pcm_width = (u8)i_value;
-        return ACODEC_SUCCESS;
+	break;
 
     case XA_PCM_CONFIG_PARAM_OUT_CHANNELS:
         /* ...support at most 8-channels stream */
         XF_CHK_ERR(i_value > 0 && i_value <= 8, ACODEC_PARA_ERROR);
         d->out_channels = (u8)i_value;
-        return ACODEC_SUCCESS;
+	break;
 
     case XA_PCM_CONFIG_PARAM_CHANROUTING:
         /* ...accept any channel routing mask */
         d->chan_routing = (u32)i_value;
-        return ACODEC_SUCCESS;
+	break;
 
     case XA_PCM_CONFIG_PARAM_FUNC_PRINT:
-	return ACODEC_SUCCESS;
+	break;
 
     default:
         /* ...unrecognized parameter */
         return XF_CHK_ERR(0, ACODEC_PARA_ERROR);
     }
+    return xa_pcm_do_runtime_init(d);
 }
 
 /* ...retrieve configuration parameter */
