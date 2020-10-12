@@ -38,7 +38,7 @@ CC          = $(CCACHE) xt-xcc
 CPLUS       = $(CCACHE) xt-xc++
 OBJCOPY     = xt-objcopy
 PKG_LOADLIB = xt-pkg-loadlib
-XTENSA_CORE = hifi4_nxp_v3_3_1_2_dev
+XTENSA_CORE = hifi4_nxp_v4_3_1_3_dev
 
 TOOL_PATH   := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../imx-audio-toolchain/Xtensa_Tool
 FRAMEWORK_DIR = dsp_framework
@@ -57,12 +57,12 @@ ifeq ($(TIME_PROFILE), 1)
 endif
 
 ifeq ($(PLATF), imx8m)
-	XTENSA_CORE = hifi4_mscale_v0_0_2_prod
+	XTENSA_CORE = hifi4_mscale_v1_0_2_prod
 	CFLAGS += -DPLATF_8M
 endif
 
 ifeq ($(PLATF), imx8mp_lpa)
-	XTENSA_CORE = hifi4_mscale_v0_0_2_prod
+	XTENSA_CORE = hifi4_mscale_v1_0_2_prod
 	CFLAGS += -DPLATF_8M
 	CFLAGS += -DPLATF_8MP_LPA
 endif
