@@ -10,8 +10,8 @@
 SRC_DIR     = ./
 INC_DIR     = ./include
 
-LINK_DIR    = $(TOOL_PATH)/builds/RF-2016.4-linux/$(XTENSA_CORE)/xtensa-elf/lib/mainsim
-SYSTEM_DIR  = $(TOOL_PATH)/builds/RF-2016.4-linux/$(XTENSA_CORE)/config
+LINK_DIR    = $(TOOL_PATH)/builds/RI-2020.4-linux/$(XTENSA_CORE)/xtensa-elf/lib/mainsim
+SYSTEM_DIR  = $(TOOL_PATH)/builds/RI-2020.4-linux/$(XTENSA_CORE)/config
 
 CFLAGS      += -mlongcalls -fmessage-length=0 -DPROC_$(XTENSA_CORE)       \
 			  -DCONFIG_$(XTENSA_CORE) -DINCL_DEMO_DEC=0 -DPROC_hifi2_std     \
