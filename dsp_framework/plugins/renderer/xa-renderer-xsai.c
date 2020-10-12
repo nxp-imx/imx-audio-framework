@@ -291,8 +291,13 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 
 	xdma_config(d);
 
+#if XCHAL_SW_VERSION >= 1404000
+	xtos_set_interrupt_handler(d->irq_2_dsp, xa_hw_renderer_isr, d, NULL);
+	xtos_interrupt_enable(d->irq_2_dsp);
+#else
 	_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);
 	_xtos_ints_on((1 << d->irq_2_dsp));
+#endif
 
 	LOG("hw_init finished\n");
 	return 0;
@@ -880,8 +885,13 @@ static UA_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
 		d->fe_dev_resume(d->fe_dev_addr, d->fe_dev_cache);
 		xdma_resume(d);
 
+#if XCHAL_SW_VERSION >= 1404000
+		xtos_set_interrupt_handler(d->irq_2_dsp, xa_hw_renderer_isr, d, NULL);
+		xtos_interrupt_enable(d->irq_2_dsp);
+#else
 		_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);
 		_xtos_ints_on((1 << d->irq_2_dsp));
+#endif
 	}
 
 	if (d->suspend_state & XA_RENDERER_FLAG_RUNNING) {

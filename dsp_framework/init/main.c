@@ -48,14 +48,23 @@ struct dsp_main_struct *dsp_global_data;
 /* ...wake on when interrupt happens */
 void wake_on_ints(struct dsp_main_struct *dsp_config)
 {
+#if XCHAL_SW_VERSION >= 1404000
+	xtos_interrupt_enable(INT_NUM_MU);
+	xtos_set_intlevel(15);
+#else
 	_xtos_ints_on((1 << INT_NUM_MU));
-
 	_xtos_set_intlevel(15);
+#endif
+
 	if (!dsp_config->is_interrupt)
 		XT_WAITI(0);
+#if XCHAL_SW_VERSION >= 1404000
+	xtos_set_intlevel(0);
+	xtos_interrupt_disable(INT_NUM_MU);
+#else
 	_xtos_set_intlevel(0);
-
-	_xtos_ints_off(1 << INT_NUM_MU);
+	_xtos_ints_off((1 << INT_NUM_MU));
+#endif
 
 	dsp_config->is_interrupt = 0;
 }
@@ -74,9 +83,15 @@ int main(void)
 
 	/* set the interrupt */
 	xthal_set_intclear(-1);
+#if XCHAL_SW_VERSION >= 1404000
+	xtos_set_interrupt_handler(INT_NUM_MU,
+				   interrupt_handler_icm,
+				   &dsp_config, NULL);
+#else
 	_xtos_set_interrupt_handler_arg(INT_NUM_MU,
-					interrupt_handler_icm,
-					&dsp_config);
+				   interrupt_handler_icm,
+				   &dsp_config);
+#endif
 
 #ifdef DEBUG
 	enable_log();

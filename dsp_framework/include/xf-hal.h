@@ -146,7 +146,11 @@ static inline u32 xf_atomic_clear(volatile u32 *bitmap, u32 mask)
 static void inline interrupt_handler_timer0 (void) {
 	/* doesn't need to do anything in particular,
 	 but turn off the timer interrupt anyhow    */
+#if XCHAL_SW_VERSION >= 1404000
+	xtos_interrupt_disable(XCHAL_TIMER0_INTERRUPT);
+#else
 	_xtos_ints_off(TIMER0_INT_MASK);
+#endif
 	return;
 }
 
@@ -156,7 +160,11 @@ static void inline sleep(unsigned int ui_cycles)
 	xthal_set_ccompare(0, xthal_get_ccount() + ui_cycles);
 
 	// See Sys Software Ref Manual table 3.7 for more info.
+#if XCHAL_SW_VERSION >= 1404000
+	xtos_interrupt_enable(XCHAL_TIMER0_INTERRUPT);
+#else
 	_xtos_ints_on(TIMER0_INT_MASK);
+#endif
 	do
 	{
 		XT_WAITI(0);  // 0 so there is no masking
