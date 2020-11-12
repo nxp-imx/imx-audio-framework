@@ -116,6 +116,8 @@ static inline void xa_hw_renderer_resume(struct XADevRenderer *d)
 static inline void xa_hw_renderer_close(struct XADevRenderer *d)
 {
 	LOG(("HW-renderer closed\n"));
+	if (!d->irqstr_addr)
+		return;
 	irqstr_stop(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
 	xdma_stop(d);
 	d->dev_stop(d->dev_addr, 1);
