@@ -49,7 +49,8 @@
 #define CODEC_FSL_NBAMR_DEC   15
 #define CODEC_FSL_WBAMR_DEC   16
 #define CODEC_FSL_WMA_DEC   17
-#define CODEC_DEMO_DEC		18
+#define CODEC_OPUS_DEC      18
+#define CODEC_DEMO_DEC		19
 
 enum DSP_ERROR_TYPE {
 	XA_SUCCESS = 0,

@@ -240,6 +240,7 @@ void *comp_process_entry(void *arg)
 				case CODEC_FSL_DDP_DEC:
 				case CODEC_FSL_NBAMR_DEC:
 				case CODEC_FSL_WBAMR_DEC:
+				case CODEC_OPUS_DEC:
 					if ((p_info.ret == XA_NOT_ENOUGH_DATA) ||
 					    (p_info.ret != XA_ERROR_STREAM) && (p_info.ret != XA_END_OF_STREAM)) {
 						/* ...issue asynchronous zero-length
