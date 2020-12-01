@@ -343,8 +343,8 @@ static UA_ERROR_TYPE xa_codec_port_route(struct XACodecBase *base,
 					&dsp_config->scratch_mem_info) == 0,
 					ACODEC_INSUFFICIENT_MEM);
 
-	/* ...schedule processing instantly */
-	xa_base_schedule(base, 0);
+	if ((xf_input_port_ready(&codec->input)))
+		xa_base_schedule(base, 0);
 
 	/* ...pass success result to caller */
 	xf_response_ok(m);
@@ -544,10 +544,6 @@ static UA_ERROR_TYPE xa_codec_preprocess(struct XACodecBase *base)
 				 * prevent further processing
 				 */
 			//    return XA_NO_OUTPUT;
-				if (!xf_msg_queue_head(&codec->input.queue)) {
-					LOG("No message ready\n");
-					return ACODEC_SUCCESS;
-				}
 			}
 		}
 
@@ -600,30 +596,12 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 		/* ...consume specified number of bytes from input port */
 		xf_input_port_consume(&codec->input, consumed);
 
-		if (codec->input.remaining)
-			xf_input_port_fill(&codec->input);
-
-		/* ...set input buffer pointer as needed */
-		XA_API(base, XF_API_CMD_SET_INPUT_PTR, 0, codec->input.buffer);
-
-		/* ...specify number of bytes available in the input buffer */
-		XA_API(base,
-			   XF_API_CMD_SET_INPUT_BYTES,
-			   0,
-			   &codec->input.filled);
-
-	}
-	if (xf_input_port_ready(&codec->input) && !codec->input.remaining && (!xf_input_port_done(&codec->input) || (xf_input_port_done(&codec->input) && ret == ACODEC_END_OF_STREAM))) {
-		if ((input_sync != INPUT_SYNC) || ((input_sync == INPUT_SYNC) && !codec->input.filled)) {
-			LOG("return input buffer\n");
-			xf_input_port_complete(&codec->input);
-			/* ...clear input-setup flag */
 			base->state ^= XA_CODEC_FLAG_INPUT_SETUP;
-		}
+
 	}
 
 	/* ...output buffer maintenance; check if we have produced anything */
-	if ((xf_output_port_routed(&codec->output) && produced) || (!xf_output_port_routed(&codec->output) &&(produced || ret || consumed))) {
+	if ((xf_output_port_routed(&codec->output) && produced) || (!xf_output_port_routed(&codec->output))) {
 		/* ...immediately complete output buffer
 		 * (don't wait until it gets filled)
 		 */
@@ -635,8 +613,7 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 
 	/* ...process execution stage transition */
 	if (xf_input_port_done(&codec->input) &&
-	    !produced &&
-	    ret == ACODEC_END_OF_STREAM) {
+	    !produced && ret) {
 		/* ...output stream is over; propagate condition to sink port */
 		if (xf_output_port_flush(&codec->output, XF_FILL_THIS_BUFFER)) {
 			/* ...flushing sequence is not needed;
@@ -644,6 +621,8 @@ static UA_ERROR_TYPE xa_codec_postprocess(struct XACodecBase *base, u32 ret)
 			 */
 			xf_input_port_purge(&codec->input);
 
+			/* ...clear input-ready condition */
+			base->state &= ~XA_CODEC_FLAG_INPUT_SETUP;
 			/* ...no propagation to output port */
 			LOG1("codec[%d] playback completed\n",
 			     base->codec_id);
