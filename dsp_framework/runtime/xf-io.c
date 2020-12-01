@@ -234,14 +234,14 @@ int xf_input_port_fill(struct xf_input_port *port)
 
 		/* ...check if input buffer is processed completely */
 		remaining -= k;
-		//if (remaining == 0) {
-			//if (!xf_input_port_complete(port)) {
+		if (remaining == 0) {
+			if (!xf_input_port_complete(port)) {
 				/* ...no more input messages; break the loop */
 				break;
-			//}
+			}
 			/* ...update remaining counter */
-			//remaining = port->remaining;
-		//}
+			remaining = port->remaining;
+		}
 	}
 
 	/* ...update buffer positions */
