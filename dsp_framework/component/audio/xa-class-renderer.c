@@ -285,8 +285,6 @@ static UA_ERROR_TYPE xa_renderer_preprocess(struct XACodecBase *base)
 			/* ...retrieve number of bytes put in buffer */
 			filled = xf_input_port_level(&renderer->input);
 //		}
-		if (!renderer->input.remaining)
-			xf_input_port_complete(&renderer->input);
 	}
 
 	/* ...set total number of bytes we have in buffer */
