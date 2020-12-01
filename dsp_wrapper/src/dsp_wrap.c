@@ -863,7 +863,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	TRACE("HAS_ERROR: err = 0x%x\n", (int)err);
 #endif
 
-	if (err == XA_ERROR_STREAM && (*offset == 0))
+	if (err == XA_ERROR_STREAM && (*offset == 0) && InputSize != 0)
 		err = XA_SUCCESS;
 
 	if (err == XA_NOT_ENOUGH_DATA) {

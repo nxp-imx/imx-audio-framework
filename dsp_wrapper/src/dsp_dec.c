@@ -279,6 +279,7 @@ int comp_process(UniACodec_Handle pua_handle,
 		pDSP_handle->inptr_busy = TRUE;
 	}
 
+WAIT:
 	do {
 		/* ...wait until result is delivered */
 		err = xaf_comp_get_status(p_comp, &p_info);
@@ -298,16 +299,19 @@ int comp_process(UniACodec_Handle pua_handle,
 		} else {
 			/* ...make sure response is expected */
 			if ((p_info.opcode == XF_EMPTY_THIS_BUFFER) &&
-			    (p_info.buf == p_comp->inptr)) {
+			    ((p_info.buf == p_comp->inptr) || p_info.buf == NULL)) {
 				pDSP_handle->inptr_busy = FALSE;
-				continue;
+				break;
 			} else {
-				pDSP_handle->inptr_busy = FALSE;
 				ret = XA_ERR_UNKNOWN;
-				continue;
+				break;
 			}
 		}
 	} while (1);
+
+	count = xaf_comp_get_msg_count(p_comp);
+	if (count > 0)
+		goto WAIT;
 
 	return ret;
 }
