@@ -322,7 +322,10 @@ void *comp_process_entry(void *arg)
 						p_pipe->input_eos = 1;
 					}
 				}
-			} else if (p_info.opcode == XF_OUTPUT_EOS) {
+			} else if ((p_info.opcode == XF_EMPTY_THIS_BUFFER) &&
+					!p_info.buf)
+				break;
+			else if (p_info.opcode == XF_OUTPUT_EOS) {
 				break;
 			}
 		}
