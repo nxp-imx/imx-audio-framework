@@ -304,7 +304,7 @@ static UA_ERROR_TYPE xa_codec_fill_this_buffer(struct XACodecBase *base,
 		XF_CHK_ERR(base->state & (XA_BASE_FLAG_RUNTIME_INIT |
 					XA_BASE_FLAG_EXECUTION), ACODEC_PARA_ERROR);
 
-		if (xf_input_port_ready(&codec->input) || xf_input_port_level(&codec->input)) {
+		if ((xf_input_port_ready(&codec->input) || xf_input_port_level(&codec->input)) && (!(xf_input_port_state(&codec->input) & XF_INPUT_FLAG_PURGING ))) {
 			/* ...schedule data processing instantly */
 			xa_base_schedule(base, 0);
 		}

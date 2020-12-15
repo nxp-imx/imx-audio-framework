@@ -137,6 +137,12 @@ static inline u32 xf_input_port_level(struct xf_input_port *port)
 	return port->filled;
 }
 
+/* ...return port state */
+static inline u32 xf_input_port_state(struct xf_input_port *port)
+{
+	return port->flags;
+}
+
 /*******************************************************************************
  * Output port data
  ******************************************************************************/
