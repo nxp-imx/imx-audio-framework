@@ -310,7 +310,8 @@ WAIT:
 	} while (1);
 
 	count = xaf_comp_get_msg_count(p_comp);
-	if (count > 0)
+	/* ...in case still have msg or not receive output msg */
+	if (count > 0 || in_size && pDSP_handle->outptr_busy)
 		goto WAIT;
 
 	return ret;
