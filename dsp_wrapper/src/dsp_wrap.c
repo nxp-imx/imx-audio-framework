@@ -688,6 +688,8 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 
 	if (pDSP_handle->stream_type == STREAM_ADIF)
 		pDSP_handle->framed = 0;
+	if (pDSP_handle->codec_type == NBAMR)
+		pDSP_handle->framed = 1;
 
 #ifdef DEBUG
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
