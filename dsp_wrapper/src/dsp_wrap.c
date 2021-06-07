@@ -106,6 +106,47 @@ const char *DSPDecVersionInfo()
 	return (const char *)WRAP_VERSION_STR;
 }
 
+static struct ChipInfo soc_info[2] = {
+	{
+		.code = MX8ULP,
+		.name = "i.MX8ULP",
+	},
+	{
+		.code = CC_OTHERS,
+		.name = "CC_OTHERS",
+	}
+};
+
+static enum ChipCode getChipCodeFromSocid(void)
+{
+	FILE *fp = NULL;
+	char soc_name[100];
+	enum ChipCode code = CC_UNKNOW;
+	int num = sizeof(soc_info) / sizeof(struct ChipInfo);
+	int i;
+
+	fp = fopen("/sys/devices/soc0/soc_id", "r");
+	if (fp == NULL) {
+		printf("open /sys/devices/soc0/soc_id failed.\n");
+		return CC_UNKNOW;
+	}
+
+	if (fscanf(fp, "%100s", soc_name) != 1) {
+		printf("fscanf soc_id failed.\n");
+		fclose(fp);
+		return CC_UNKNOW;
+	}
+	fclose(fp);
+
+	for(i=0; i<num; i++) {
+		if(!strcmp(soc_name, soc_info[i].name)) {
+			code = soc_info[i].code;
+			break;
+		}
+	}
+
+	return code;
+}
 /*
  * DSPDecCreate - DSP wrapper creation
  *
@@ -122,6 +163,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	uint32 frame_maxlen;
 	int comp_type = 0;
 	int err = 0;
+	enum ChipCode chip_info;
 
 	if (!memOps)
 		return NULL;
@@ -141,16 +183,24 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	frame_maxlen = INBUF_SIZE;
 	pDSP_handle->outbuf_alloc_size = OUTBUF_SIZE;
 
+	chip_info = getChipCodeFromSocid();
+
 	switch (pDSP_handle->codec_type) {
 	case MP2:
 		comp_type = CODEC_MP2_DEC;
 		break;
 	case MP3:
-		comp_type = CODEC_FSL_MP3_DEC;
+		if (chip_info == MX8ULP)
+			comp_type = CODEC_MP3_DEC;
+		else
+			comp_type = CODEC_FSL_MP3_DEC;
 		break;
 	case AAC:
 	case AAC_PLUS:
-		comp_type = CODEC_FSL_AAC_PLUS_DEC;
+		if (chip_info == MX8ULP)
+			comp_type = CODEC_AAC_DEC;
+		else
+			comp_type = CODEC_FSL_AAC_PLUS_DEC;
 		break;
 	case DAB_PLUS:
 		comp_type = CODEC_DAB_DEC;
@@ -191,6 +241,18 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 #endif
 		goto Err2;
 		break;
+	}
+
+	/* return err for bad perf on i.mx8ulp */
+	if ((comp_type == CODEC_FSL_OGG_DEC ||
+		comp_type == CODEC_FSL_AC3_DEC ||
+		comp_type == CODEC_FSL_DDP_DEC ||
+		comp_type == CODEC_FSL_NBAMR_DEC ||
+		comp_type == CODEC_FSL_WBAMR_DEC ||
+		comp_type == CODEC_FSL_WMA_DEC)
+		&& chip_info == MX8ULP) {
+		printf("Stop decoding %d codec for bad performance\n", comp_type);
+		goto Err2;
 	}
 
 	pDSP_handle->inner_buf.data = memOps->Malloc(INBUF_SIZE);
@@ -805,7 +867,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	TRACE("inner buffer data size = %d, inner buffer offset = %d\n",
 	      in_size, *inner_offset);
 #endif
-
 	err = comp_process(pDSP_handle, pIn, in_size, &in_off, pOut, &out_size);
 
 	*inner_size -= in_off;

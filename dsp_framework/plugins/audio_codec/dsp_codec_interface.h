@@ -19,6 +19,9 @@ typedef enum {
 	CODEC_DRM_DEC,
 	CODEC_SBC_DEC,
 	CODEC_SBC_ENC,
+	/* Carefully add fsl codecs for it may cause bad performace
+	 * on some platforms.
+	*/
 	CODEC_FSL_OGG_DEC,
 	CODEC_FSL_MP3_DEC,
 	CODEC_FSL_AAC_DEC,

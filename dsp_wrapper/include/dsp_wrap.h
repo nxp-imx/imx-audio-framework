@@ -92,6 +92,17 @@
 #define PURPLE_STR(format, ...) COLORFUL_STR(COLOR_PURPLE, format, ##__VA_ARGS__)
 #define CYAN_STR(format, ...)   COLORFUL_STR(COLOR_CYAN, format, ##__VA_ARGS__)
 
+enum ChipCode {
+	CC_UNKNOW = 0,
+	MX8ULP,
+	CC_OTHERS
+};
+
+struct ChipInfo {
+	enum ChipCode code;
+	char name[30];
+};
+
 struct lastErr {
 	int32 ErrType;
 	char *ErrMsg;
