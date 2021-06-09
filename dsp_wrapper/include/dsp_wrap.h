@@ -160,6 +160,7 @@ struct DSP_Handle {
 	bool input_over;
 	bool inptr_busy, outptr_busy;
 	bool codecdata_copy;
+	bool codecdata_ignored;
 	unsigned int codecoffset;
 	int blockalign;
 	int offset_copy;

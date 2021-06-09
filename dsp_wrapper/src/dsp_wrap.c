@@ -164,6 +164,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	int comp_type = 0;
 	int err = 0;
 	enum ChipCode chip_info;
+	bool codecdata_ignored;
 
 	if (!memOps)
 		return NULL;
@@ -188,52 +189,70 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	switch (pDSP_handle->codec_type) {
 	case MP2:
 		comp_type = CODEC_MP2_DEC;
+		codecdata_ignored = TRUE;
 		break;
 	case MP3:
-		if (chip_info == MX8ULP)
+		if (chip_info == MX8ULP) {
 			comp_type = CODEC_MP3_DEC;
-		else
+			codecdata_ignored = TRUE;
+		} else {
 			comp_type = CODEC_FSL_MP3_DEC;
+			codecdata_ignored = FALSE;
+		}
 		break;
 	case AAC:
 	case AAC_PLUS:
-		if (chip_info == MX8ULP)
+		if (chip_info == MX8ULP) {
 			comp_type = CODEC_AAC_DEC;
-		else
+			codecdata_ignored = TRUE;
+		} else {
 			comp_type = CODEC_FSL_AAC_PLUS_DEC;
+			codecdata_ignored = FALSE;
+		}
 		break;
 	case DAB_PLUS:
 		comp_type = CODEC_DAB_DEC;
+		codecdata_ignored = TRUE;
 		break;
 	case BSAC:
 		comp_type = CODEC_BSAC_DEC;
+		codecdata_ignored = TRUE;
 		break;
 	case DRM:
 		comp_type = CODEC_DRM_DEC;
+		codecdata_ignored = TRUE;
 		break;
 	case SBCDEC:
 		comp_type = CODEC_SBC_DEC;
+		codecdata_ignored = TRUE;
 		break;
 	case SBCENC:
 		comp_type = CODEC_SBC_ENC;
+		codecdata_ignored = TRUE;
 		break;
 	case OGG:
 		comp_type = CODEC_FSL_OGG_DEC;
+		codecdata_ignored = FALSE;
 		break;
 	case AC3:
 		comp_type = CODEC_FSL_AC3_DEC;
+		codecdata_ignored = FALSE;
 		break;
 	case DD_PLUS:
 		comp_type = CODEC_FSL_DDP_DEC;
+		codecdata_ignored = FALSE;
 		break;
 	case NBAMR:
 		comp_type = CODEC_FSL_NBAMR_DEC;
+		codecdata_ignored = FALSE;
 		break;
 	case WBAMR:
 		comp_type = CODEC_FSL_WBAMR_DEC;
+		codecdata_ignored = FALSE;
 		break;
 	case WMA:
 		comp_type = CODEC_FSL_WMA_DEC;
+		codecdata_ignored = FALSE;
 		break;
 	default:
 #ifdef DEBUG
@@ -268,6 +287,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	memset(pDSP_handle->inner_buf.data, 0, INBUF_SIZE);
 	pDSP_handle->codecoffset = 0;
 	pDSP_handle->codecdata_copy = FALSE;
+	pDSP_handle->codecdata_ignored = codecdata_ignored;
 
 	/* ...open DSP proxy - specify "DSP#0" */
 	err = xaf_adev_open(&pDSP_handle->adev);
@@ -756,16 +776,16 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 #ifdef DEBUG
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
 #endif
-	if (pDSP_handle->codecData.buf && pDSP_handle->codecdata_copy == FALSE) {
+	if (pDSP_handle->codecData.buf && (pDSP_handle->codecdata_copy == FALSE)
+			&& (pDSP_handle->codecdata_ignored == FALSE)) {
 			InputBufHandle(&pDSP_handle->inner_buf,
 						pDSP_handle->codecData.buf,
 						pDSP_handle->codecData.size,
 						codecoffset,
 						0);
-	} else
-		pDSP_handle->codecdata_copy = TRUE;
+	}
 
-	if (pDSP_handle->codecdata_copy == TRUE) {
+	if ((pDSP_handle->codecdata_copy == TRUE) || pDSP_handle->codecdata_ignored == TRUE) {
 		if (!pDSP_handle->inptr_busy) {
 			ret = InputBufHandle(&pDSP_handle->inner_buf,
 						 InputBuf,
