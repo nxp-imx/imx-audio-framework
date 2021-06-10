@@ -61,6 +61,7 @@ struct AudioOption {
 FILE *fd_dst;
 FILE *fd_src;
 u32 frame_count;
+int log_of_perf;
 
 void help_info(int ac, char *av[])
 {
@@ -114,6 +115,7 @@ void help_info(int ac, char *av[])
 	printf("                        DRM        for 6\n");
 	printf("                        SBCDEC     for 7\n");
 	printf("                        SBCENC     for 8\n");
+	printf("          -l Show the performance data\n");
 	printf("**************************************************\n\n");
 }
 
@@ -162,6 +164,9 @@ int GetParameter(int argc_t, char *argv_t[], struct AudioOption *pAOption)
 				pAOption->AudioFormatRoute = atoi(in);
 				pAOption->comp_routed = 1;
 				break;
+			case 'l':
+				log_of_perf = 1;
+				break;
 			default:
 				goto Error;
 			}
@@ -181,6 +186,10 @@ void *comp_process_entry(void *arg)
 	int size_read = INBUF_SIZE;
 	int size;
 	int ret = 0;
+	struct timeval tv_begin = {0}, tv_end = {0};
+
+	if (log_of_perf)
+		gettimeofday(&tv_begin, NULL);
 
 	do {
 		/* ...wait until result is delivered */
@@ -195,6 +204,15 @@ void *comp_process_entry(void *arg)
 				u32 actual_size;
 
 				frame_count++;
+
+				if (log_of_perf) {
+					/* Receive a buffer */
+					gettimeofday(&tv_end, NULL);
+					printf("time interval for %d frame %dus\n", frame_count,
+					       (tv_end.tv_sec * 1000000 + tv_end.tv_usec) -
+					       (tv_begin.tv_sec * 1000000 + tv_begin.tv_usec));
+					tv_begin = tv_end;
+				}
 
 				actual_size = fwrite((void *)p_comp->outptr, 1,
 						     p_info.length, fd_dst);
