@@ -773,6 +773,8 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 	if (pDSP_handle->codec_type == NBAMR)
 		pDSP_handle->framed = 1;
 
+	if (!pDSP_handle->codecData.buf)
+		pDSP_handle->codecdata_ignored = TRUE;
 #ifdef DEBUG
 	TRACE("InputSize = %d, offset = %d\n", InputSize, *offset);
 #endif
