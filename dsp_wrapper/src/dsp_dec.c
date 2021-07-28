@@ -235,6 +235,15 @@ void cancel_unused_channel_data(uint8 *data_in, int32 length, int32 depth)
 	}
 }
 
+void memcpy_device(char *dst, char *src, int size)
+{
+	int i;
+
+	for (i = 0; i < size; i++)
+		dst[i] = src[i];
+
+}
+
 int comp_process(UniACodec_Handle pua_handle,
 		 uint8 *input,
 		 uint32 in_size,
@@ -262,7 +271,7 @@ int comp_process(UniACodec_Handle pua_handle,
 
 	if (!pDSP_handle->inptr_busy) {
 		if (in_size) {
-			memcpy(p_comp->inptr, input, in_size);
+			memcpy_device(p_comp->inptr, input, in_size);
 			*in_off = in_size;
 
 			err = xaf_comp_process(p_comp,
