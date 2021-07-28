@@ -1,0 +1,3 @@
+[submodule "dsp_framework/rpmsg-lite"]
+	path = dsp_framework/rpmsg-lite
+	url = https://github.com/NXPmicro/rpmsg-lite.git
