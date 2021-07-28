@@ -151,6 +151,17 @@ static UA_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 		return ACODEC_INIT_ERR;
 	}
 
+	cmd->pil_info.dst_addr      = env_map_patova(cmd->pil_info.dst_addr);
+	cmd->pil_info.dst_data_addr = env_map_patova(cmd->pil_info.dst_data_addr);
+	cmd->pil_info.start_sym     = env_map_patova(cmd->pil_info.start_sym);
+	cmd->pil_info.text_addr     = env_map_patova(cmd->pil_info.text_addr);
+	cmd->pil_info.init          = env_map_patova(cmd->pil_info.init);
+	cmd->pil_info.fini          = env_map_patova(cmd->pil_info.fini);
+	cmd->pil_info.rel           = env_map_patova(cmd->pil_info.rel);
+	cmd->pil_info.hash          = env_map_patova(cmd->pil_info.hash);
+	cmd->pil_info.symtab        = env_map_patova(cmd->pil_info.symtab);
+	cmd->pil_info.strtab        = env_map_patova(cmd->pil_info.strtab);
+
 	lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, lib_stat, 0);
 	if (!lib_interface) {
 		LOG2("lib load error: lib_type = %d, lib_entry = 0x%x\n",

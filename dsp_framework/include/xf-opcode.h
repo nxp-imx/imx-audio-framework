@@ -148,8 +148,11 @@
 #define XF_OUTPUT_EOS                   __XF_OPCODE(0, 0, 18)
 
 #define XF_PAUSE_RELEASE                __XF_OPCODE(0, 0, 19)
+
+/* ...shmem (scratch memory info) */
+#define XF_SHMEM_INFO                   __XF_OPCODE(0, 0, 20)
 /* ...total amount of supported decoder commands */
-#define __XF_OP_NUM                     20
+#define __XF_OP_NUM                     21
 
 /*******************************************************************************
  * XF_START message definition

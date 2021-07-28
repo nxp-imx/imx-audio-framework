@@ -30,10 +30,12 @@ INCLUDES   += -I$(INC_DIR)/lib                            \
 			  -I$(SRC_DIR)/plugins/audio_codec            \
 			  -I$(SRC_DIR)/plugins/renderer            \
 			  -I$(SRC_DIR)/component/audio \
-			  -I$(SRC_DIR)/plugins/audio_codec/uni_audio
+			  -I$(SRC_DIR)/plugins/audio_codec/uni_audio \
+			  -I$(SRC_DIR)/rpmsg-lite/lib/include
 
 # Put common C files here
 C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
+			  $(SRC_DIR)/arch/board.o                                    \
 			  $(SRC_DIR)/arch/printf.o                                   \
 			  $(SRC_DIR)/arch/dpu_lib_load.o                             \
 			  $(SRC_DIR)/arch/libloader/common.o                         \
@@ -58,11 +60,18 @@ C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
 			  $(SRC_DIR)/init/main.o                                     \
 			  $(SRC_DIR)/ipc/xf-shmem.o                                  \
 			  $(SRC_DIR)/ipc/xf-msg.o                                    \
+			  $(SRC_DIR)/ipc/rsc_table.o                                 \
+			  $(SRC_DIR)/ipc/rpmsg_platform.o                            \
+			  $(SRC_DIR)/ipc/rpmsg_env_bm.o                              \
+			  $(SRC_DIR)/ipc/fsl_mu.o                                    \
 			  $(SRC_DIR)/memory/memory.o                                 \
 			  $(SRC_DIR)/runtime/xf-core.o                               \
 			  $(SRC_DIR)/runtime/xf-io.o                                 \
 			  $(SRC_DIR)/runtime/xf-sched.o                              \
-			  $(SRC_DIR)/runtime/util/rbtree.o
+			  $(SRC_DIR)/runtime/util/rbtree.o                           \
+			  $(SRC_DIR)/rpmsg-lite/lib/rpmsg_lite/rpmsg_lite.o          \
+			  $(SRC_DIR)/rpmsg-lite/lib/virtio/virtqueue.o               \
+			  $(SRC_DIR)/rpmsg-lite/lib/common/llist.o
 
 TARGET = hifi4_imx8qmqxp.bin
 
@@ -98,5 +107,8 @@ clean:
 	rm -f $(SRC_DIR)/memory/*.o
 	rm -f $(SRC_DIR)/runtime/*.o
 	rm -f $(SRC_DIR)/runtime/util/*.o
+	rm -f $(SRC_DIR)/rpmsg-lite/lib/rpmsg_lite/*.o
+	rm -f $(SRC_DIR)/rpmsg-lite/lib/virtio/*.o
+	rm -f $(SRC_DIR)/rpmsg-lite/lib/common/*.o
 	rm -f ./hifi4*
 

@@ -30,42 +30,6 @@
 #include <xtensa/config/core.h>
 #include <xtensa/config/system.h>
 
-/**********************************
- * System Memory Map
- **********************************/
-#define XSHAL_MU5_SIDEB_BYPASS_PADDR  0x5D290000
-#define XSHAL_MU6_SIDEB_BYPASS_PADDR  0x5D2A0000
-#define XSHAL_MU7_SIDEB_BYPASS_PADDR  0x5D2B0000
-#define XSHAL_MU8_SIDEB_BYPASS_PADDR  0x5D2C0000
-#define XSHAL_MU9_SIDEB_BYPASS_PADDR  0x5D2D0000
-#define XSHAL_MU10_SIDEB_BYPASS_PADDR 0x5D2E0000
-#define XSHAL_MU11_SIDEB_BYPASS_PADDR 0x5D2F0000
-#define XSHAL_MU12_SIDEB_BYPASS_PADDR 0x5D300000
-#define XSHAL_MU13_SIDEB_BYPASS_PADDR 0x5D310000
-#define XSHAL_MU13_SIDEB_BYPASS_PADDR_8MP 0x30E70000
-#define XSHAL_MU3_SIDEB_BYPASS_PADDR_8ULP 0x2DA20000
-
-#ifdef PLATF_8M
-#define MU_PADDR  XSHAL_MU13_SIDEB_BYPASS_PADDR_8MP
-#else
-#ifdef PLATF_8ULP
-#define MU_PADDR  XSHAL_MU3_SIDEB_BYPASS_PADDR_8ULP
-#else
-#define MU_PADDR  XSHAL_MU13_SIDEB_BYPASS_PADDR
-#endif
-#endif
-
-#define  XSHAL_MU5_SIDEB_BTR0  (MU_PADDR + 0x00)
-#define  XSHAL_MU5_SIDEB_BTR1  (MU_PADDR + 0x04)
-#define  XSHAL_MU5_SIDEB_BTR2  (MU_PADDR + 0x08)
-#define  XSHAL_MU5_SIDEB_BTR3  (MU_PADDR + 0x0C)
-#define  XSHAL_MU5_SIDEB_BRR0  (MU_PADDR + 0x10)
-#define  XSHAL_MU5_SIDEB_BRR1  (MU_PADDR + 0x14)
-#define  XSHAL_MU5_SIDEB_BRR2  (MU_PADDR + 0x18)
-#define  XSHAL_MU5_SIDEB_BRR3  (MU_PADDR + 0x1C)
-#define  XSHAL_MU5_SIDEB_BSR   (MU_PADDR + 0x20)
-#define  XSHAL_MU5_SIDEB_BCR   (MU_PADDR + 0x24)
-
 /* Destination is DPU's local DataRAMs from where DPU processes input data
  * blocks. In this example, the macros XCHAL_DATARAM(0/1)_VADDR are same on
  * both APU and DPU.  If DPU's DataRAM area is mapped to different addresses

@@ -34,39 +34,14 @@
 #include "xf-sched.h"
 #include "xf-component.h"
 #include "memory.h"
+#include "rpmsg_lite.h"
+#include "rpmsg_ns.h"
+#include "fsl_mu.h"
 
 /* ...allocate 6 bits for client number per core */
 #define XF_CFG_MAX_CLIENTS             (1 << 6)
 
-union icm_header_t {
-	struct {
-		/* intr = 1 when sending msg */
-		u32 msg     : 6;
-		/* sub_msg will have ICM_MSG when
-		 * msg=ICM_XXX_ACTION_COMPLETE
-		 */
-		u32 sub_msg : 6;
-		// reserved
-		u32 rsvd    : 3;
-		u32 intr    : 1;
-		/* =size in bytes (excluding header) to follow
-		 * when intr=1, =response message when ack=1
-		 */
-		u32 size    : 15;
-		u32 ack     : 1;
-	};
-	u32 allbits;
-};
-
-enum icm_action_t {
-	ICM_CORE_READY = 1,
-	ICM_CORE_INIT,
-	ICM_CORE_EXIT,
-};
-
 struct icm_dpu_ext_msg {
-	u32     ext_msg_addr;
-	u32     ext_msg_size;
 	u32     scratch_buf_phys;
 	u32     scratch_buf_size;
 	u32     dsp_config_phys;
@@ -74,6 +49,37 @@ struct icm_dpu_ext_msg {
 	u32	dsp_board_type;
 };
 
+struct rpmsg_ept_handle {
+	u32 localAddr;                 /*!< RPMsg local endpoint address */
+	u32 peerAddr;                  /*!< RPMsg peer endpoint address */
+	void *priv;                    /* Pointer for dsp_main_struct */
+};
+
+/* Max supported ISR counts */
+#define ISR_COUNT (12U) /* Change for multiple remote cores */
+/*!
+ * Structure to keep track of registered ISR's.
+ */
+struct isr_info {
+	void *data;
+};
+
+struct mem_att {
+	u32 da; /* device address (From Cortex M4 view)*/
+	u32 sa; /* system bus address */
+	u32 size; /* size of reg range */
+	int flags;
+};
+
+struct mem_cfg {
+	struct mem_att *att;
+	int    att_size;
+};
+
+/*
+ * Only support one instance
+ */
+#define EPT_NUM        0x2
 #define XF_CFG_MESSAGE_POOL_SIZE  256
 struct dsp_main_struct {
 	/* shared memory message pool data */
@@ -102,16 +108,22 @@ struct dsp_main_struct {
 
 	u32 is_core_init;
 	u32 is_interrupt;
-	struct icm_dpu_ext_msg dpu_ext_msg;
+	u32 is_suspend;
+	u32 is_resume;
 
+	struct icm_dpu_ext_msg dpu_ext_msg;
 	struct dsp_mem_info scratch_mem_info;
 
-};
+	struct rpmsg_lite_instance *rpmsg;
+	struct rpmsg_lite_instance rpmsg_ctxt;
 
-enum {
-	DSP_IMX8QXP_TYPE = 0,
-	DSP_IMX8QM_TYPE,
-	DSP_IMX8MP_TYPE,
+	struct rpmsg_lite_endpoint *ept[EPT_NUM];
+	struct rpmsg_lite_ept_static_context ept_ctx[EPT_NUM];
+	struct rpmsg_ept_handle ept_handle[EPT_NUM];
+	struct isr_info isr_table[ISR_COUNT];
+	struct mem_cfg *mem_cfg;
+	struct mu_cfg *mu_cfg;
+	void *platform_lock;
 };
 
 #endif

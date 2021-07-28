@@ -169,7 +169,7 @@ void *MEM_scratch_malloc(struct dsp_mem_info *mem_info, int nb)
 	if (p)
 		memset((void *)p, 0, nb);
 
-	LOG3("alloc size out: %p %d avail mem: %d\n", (void *)(p-1), nb+8, ptr->Availmem*8);
+	LOG3("alloc size out: %p %d avail mem: %d\n", (void *)p, nb, ptr->Availmem*8);
 
 	return (void *)p;
 }

@@ -38,6 +38,7 @@
 #include "irqstr.h"
 #include "io.h"
 #include "wrap_dma.h"
+#include "board.h"
 
 /*******************************************************************************
  * Renderer state flags

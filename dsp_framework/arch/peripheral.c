@@ -22,80 +22,12 @@
  *
  *****************************************************************/
 
-#include "peripheral.h"
-#include "mydefs.h"
 #include <stdarg.h>
+#include "mydefs.h"
+#include "peripheral.h"
+#include "board.h"
 
-/* Enable the specific receive interrupt */
-void mu_enableinterrupt_rx(u32 start_addr, u32 idx)
-{
-#ifdef PLATF_8ULP
-	volatile u32 *reg_rcr = (volatile u32 *)(start_addr + MX8ULP_MU_RCR);
-	*reg_rcr = 1 << idx;
-#else
-	struct mu_regs *regs = (struct mu_regs *)start_addr;
-
-	u32 reg_cr = (regs->MU_CR & ~MU_CR_GIRn_NMI_MASK);
-
-	regs->MU_CR = reg_cr | (MU_CR_RIE0_MASK >> idx);
-#endif
-}
-
-/* Receive the message for specify registers */
-void mu_msg_receive(u32 start_addr, u32 regidx, u32 *msg)
-{
-#ifdef PLATF_8ULP
-	volatile u32 *reg_rsr = (volatile u32 *)(start_addr + MX8ULP_MU_RSR);
-	volatile u32 *reg_rr = (volatile u32 *)(start_addr + MX8ULP_MU_RR0 + (regidx << 2));
-
-	while (!(*reg_rsr & (1 << regidx)))
-                ;
-
-	*msg = *reg_rr;
-#else
-	struct mu_regs *regs = (struct mu_regs *)start_addr;
-
-	u32 mask = MU_SR_RF0_MASK >> regidx;
-
-	while (!(regs->MU_SR & mask))
-		;
-
-	*msg = regs->MU_RR[regidx];
-#endif
-}
-
-void mu_msg_send(u32 start_addr, u32 regidx, u32 msg)
-{
-#ifdef PLATF_8ULP
-	volatile u32 *reg_tsr = (volatile u32 *)(start_addr + MX8ULP_MU_TSR);
-	volatile u32 *reg_tr = (volatile u32 *)(start_addr + MX8ULP_MU_TR0 + (regidx << 2));
-
-	while (!(*reg_tsr & (1 << regidx)));
-
-	*reg_tr = msg;
-#else
-	struct mu_regs *regs = (struct mu_regs *)start_addr;
-
-	u32 mask = MU_SR_TE0_MASK >> regidx;
-
-	while (!(regs->MU_SR & mask))
-		;
-
-	regs->MU_TR[regidx] = msg;
-#endif
-}
-
-static void lpuart_putc(struct nxp_lpuart *base, const char c)
-{
-	if (c == '\n')
-		lpuart_putc(base, '\r');
-
-	while (!(base->stat & LPUART_STAT_TDRE))
-		;
-
-	base->data = c;
-}
-
+#ifdef PLATF_8M
 static void uart_putc(const char c)
 {
 	volatile char *uart_base = (volatile char *)UART_BASE;
@@ -105,7 +37,7 @@ static void uart_putc(const char c)
 	if (c == '\n')
 		uart_putc('\r');
 
-	//drain
+	/* drain */
 	do {
 		status = read32(uart_base + USR1);
 		count++;
@@ -114,8 +46,37 @@ static void uart_putc(const char c)
 	write32(uart_base + URTX0, c);
 }
 
-static int lpuart_init(struct nxp_lpuart *base)
+static int uart_init(void)
 {
+	volatile char *uart_base = (volatile char *)UART_BASE;
+
+	/* enable UART */
+	write32(uart_base + UCR1, 0x0001);
+
+	write32(uart_base + UCR2, 0x5027);
+
+	/* Set UCR3[RXDMUXSEL] = 1. */
+	write32(uart_base + UCR3, 0x0084);
+
+	write32(uart_base + UCR4, 0x4002);
+
+	/* Set internal clock divider = 1 */
+	write32(uart_base + UFCR, 0x0A81);
+
+	write32(uart_base + UBIR, 0x3E7);
+	write32(uart_base + UBMR, 0x32DC);
+
+	write32(uart_base + UCR1, 0x2201);
+	write32(uart_base + UMCR, 0x0000);
+
+	return 0;
+}
+#else
+static int lpuart_init(void)
+{
+	volatile int *lpuart1 = (volatile int *)LPUART_BASE;
+	struct nxp_lpuart *base = (struct nxp_lpuart *)lpuart1;
+
 	u32 tmp;
 	u32 sbr, osr, baud_diff, tmp_osr, tmp_sbr, tmp_diff;
 	u32 clk = UART_CLK_ROOT;
@@ -176,42 +137,27 @@ static int lpuart_init(struct nxp_lpuart *base)
 	return 0;
 }
 
-static int uart_init()
-{
-	volatile char *uart_base = (volatile char *)UART_BASE;
-
-	//enbale UART
-	write32(uart_base + UCR1, 0x0001);
-
-	write32(uart_base + UCR2, 0x5027);
-
-	//Set UCR3[RXDMUXSEL] = 1.
-	write32(uart_base + UCR3, 0x0084);
-
-	write32(uart_base + UCR4, 0x4002);
-
-	//Set internal clock divider = 1
-	write32(uart_base + UFCR, 0x0A81);
-
-	write32(uart_base + UBIR, 0x3E7);
-	write32(uart_base + UBMR, 0x32DC);
-
-	write32(uart_base + UCR1, 0x2201);
-	write32(uart_base + UMCR, 0x0000);
-
-	return 0;
-}
-
-int enable_log(void)
+static void lpuart_putc(const char c)
 {
 	volatile int *lpuart1 = (volatile int *)LPUART_BASE;
 	struct nxp_lpuart *base = (struct nxp_lpuart *)lpuart1;
-	int i = 0;
 
+	if (c == '\n')
+		lpuart_putc('\r');
+
+	while (!(base->stat & LPUART_STAT_TDRE))
+		;
+
+	base->data = c;
+}
+#endif
+
+int enable_log(void)
+{
 #ifdef PLATF_8M
 	uart_init();
 #else
-	lpuart_init(base);
+	lpuart_init();
 #endif
 
 	return 0;
@@ -219,13 +165,11 @@ int enable_log(void)
 
 void dsp_putc(const char c)
 {
-	volatile int *lpuart1 = (volatile int *)LPUART_BASE;
-	struct nxp_lpuart *base = (struct nxp_lpuart *)lpuart1;
 
 #ifdef PLATF_8M
 	uart_putc(c);
 #else
-	lpuart_putc(base, c);
+	lpuart_putc(c);
 #endif
 }
 

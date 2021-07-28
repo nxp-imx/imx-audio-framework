@@ -35,8 +35,7 @@
 #include "mydefs.h"
 #include "xf-debug.h"
 #include "xf-hal.h"
-
-extern struct dsp_main_struct *dsp_global_data;
+#include "board.h"
 
 /*******************************************************************************
  * Entry points
@@ -180,7 +179,7 @@ void xf_msg_submit(struct xf_msg_queue *queue, struct xf_message *m)
 /* ...complete message and pass response to a caller */
 void xf_msg_complete(struct xf_message *m)
 {
-	struct dsp_main_struct *dsp_config = dsp_global_data;
+	struct dsp_main_struct *dsp_config = (struct dsp_main_struct *)GLOBAL_DSP_MEM_ADDR;
 	u32 src = XF_MSG_SRC(m->id);
 	u32 dst = XF_MSG_DST(m->id);
 

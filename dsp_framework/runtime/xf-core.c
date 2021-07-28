@@ -36,6 +36,7 @@
 #include "xf-debug.h"
 #include "xf-core.h"
 #include "xf-shmem.h"
+#include "board.h"
 
 /* ...translate client-id into component handle */
 static inline struct xf_component *xf_client_lookup(
@@ -154,7 +155,6 @@ static int xf_proxy_free(struct dsp_main_struct *dsp_config,
 static int xf_proxy_suspend(struct dsp_main_struct *dsp_config,
 			    struct xf_message *m)
 {
-	union icm_header_t icm_msg;
 	struct xf_cmap_link     *link;
 	struct xf_component *component;
 	u32                 i;
@@ -173,23 +173,8 @@ static int xf_proxy_suspend(struct dsp_main_struct *dsp_config,
 	/* ...return message back to the pool */
 	xf_msg_pool_put(&dsp_config->pool, m);
 
-	/* ...disable shard message pool between DSP and AP core */
-	XF_PROXY_WRITE(dsp_config, cmd_invalid, 1);
-	XF_PROXY_WRITE(dsp_config, rsp_invalid, 1);
-
-	/* ...save the data of dsp_main_struct structure */
-	if (dsp_config->dpu_ext_msg.dsp_config_phys)
-		memcpy((char *)(dsp_config->dpu_ext_msg.dsp_config_phys),
-		       dsp_config,
-		       sizeof(struct dsp_main_struct));
-
-	dsp_config->is_core_init = 0;
-
-	/* ...send ack to dsp driver */
-	icm_msg.allbits = 0;
-	icm_msg.intr = 1;
-	icm_msg.msg  = XF_SUSPEND;
-	icm_intr_send(icm_msg.allbits);
+	/* send message back*/
+	platform_notify(RP_MBOX_SUSPEND_ACK);
 
 	return 0;
 }
@@ -198,7 +183,6 @@ static int xf_proxy_suspend(struct dsp_main_struct *dsp_config,
 static int xf_proxy_resume(struct dsp_main_struct *dsp_config,
 			   struct xf_message *m)
 {
-	union icm_header_t icm_msg;
 	struct xf_cmap_link     *link;
 	struct xf_component *component;
 	struct xf_message *m_tmp;
@@ -210,14 +194,6 @@ static int xf_proxy_resume(struct dsp_main_struct *dsp_config,
 	xf_msg_pool_put(&dsp_config->pool, m);
 
 	/* ...recover the data of dsp_main_struct structure */
-	if (dsp_config->dpu_ext_msg.dsp_config_phys)
-		memcpy(dsp_config,
-		       (char *)(dsp_config->dpu_ext_msg.dsp_config_phys),
-			   sizeof(struct dsp_main_struct));
-
-	/* ...enable shard message pool between DSP and AP core */
-	XF_PROXY_WRITE(dsp_config, cmd_invalid, 0);
-	XF_PROXY_WRITE(dsp_config, rsp_invalid, 0);
 
 	m_tmp = xf_msg_pool_get(&dsp_config->pool);
 	if (!m_tmp) {
@@ -241,14 +217,7 @@ static int xf_proxy_resume(struct dsp_main_struct *dsp_config,
 
 	xf_msg_pool_put(&dsp_config->pool, m_tmp);
 
-	/* ...set is_interrupt flag */
-	dsp_config->is_interrupt = 1;
-
-	/* ...send ack to dsp driver */
-	icm_msg.allbits = 0;
-	icm_msg.intr = 1;
-	icm_msg.msg  = XF_RESUME;
-	icm_intr_send(icm_msg.allbits);
+	/* no message reply to A core */
 
 	return 0;
 }
@@ -257,13 +226,15 @@ static int xf_proxy_resume(struct dsp_main_struct *dsp_config,
 static int xf_proxy_pause(struct dsp_main_struct *dsp_config,
 			   struct xf_message *m)
 {
-	union icm_header_t icm_msg;
 	struct xf_cmap_link     *link;
 	struct xf_component *component;
 	u32                 i;
 
 	LOG("Process XF_PAUSE command\n");
 
+	/* TBD:  Should be for instance, one instance is paused, another one
+	 * still can run.
+	 */
 	/* ...call pause of each component */
 	for (link = &dsp_config->cmap[i = 0]; i < XF_CFG_MAX_CLIENTS; i++, link++) {
 		if (link->c != NULL) {
@@ -276,60 +247,50 @@ static int xf_proxy_pause(struct dsp_main_struct *dsp_config,
 	/* ...return message back to the pool */
 	xf_msg_pool_put(&dsp_config->pool, m);
 
-	/* ...send ack to dsp driver */
-	icm_msg.allbits = 0;
-	icm_msg.intr = 1;
-	icm_msg.msg  = XF_PAUSE;
-	icm_intr_send(icm_msg.allbits);
+	xf_response(m);
 
 	return 0;
 }
 
 /* ...deal with pause release command */
 static int xf_proxy_pause_release(struct dsp_main_struct *dsp_config,
-			   struct xf_message *m)
+				  struct xf_message *m)
 {
-	union icm_header_t icm_msg;
 	struct xf_cmap_link     *link;
 	struct xf_component *component;
-	struct xf_message *m_tmp;
 	u32                 i;
 
 	LOG("Process XF_PAUSE_RELEASE command\n");
 
-	/* ...return message back to the pool */
-	xf_msg_pool_put(&dsp_config->pool, m);
-
-	m_tmp = xf_msg_pool_get(&dsp_config->pool);
-	if (!m_tmp) {
-		LOG("Error: ICM Queue full\n");
-		return -ENOMEM;
-	}
-	/* ...fill message parameters */
-	m_tmp->id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
-	m_tmp->opcode = XF_PAUSE_RELEASE;
-	m_tmp->length = 0;
-	m_tmp->buffer = 0;
-	m_tmp->ret = 0;
-
 	/* ...call resume of each component */
+
+	/* TBD:  Should be for instance, one instance is paused, another one
+	 * still can run.
+	 */
 	for (link = &dsp_config->cmap[i = 0]; i < XF_CFG_MAX_CLIENTS; i++, link++) {
 		if (link->c != NULL) {
 			component = link->c;
-			component->entry(component, m_tmp);
+			component->entry(component, m);
 		}
 	}
 
-	xf_msg_pool_put(&dsp_config->pool, m_tmp);
+	/* ...return message back to the pool */
+	xf_msg_pool_put(&dsp_config->pool, m);
 
-	/* ...set is_interrupt flag */
-	dsp_config->is_interrupt = 1;
+	xf_response(m);
 
-	/* ...send ack to dsp driver */
-	icm_msg.allbits = 0;
-	icm_msg.intr = 1;
-	icm_msg.msg  = XF_PAUSE_RELEASE;
-	icm_intr_send(icm_msg.allbits);
+	return 0;
+}
+
+static int xf_proxy_shmem_info(struct dsp_main_struct *dsp_config,
+			       struct xf_message *m)
+{
+	LOG("GET SHMEM INFO\n");
+
+	m->buffer = (void *)env_map_vatopa((void *)dsp_config->dpu_ext_msg.scratch_buf_phys);
+	m->length = dsp_config->dpu_ext_msg.scratch_buf_size;
+
+	xf_response(m);
 
 	return 0;
 }
@@ -343,6 +304,7 @@ static int (* const xf_proxy_cmd[])(struct dsp_main_struct *dsp_config, struct x
 	[XF_OPCODE_TYPE(XF_RESUME)] = xf_proxy_resume,
 	[XF_OPCODE_TYPE(XF_PAUSE)] = xf_proxy_pause,
 	[XF_OPCODE_TYPE(XF_PAUSE_RELEASE)] = xf_proxy_pause_release,
+	[XF_OPCODE_TYPE(XF_SHMEM_INFO)] = xf_proxy_shmem_info,
 };
 
 /* ...total number of commands supported */

@@ -31,31 +31,6 @@
 #include <stddef.h>
 #include "xf-types.h"
 
-#define MU_CR_NMI_MASK                           0x8u
-#define MU_CR_GIRn_MASK                          0xF0000u
-#define MU_CR_GIRn_NMI_MASK		(MU_CR_GIRn_MASK | MU_CR_NMI_MASK)
-
-#define MU_SR_RF0_MASK				(1U << 27U)
-#define MU_SR_TE0_MASK				(1U << 23U)
-#define MU_CR_RIE0_MASK				(1U << 27U)
-
-#define MX8ULP_MU_TSR        0x124
-#define MX8ULP_MU_RCR        0x128
-#define MX8ULP_MU_RSR        0x12C
-#define MX8ULP_MU_TR0        0x200
-#define MX8ULP_MU_RR0        0x280
-
-struct mu_regs {
-	volatile u32		MU_TR[4];
-	volatile const  u32	MU_RR[4];
-	volatile u32		MU_SR;
-	volatile u32		MU_CR;
-};
-
-void mu_enableinterrupt_rx(u32 start_addr, u32 idx);
-void mu_msg_receive(u32 start_addr, u32 regidx, u32 *msg);
-void mu_msg_send(u32 start_addr, u32 regidx, u32 msg);
-
 #define LPUART_STAT_TDRE		(1 << 23)
 #define LPUART_FIFO_TXFE		0x80
 #define LPUART_FIFO_RXFE		0x40
@@ -119,16 +94,7 @@ struct nxp_lpuart {
 #define USR1_TRDY	(1<<13) /* Transmitter ready interrupt/dma flag */
 #define USR2_TXDC	 (1<<3)	 /* Transmitter complete */
 
-#define UART_CLK_ROOT (80000000)
 #define BAUDRATE (115200)
-
-#ifdef PLATF_8ULP
-#define LPUART_BASE  (0x29860000)
-#else
-#define LPUART_BASE  (0x5a090000)
-#endif
-
-#define UART_BASE  (0x30a60000)
 
 void dsp_putc(const char c);
 void dsp_puts(const char *s);
