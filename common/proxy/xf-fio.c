@@ -40,7 +40,16 @@
 #include <poll.h>
 #include <fcntl.h>
 #include "xf-proxy.h"
-#include "mxc_dsp.h"
+
+struct rpmsg_endpoint_info {
+	char name[32];
+	uint32_t src;
+	uint32_t dst;
+};
+
+#define RPMSG_CREATE_EPT_IOCTL  _IOW(0xb5, 0x1, struct rpmsg_endpoint_info)
+
+#define RPMSG_DESTROY_EPT_IOCTL _IO(0xb5, 0x2)
 
 /*******************************************************************************
  * Internal IPC API implementation
@@ -55,10 +64,11 @@ int xf_ipc_send(struct xf_proxy_ipc_data *ipc,
 	int ret;
 
 	/* ...pass message to kernel driver */
-	ret = ioctl(fd, DSP_IPC_MSG_SEND, msg);
-
+	ret = write(fd, msg, sizeof(*msg));
+	if (ret < 0)
+		return -errno;
 	/* ...communication mutex is still locked! */
-	return ret;
+	return 0;
 }
 
 /* ...wait for response availability */
@@ -92,17 +102,35 @@ int xf_ipc_recv(struct xf_proxy_ipc_data *ipc,
 	struct xf_proxy_message temp;
 
 	/* ...get message header from file */
-	r = ioctl(fd, DSP_IPC_MSG_RECV, &temp);
-	if (r == 0) {
+	r = read(fd, &temp, sizeof(struct xf_proxy_message));
+	if (r == sizeof(struct xf_proxy_message)) {
 		msg->session_id = temp.session_id;
 		msg->opcode = temp.opcode;
 		msg->length = temp.length;
-		*buffer = xf_ipc_a2b(ipc, temp.address);
-		/* ...translate shared address into local pointer */
-		XF_CHK_ERR((*buffer = xf_ipc_a2b(ipc, temp.address)) !=
+
+		if (msg->opcode == XF_SHMEM_INFO) {
+			ipc->shmem_phys = temp.address;
+			ipc->shmem_size = temp.length;
+
+			/* ...map entire shared memory region (not too good - tbd) */
+			XF_CHK_ERR((ipc->shmem = mmap(NULL,
+						ipc->shmem_size,
+						PROT_READ | PROT_WRITE,
+						MAP_SHARED,
+						ipc->fd_mem,
+						temp.address & (~(0x1000 - 1)))) != MAP_FAILED, -errno);
+
+			msg->address = temp.address;
+			msg->ret = temp.ret;
+		} else {
+
+			*buffer = xf_ipc_a2b(ipc, temp.address);
+			/* ...translate shared address into local pointer */
+			XF_CHK_ERR((*buffer = xf_ipc_a2b(ipc, temp.address)) !=
 					(void *)-1, -EBADFD);
-		msg->address = temp.address;
-		msg->ret = temp.ret;
+			msg->address = temp.address;
+			msg->ret = temp.ret;
+		}
 
 		/* ...return positive result indicating the message
 		 * has been received.
@@ -117,38 +145,199 @@ int xf_ipc_recv(struct xf_proxy_ipc_data *ipc,
 /*******************************************************************************
  * Internal API functions implementation
  ******************************************************************************/
+int file_write(char *path, char *str)
+{
+	int fd;
+	ssize_t bytes_written;
+	size_t str_sz;
+
+	fd = open(path, O_WRONLY);
+	if (fd == -1) {
+		perror("Error");
+		return -1;
+	}
+	str_sz = strlen(str);
+	bytes_written = write(fd, str, str_sz);
+	if (bytes_written != str_sz) {
+		if (bytes_written == -1)
+			perror("Error");
+		close(fd);
+		return -1;
+	}
+
+	if (-1 == close(fd)) {
+		perror("Error");
+		return -1;
+	}
+	return 0;
+}
+
+int file_read(char *path, char *str, size_t len)
+{
+	int fd;
+	ssize_t bytes_read;
+	size_t str_sz;
+
+	fd = open(path, O_RDONLY);
+	if (fd == -1) {
+		perror("Error");
+		return -1;
+	}
+
+	bytes_read = read(fd, str, len);
+	if (bytes_read != len) {
+		if (bytes_read == -1)
+			perror("Error");
+		close(fd);
+		return 0;
+	}
+
+	if (-1 == close(fd)) {
+		perror("Error");
+		return -1;
+	}
+
+	return 0;
+}
+
+int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
+{
+	struct rpmsg_endpoint_info eptinfo;
+	char path_buf[512];
+	char sbuf[32];
+	int  ctrl_id = 0;
+	int  found = 0;
+	int  i, fd, ret;
+
+	ipc->rproc_id = -1;
+
+	for (i = 0; i < 10; i++) {
+		memset(path_buf, 0, 512);
+		memset(sbuf, 0, 32);
+		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/name", i);
+
+		if (access(path_buf, F_OK) < 0)
+			continue;
+		if (file_read(path_buf, sbuf, 32) < 0)
+			continue;
+		if (!strncmp(sbuf, "imx-dsp-rproc", 13)) {
+			found = 1;
+			ipc->rproc_id = i;
+			break;
+		}
+	}
+
+	if (!found)
+		return -1;
+
+	memset(path_buf, 0, 512);
+	memset(sbuf, 0, 32);
+	sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
+	if (file_read(path_buf, sbuf, 32) < 0)
+		return -1;
+
+	if (!strncmp(sbuf, "offline", 7)) {
+		if (file_write(path_buf, "start") != 0)
+			return -1;
+	}
+
+	/* get index of rpmsg ctrl device */
+	found = 0;
+	for (i = 0; i < 10; i++) {
+		memset(path_buf, 0, 512);
+		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/remoteproc%u#vdev0buffer/virtio%u",
+			ipc->rproc_id, ipc->rproc_id, i);
+
+		if (access(path_buf, F_OK) < 0)
+			continue;
+		else {
+			found = 1;
+			ctrl_id = i;
+			break;
+		}
+	}
+
+	if (!found)
+		return -1;
+
+	memset(path_buf, 0, 512);
+	sprintf(path_buf, "/dev/rpmsg_ctrl%u", ctrl_id);
+	fd = open(path_buf, O_RDWR | O_NONBLOCK);
+	if (fd < 0) {
+		printf("Failed to open rpmsg char dev\n");
+		return -1;
+	}
+
+	ipc->fd_ctrl = fd;
+
+	for (i  = 0; i < 2; i++) {
+		memset(path_buf, 0, 512);
+		sprintf(path_buf, "/dev/rpmsg%d", i);
+		if (access(path_buf, F_OK) < 0) {
+			strcpy(eptinfo.name, "rpmsg-raw");
+			eptinfo.src = 0xFFFFFFFF;
+			eptinfo.dst = i + 1;
+			ret = ioctl(ipc->fd_ctrl, RPMSG_CREATE_EPT_IOCTL, &eptinfo);
+			if (ret) {
+				printf("Failed to create endpoint.\n");
+				close(ipc->fd_ctrl);
+				return -1;
+			}
+
+			memset(path_buf, 0, 512);
+			sprintf(path_buf, "/dev/rpmsg%d", i);
+			ipc->fd = open(path_buf, O_RDWR | O_NONBLOCK);
+			if (ipc->fd < 0) {
+				printf("Failed to open rpmsg.\n");
+				return -1;
+			}
+			break;
+		}
+	}
+
+	return 0;
+}
+
+int xf_rproc_close(struct xf_proxy_ipc_data *ipc)
+{
+	char path_buf[512];
+	int  ret;
+
+	ret = ioctl(ipc->fd, RPMSG_DESTROY_EPT_IOCTL, NULL);
+	if (ret)
+		printf("Failed to destroy endpoint.\n");
+
+	close(ipc->fd);
+	close(ipc->fd_ctrl);
+
+	if ((access("/dev/rpmsg0", F_OK) < 0) &&
+	    (access("/dev/rpmsg1", F_OK) < 0)) {
+		memset(path_buf, 0, 512);
+		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
+
+		if (file_write(path_buf, "stop") != 0)
+			return -1;
+	}
+
+	return 0;
+}
 
 /* ...open proxy interface on proper DSP partition */
 int xf_ipc_open(struct xf_proxy_ipc_data *ipc, u32 core)
 {
-	struct shmem_info mem_info;
-	int ret;
+	int ret, i;
+	char path[20];
 
 	/* ...open file handle */
-	XF_CHK_ERR((ipc->fd = open("/dev/mxc_hifi4", O_RDWR)) >= 0, -errno);
+	ret = xf_rproc_open(ipc);
+	if (ret < 0)
+		return ret;
 
-	/* ...pass shread memory core for this proxy instance */
-	XF_CHK_ERR(ioctl(ipc->fd, DSP_CLIENT_REGISTER, 0) >= 0, -errno);
+	XF_CHK_ERR(ipc->fd >= 0, -errno);
+	XF_CHK_ERR((ipc->fd_mem = open("/dev/mem", O_RDWR | O_SYNC)) >= 0, -errno);
 
 	/* ...create pipe for asynchronous response delivery */
 	XF_CHK_ERR(pipe(ipc->pipe) == 0, -errno);
-
-	/* ...get physical address and size of shared memory */
-	ret = ioctl(ipc->fd, DSP_GET_SHMEM_INFO, &mem_info);
-	if (ret) {
-		TRACE("get physical address and size failed\n");
-		return ret;
-	}
-	ipc->shmem_phys = mem_info.phys_addr;
-	ipc->shmem_size = mem_info.size;
-
-	/* ...map entire shared memory region (not too good - tbd) */
-	XF_CHK_ERR((ipc->shmem = mmap(NULL,
-				      ipc->shmem_size,
-				      PROT_READ | PROT_WRITE,
-				      MAP_SHARED,
-				      ipc->fd,
-				      0)) != MAP_FAILED, -errno);
 
 	TRACE("proxy interface opened\n");
 
@@ -158,14 +347,12 @@ int xf_ipc_open(struct xf_proxy_ipc_data *ipc, u32 core)
 /* ...close proxy handle */
 void xf_ipc_close(struct xf_proxy_ipc_data *ipc, u32 core)
 {
-	/* ...unmap shared memory region */
-	(void)munmap(ipc->shmem, XF_CFG_REMOTE_IPC_POOL_SIZE);
-
 	/* ...close asynchronous response delivery pipe */
 	close(ipc->pipe[0]), close(ipc->pipe[1]);
 
+	close(ipc->fd_mem);
 	/* ...close proxy file handle */
-	close(ipc->fd);
+	xf_rproc_close(ipc);
 
 	TRACE("proxy interface closed\n");
 }

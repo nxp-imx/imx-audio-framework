@@ -52,7 +52,7 @@ int xf_proxy_cmd_exec(struct xf_proxy *proxy, struct xf_user_msg *msg)
 
 	/* ...translate address */
 	XF_CHK_ERR((m.address = xf_proxy_b2a(proxy, msg->buffer)) !=
-				XF_PROXY_BADADDR, -EINVAL);
+				proxy->ipc.shmem_size, -EINVAL);
 
 	/* ...pass command to remote proxy */
 	XF_CHK_API(xf_ipc_send(&proxy->ipc, &m, msg->buffer));
@@ -67,8 +67,10 @@ int xf_proxy_cmd_exec(struct xf_proxy *proxy, struct xf_user_msg *msg)
 	msg->ret = m.ret;
 
 	/* ...translate address back to virtual space */
-	XF_CHK_ERR((msg->buffer = xf_proxy_a2b(proxy, m.address)) !=
-				(void *)-1, -EBADFD);
+	if (msg->opcode != XF_SHMEM_INFO) {
+		XF_CHK_ERR((msg->buffer = xf_proxy_a2b(proxy, m.address)) !=
+			   (void *)-1, -EBADFD);
+	}
 
 	TRACE("proxy[%p]: command done: [%08x:%p:%u:%u]\n",
 	      proxy,
@@ -95,7 +97,7 @@ int xf_proxy_cmd(struct xf_proxy *proxy,
 
 	/* ...translate buffer pointer to shared address */
 	XF_CHK_ERR((msg.address = xf_proxy_b2a(proxy, m->buffer)) !=
-				XF_PROXY_BADADDR, -EINVAL);
+				proxy->ipc.shmem_size, -EINVAL);
 
 	/* ...submit command message to IPC layer */
 	return XF_CHK_API(xf_ipc_send(&proxy->ipc, &msg, m->buffer));
@@ -190,7 +192,7 @@ static inline int xf_client_register(struct xf_proxy *proxy,
 static inline int xf_client_unregister(struct xf_proxy *proxy,
 				       struct xf_handle *handle)
 {
-	struct xf_user_msg   msg;
+	struct xf_user_msg msg;
 
 	/* ...make sure the client is consistent */
 	BUG(proxy->cmap[handle->client].handle != handle,
@@ -370,6 +372,7 @@ int xf_proxy_init(struct xf_proxy *proxy, u32 core)
 	int             r;
 	int                     rc;
 	struct sigaction        actions;
+	struct xf_user_msg   msg;
 
 	/* ...initialize proxy lock */
 	__xf_lock_init(&proxy->lock);
@@ -405,6 +408,16 @@ int xf_proxy_init(struct xf_proxy *proxy, u32 core)
 
 	TRACE("proxy [%p] opened\n", proxy);
 
+	/* ...prepare command parameters */
+	msg.id = __XF_MSG_ID(__XF_AP_PROXY(0), __XF_DSP_PROXY(0));
+	msg.opcode = XF_SHMEM_INFO;
+	msg.length = 0;
+	msg.buffer = 0;
+	msg.ret = 0;
+
+	XF_CHK_API(xf_proxy_cmd_exec(proxy, &msg));
+
+	TRACE("Got shmem info\n", proxy);
 	return 0;
 }
 
@@ -412,6 +425,9 @@ int xf_proxy_init(struct xf_proxy *proxy, u32 core)
 void xf_proxy_close(struct xf_proxy *proxy)
 {
 	u32     core = proxy->core;
+
+	/* ...unmap shared memory region */
+	(void)munmap(&proxy->ipc.shmem, proxy->ipc.shmem_size);
 
 	/* ...terminate proxy thread */
 	__xf_thread_destroy(&proxy->thread);
@@ -631,7 +647,7 @@ int xf_command(struct xf_handle *handle,
 	msg.opcode = opcode;
 	msg.length = length;
 	XF_CHK_ERR((msg.address = xf_proxy_b2a(proxy, buffer)) !=
-				XF_PROXY_BADADDR, -EINVAL);
+				proxy->ipc.shmem_size, -EINVAL);
 	msg.ret = 0;
 
 	TRACE("[%p]:[%08x]:(%08x,%u,%p)\n",

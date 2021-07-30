@@ -27,14 +27,8 @@
 #include "xf-types.h"
 #include "xf-osal.h"
 
-/* ...size of the shared memory pool (in bytes) */
-#define  XF_CFG_REMOTE_IPC_POOL_SIZE  0xFFFFFF
-
 /* ...NULL-address specification */
 #define XF_PROXY_NULL       (~0U)
-
-/* ...invalid proxy address */
-#define XF_PROXY_BADADDR    XF_CFG_REMOTE_IPC_POOL_SIZE
 
 /* ...response timeout, 10s */
 #define TIMEOUT   10000
@@ -92,6 +86,14 @@ struct xf_proxy_ipc_data {
 	/* ...file descriptor */
 	int                     fd;
 
+	/* ...file descriptor "/dev/mem" */
+	int                     fd_mem;
+
+	/* ...file descriptor "/dev/rpmsg_ctrl" */
+	int                     fd_ctrl;
+
+	int                     rproc_id;
+
 	/* ...pipe for asynchronous response delivery */
 	int                     pipe[2];
 
@@ -118,7 +120,7 @@ struct xf_proxy_ipc_data {
 /* ...translate proxy shared address into local virtual address */
 static inline void *xf_ipc_a2b(struct xf_proxy_ipc_data *ipc, u32 address)
 {
-	if (address < XF_CFG_REMOTE_IPC_POOL_SIZE)
+	if (address < ipc->shmem_size)
 		return (unsigned char *)ipc->shmem + address;
 	else if (address == XF_PROXY_NULL)
 		return NULL;
@@ -135,10 +137,10 @@ static inline u32 xf_ipc_b2a(struct xf_proxy_ipc_data *ipc, void *b)
 		return XF_PROXY_NULL;
 
 	a = (u32)((u8 *)b - (u8 *)ipc->shmem);
-	if (a < XF_CFG_REMOTE_IPC_POOL_SIZE)
+	if (a < ipc->shmem_size)
 		return a;
 	else
-		return XF_PROXY_BADADDR;
+		return ipc->shmem_size;
 }
 
 /*******************************************************************************
