@@ -105,10 +105,9 @@ int xaf_comp_set_config(struct xaf_comp *p_comp, u32 num_param, void *p_param)
 	/* ...set persistent stream characteristics */
 	smsg = xf_buffer_data(p_handle->aux);
 
-	for (i = 0; i < num_param; i++) {
-		smsg[i].id = param[i].id;
-		smsg[i].mixData = param[i].mixData;
-	}
+	/* Fixme: meet alignment issue for memcpy*/
+	for (i = 0; i < num_param; i++)
+		smsg[i] = param[i];
 
 	/* ...pass command to the component */
 	ret = xf_command(p_handle,
@@ -178,8 +177,9 @@ int xaf_comp_get_config(struct xaf_comp *p_comp, u32 num_param, void *p_param)
 		return -EPIPE;
 	}
 
+	/* Fixme: meet alignment issue for memcpy*/
 	for (i = 0; i < num_param; i++)
-		param[i].mixData = smsg[i].mixData;
+		param[i] = smsg[i];
 
 	return 0;
 }
