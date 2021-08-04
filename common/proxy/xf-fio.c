@@ -205,10 +205,10 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 	struct rpmsg_endpoint_info eptinfo;
 	char path_buf[512];
 	char sbuf[32];
-	int  ctrl_id = 0;
 	int  found = 0;
 	int  i, fd, ret;
 
+	ipc->rproc_flag = 0;
 	ipc->rproc_id = -1;
 
 	for (i = 0; i < 10; i++) {
@@ -237,65 +237,51 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 		return -1;
 
 	if (!strncmp(sbuf, "offline", 7)) {
-		if (file_write(path_buf, "start") != 0)
-			return -1;
+		if (file_write(path_buf, "start") == 0)
+			ipc->rproc_flag = 1;
 	}
 
-	/* get index of rpmsg ctrl device */
-	found = 0;
-	for (i = 0; i < 10; i++) {
-		memset(path_buf, 0, 512);
-		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/remoteproc%u#vdev0buffer/virtio%u",
-			ipc->rproc_id, ipc->rproc_id, i);
-
-		if (access(path_buf, F_OK) < 0)
-			continue;
-		else {
-			found = 1;
-			ctrl_id = i;
+	/* wait /dev/rpmsgx ready or not */
+	i = 0;
+	do {
+		if ((access("/dev/rpmsg0", F_OK) < 0) ||
+		    (access("/dev/rpmsg1", F_OK) < 0))
+			usleep(10);
+		else
 			break;
-		}
+		i++;
+	} while (i < 10000);
+
+	if ( i >= 10000 ) {
+		printf("remote proc is not ready\n");
+		goto err_virtio;
 	}
 
-	if (!found)
-		return -1;
-
-	memset(path_buf, 0, 512);
-	sprintf(path_buf, "/dev/rpmsg_ctrl%u", ctrl_id);
-	fd = open(path_buf, O_RDWR | O_NONBLOCK);
-	if (fd < 0) {
-		printf("Failed to open rpmsg char dev\n");
-		return -1;
-	}
-
-	ipc->fd_ctrl = fd;
-
-	for (i  = 0; i < 2; i++) {
+	found = 0;
+	for (i = 0; i < 2; i++) {
 		memset(path_buf, 0, 512);
 		sprintf(path_buf, "/dev/rpmsg%d", i);
-		if (access(path_buf, F_OK) < 0) {
-			strcpy(eptinfo.name, "rpmsg-raw");
-			eptinfo.src = 0xFFFFFFFF;
-			eptinfo.dst = i + 1;
-			ret = ioctl(ipc->fd_ctrl, RPMSG_CREATE_EPT_IOCTL, &eptinfo);
-			if (ret) {
-				printf("Failed to create endpoint.\n");
-				close(ipc->fd_ctrl);
-				return -1;
-			}
+		ipc->fd = open(path_buf, O_RDWR | O_NONBLOCK);
+		if (ipc->fd < 0)
+			continue;
+		found = 1;
+		break;
+	}
 
-			memset(path_buf, 0, 512);
-			sprintf(path_buf, "/dev/rpmsg%d", i);
-			ipc->fd = open(path_buf, O_RDWR | O_NONBLOCK);
-			if (ipc->fd < 0) {
-				printf("Failed to open rpmsg.\n");
-				return -1;
-			}
-			break;
-		}
+	if (!found){
+		printf("Failed to open rpmsg.\n");
+		goto err_virtio;
 	}
 
 	return 0;
+
+err_virtio:
+	if (ipc->rproc_flag) {
+		memset(path_buf, 0, 512);
+		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
+		file_write(path_buf, "stop");
+	}
+	return -1;
 }
 
 int xf_rproc_close(struct xf_proxy_ipc_data *ipc)
@@ -303,15 +289,9 @@ int xf_rproc_close(struct xf_proxy_ipc_data *ipc)
 	char path_buf[512];
 	int  ret;
 
-	ret = ioctl(ipc->fd, RPMSG_DESTROY_EPT_IOCTL, NULL);
-	if (ret)
-		printf("Failed to destroy endpoint.\n");
-
 	close(ipc->fd);
-	close(ipc->fd_ctrl);
 
-	if ((access("/dev/rpmsg0", F_OK) < 0) &&
-	    (access("/dev/rpmsg1", F_OK) < 0)) {
+	if (ipc->rproc_flag) {
 		memset(path_buf, 0, 512);
 		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
 
