@@ -179,6 +179,13 @@ int main(void)
 			}
 			dsp->ept_handle[i].localAddr = dsp->ept[i]->addr;
 
+			/* rpmsg-raw is defined in kernel */
+			ret = rpmsg_ns_announce(dsp->rpmsg, dsp->ept[i], "rpmsg-raw",
+						(uint32_t)RL_NS_CREATE);
+			if (ret != RL_SUCCESS) {
+				LOG1("ns %d fail\n", i);
+				goto exit;
+			}
 		}
 
 	} else {

@@ -70,6 +70,7 @@ C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
 			  $(SRC_DIR)/runtime/xf-sched.o                              \
 			  $(SRC_DIR)/runtime/util/rbtree.o                           \
 			  $(SRC_DIR)/rpmsg-lite/lib/rpmsg_lite/rpmsg_lite.o          \
+			  $(SRC_DIR)/rpmsg-lite/lib/rpmsg_lite/rpmsg_ns.o          \
 			  $(SRC_DIR)/rpmsg-lite/lib/virtio/virtqueue.o               \
 			  $(SRC_DIR)/rpmsg-lite/lib/common/llist.o
 
