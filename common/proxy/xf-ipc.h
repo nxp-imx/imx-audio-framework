@@ -89,7 +89,6 @@ struct xf_proxy_ipc_data {
 	/* ...file descriptor "/dev/mem" */
 	int                     fd_mem;
 
-	int                     rproc_flag;
 	int                     rproc_id;
 
 	/* ...pipe for asynchronous response delivery */

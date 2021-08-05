@@ -51,6 +51,8 @@ struct rpmsg_endpoint_info {
 
 #define RPMSG_DESTROY_EPT_IOCTL _IO(0xb5, 0x2)
 
+#define EPT_NUM 2
+
 /*******************************************************************************
  * Internal IPC API implementation
  ******************************************************************************/
@@ -206,9 +208,9 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 	char path_buf[512];
 	char sbuf[32];
 	int  found = 0;
-	int  i, fd, ret;
+	int rproc_flag = 0;
+	int  i, j, fd, ret;
 
-	ipc->rproc_flag = 0;
 	ipc->rproc_id = -1;
 
 	for (i = 0; i < 10; i++) {
@@ -238,27 +240,33 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 
 	if (!strncmp(sbuf, "offline", 7)) {
 		if (file_write(path_buf, "start") == 0)
-			ipc->rproc_flag = 1;
+			rproc_flag = 1;
 	}
 
 	/* wait /dev/rpmsgx ready or not */
-	i = 0;
-	do {
-		if ((access("/dev/rpmsg0", F_OK) < 0) ||
-		    (access("/dev/rpmsg1", F_OK) < 0))
-			usleep(10);
-		else
-			break;
-		i++;
-	} while (i < 10000);
+	for (j = 0; j < 10000; j++) {
+		for (i = 0; i < EPT_NUM; i++) {
+			memset(path_buf, 0, 512);
+			sprintf(path_buf, "/dev/rpmsg%d", i);
+			if (access(path_buf, F_OK) >= 0)
+				continue;
+			else
+				break;
+		}
 
-	if ( i >= 10000 ) {
+		if (i >= EPT_NUM)
+			break;
+		else
+			usleep(10);
+	}
+
+	if ( j >= 10000 ) {
 		printf("remote proc is not ready\n");
 		goto err_virtio;
 	}
 
 	found = 0;
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < EPT_NUM; i++) {
 		memset(path_buf, 0, 512);
 		sprintf(path_buf, "/dev/rpmsg%d", i);
 		ipc->fd = open(path_buf, O_RDWR | O_NONBLOCK);
@@ -276,7 +284,7 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 	return 0;
 
 err_virtio:
-	if (ipc->rproc_flag) {
+	if (rproc_flag) {
 		memset(path_buf, 0, 512);
 		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
 		file_write(path_buf, "stop");
@@ -287,11 +295,21 @@ err_virtio:
 int xf_rproc_close(struct xf_proxy_ipc_data *ipc)
 {
 	char path_buf[512];
-	int  ret;
+	int  ret, i;
+	int  fd[EPT_NUM];
 
 	close(ipc->fd);
 
-	if (ipc->rproc_flag) {
+	for (i = 0; i < EPT_NUM; i++) {
+		memset(path_buf, 0, 512);
+		sprintf(path_buf, "/dev/rpmsg%d", i);
+		fd[i] = open(path_buf, O_RDWR | O_NONBLOCK);
+		if (fd[i] < 0)
+			break;
+		close(fd[i]);
+	}
+	/* all /dev/rpmsgX are free */
+	if (i == EPT_NUM) {
 		memset(path_buf, 0, 512);
 		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
 
