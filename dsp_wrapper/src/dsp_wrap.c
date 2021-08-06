@@ -495,7 +495,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		pDSP_handle->chan_map_tab = parameter->chan_map_tab;
 		param.mixData.chan_map_tab.size = parameter->chan_map_tab.size;
 		{
-			int i, j;
+			int i;
 			u32 *channel_map;
 			u32 *dest;
 			u32 dest_phy;
@@ -503,8 +503,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 			for(i = 1; i < 10; i++) {
 				channel_map = parameter->chan_map_tab.channel_table[i];
 				if (channel_map) {
-					for (j = 0; j < i; j++)
-						dest[j] = channel_map[j];
+					memcpy(dest, channel_map, sizeof(uint32) * i);
 					dest_phy =  (int)(intptr_t)xf_proxy_b2a(&pDSP_handle->adev.proxy, dest);
 					param.mixData.chan_map_tab.channel_table[i] = dest_phy;
 					dest += i;
