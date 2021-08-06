@@ -41,6 +41,18 @@
 #include <fcntl.h>
 #include "xf-proxy.h"
 
+struct dma_heap_allocation_data {
+        __u64 len;
+        __u32 fd;
+        __u32 fd_flags;
+        __u64 heap_flags;
+};
+
+#define DMA_HEAP_IOC_MAGIC              'H'
+
+#define DMA_HEAP_IOCTL_ALLOC    _IOWR(DMA_HEAP_IOC_MAGIC, 0x0,\
+                                      struct dma_heap_allocation_data)
+
 struct rpmsg_endpoint_info {
 	char name[32];
 	uint32_t src;
@@ -113,14 +125,13 @@ int xf_ipc_recv(struct xf_proxy_ipc_data *ipc,
 		if (msg->opcode == XF_SHMEM_INFO) {
 			ipc->shmem_phys = temp.address;
 			ipc->shmem_size = temp.length;
-
 			/* ...map entire shared memory region (not too good - tbd) */
 			XF_CHK_ERR((ipc->shmem = mmap(NULL,
 						ipc->shmem_size,
 						PROT_READ | PROT_WRITE,
 						MAP_SHARED,
 						ipc->fd_mem,
-						temp.address & (~(0x1000 - 1)))) != MAP_FAILED, -errno);
+						0)) != MAP_FAILED, -errno);
 
 			msg->address = temp.address;
 			msg->ret = temp.ret;
@@ -320,6 +331,40 @@ int xf_rproc_close(struct xf_proxy_ipc_data *ipc)
 	return 0;
 }
 
+int xf_dma_buf_open(struct xf_proxy_ipc_data *ipc) {
+
+	struct dma_heap_allocation_data heap_data;
+	int fd;
+	int ret;
+
+	fd = open("/dev/dma_heap/dsp", O_RDWR | O_SYNC);
+	if (fd < 0) {
+		printf("open dma heap for dsp fail\n");
+		return -1;
+	}
+
+	heap_data.len = 0xEF0000;
+	heap_data.fd_flags = O_RDWR | O_CLOEXEC;
+	heap_data.heap_flags = 0;
+	heap_data.fd = 0;
+
+	ret = ioctl(fd, DMA_HEAP_IOCTL_ALLOC, &heap_data);
+	if (ret < 0) {
+		printf("ioctl DMA_HEAP_IOCTL_ALLOC fail %d\n", ret);
+		close(fd);
+		return -1;
+	}
+
+	ipc->fd_mem = heap_data.fd;
+
+	return 0;
+}
+
+int xf_dma_buf_close(struct xf_proxy_ipc_data *ipc) {
+	close(ipc->fd_mem);
+	return 0;
+}
+
 /* ...open proxy interface on proper DSP partition */
 int xf_ipc_open(struct xf_proxy_ipc_data *ipc, u32 core)
 {
@@ -331,8 +376,11 @@ int xf_ipc_open(struct xf_proxy_ipc_data *ipc, u32 core)
 	if (ret < 0)
 		return ret;
 
-	XF_CHK_ERR(ipc->fd >= 0, -errno);
-	XF_CHK_ERR((ipc->fd_mem = open("/dev/mem", O_RDWR | O_SYNC)) >= 0, -errno);
+	ret = xf_dma_buf_open(ipc);
+	if (ret < 0) {
+		xf_rproc_close(ipc);
+		return ret;
+	}
 
 	/* ...create pipe for asynchronous response delivery */
 	XF_CHK_ERR(pipe(ipc->pipe) == 0, -errno);
@@ -348,7 +396,7 @@ void xf_ipc_close(struct xf_proxy_ipc_data *ipc, u32 core)
 	/* ...close asynchronous response delivery pipe */
 	close(ipc->pipe[0]), close(ipc->pipe[1]);
 
-	close(ipc->fd_mem);
+	xf_dma_buf_close(ipc);
 	/* ...close proxy file handle */
 	xf_rproc_close(ipc);
 
