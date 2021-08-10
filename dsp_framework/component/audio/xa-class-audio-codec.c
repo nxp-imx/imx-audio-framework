@@ -131,6 +131,8 @@ struct XAAudioCodec {
 static UA_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 					struct xf_message *m)
 {
+	struct dsp_main_struct *dsp_config =
+		(struct dsp_main_struct *)base->component.private_data;
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 	struct icm_xtlib_pil_info  *cmd = m->buffer;
 	struct dpu_lib_stat_t *lib_stat;
@@ -151,16 +153,16 @@ static UA_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 		return ACODEC_INIT_ERR;
 	}
 
-	cmd->pil_info.dst_addr      = env_map_patova(cmd->pil_info.dst_addr);
-	cmd->pil_info.dst_data_addr = env_map_patova(cmd->pil_info.dst_data_addr);
-	cmd->pil_info.start_sym     = env_map_patova(cmd->pil_info.start_sym);
-	cmd->pil_info.text_addr     = env_map_patova(cmd->pil_info.text_addr);
-	cmd->pil_info.init          = env_map_patova(cmd->pil_info.init);
-	cmd->pil_info.fini          = env_map_patova(cmd->pil_info.fini);
-	cmd->pil_info.rel           = env_map_patova(cmd->pil_info.rel);
-	cmd->pil_info.hash          = env_map_patova(cmd->pil_info.hash);
-	cmd->pil_info.symtab        = env_map_patova(cmd->pil_info.symtab);
-	cmd->pil_info.strtab        = env_map_patova(cmd->pil_info.strtab);
+	cmd->pil_info.dst_addr      = xf_ipc_a2b(dsp_config, cmd->pil_info.dst_addr);
+	cmd->pil_info.dst_data_addr = xf_ipc_a2b(dsp_config, cmd->pil_info.dst_data_addr);
+	cmd->pil_info.start_sym     = xf_ipc_a2b(dsp_config, cmd->pil_info.start_sym);
+	cmd->pil_info.text_addr     = xf_ipc_a2b(dsp_config, cmd->pil_info.text_addr);
+	cmd->pil_info.init          = xf_ipc_a2b(dsp_config, cmd->pil_info.init);
+	cmd->pil_info.fini          = xf_ipc_a2b(dsp_config, cmd->pil_info.fini);
+	cmd->pil_info.rel           = xf_ipc_a2b(dsp_config, cmd->pil_info.rel);
+	cmd->pil_info.hash          = xf_ipc_a2b(dsp_config, cmd->pil_info.hash);
+	cmd->pil_info.symtab        = xf_ipc_a2b(dsp_config, cmd->pil_info.symtab);
+	cmd->pil_info.strtab        = xf_ipc_a2b(dsp_config, cmd->pil_info.strtab);
 
 	lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, lib_stat, 0);
 	if (!lib_interface) {
