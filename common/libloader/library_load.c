@@ -552,13 +552,11 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 	}
 
 	buf = xf_buffer_get(lib_info->code_section_pool);
-	lib_info->code_buf_phys = proxy->ipc.shmem_phys +
-		(xf_buffer_data(buf) - proxy->ipc.shmem);
+	lib_info->code_buf_phys = xf_proxy_b2a(proxy, xf_buffer_data(buf));
 	lib_info->code_buf_virt = xf_buffer_data(buf);
 
 	buf = xf_buffer_get(lib_info->data_section_pool);
-	lib_info->data_buf_phys = proxy->ipc.shmem_phys +
-		(xf_buffer_data(buf) - proxy->ipc.shmem);
+	lib_info->data_buf_phys = xf_proxy_b2a(proxy, xf_buffer_data(buf));
 	lib_info->data_buf_virt = xf_buffer_data(buf);
 
 	xf_buffer_put(buf);

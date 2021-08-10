@@ -122,28 +122,12 @@ int xf_ipc_recv(struct xf_proxy_ipc_data *ipc,
 		msg->opcode = temp.opcode;
 		msg->length = temp.length;
 
-		if (msg->opcode == XF_SHMEM_INFO) {
-			ipc->shmem_phys = temp.address;
-			ipc->shmem_size = temp.length;
-			/* ...map entire shared memory region (not too good - tbd) */
-			XF_CHK_ERR((ipc->shmem = mmap(NULL,
-						ipc->shmem_size,
-						PROT_READ | PROT_WRITE,
-						MAP_SHARED,
-						ipc->fd_mem,
-						0)) != MAP_FAILED, -errno);
-
-			msg->address = temp.address;
-			msg->ret = temp.ret;
-		} else {
-
-			*buffer = xf_ipc_a2b(ipc, temp.address);
-			/* ...translate shared address into local pointer */
-			XF_CHK_ERR((*buffer = xf_ipc_a2b(ipc, temp.address)) !=
-					(void *)-1, -EBADFD);
-			msg->address = temp.address;
-			msg->ret = temp.ret;
-		}
+		*buffer = xf_ipc_a2b(ipc, temp.address);
+		/* ...translate shared address into local pointer */
+		XF_CHK_ERR((*buffer = xf_ipc_a2b(ipc, temp.address)) !=
+				(void *)-1, -EBADFD);
+		msg->address = temp.address;
+		msg->ret = temp.ret;
 
 		/* ...return positive result indicating the message
 		 * has been received.
@@ -356,12 +340,26 @@ int xf_dma_buf_open(struct xf_proxy_ipc_data *ipc) {
 	}
 
 	ipc->fd_mem = heap_data.fd;
+	ipc->shmem_size = heap_data.len;
+
+	ipc->shmem = mmap(NULL, ipc->shmem_size,
+			  PROT_READ | PROT_WRITE, MAP_SHARED,
+			  ipc->fd_mem, 0);
+	if (ipc->shmem == MAP_FAILED) {
+		printf("mmap fail %d\n", -errno);
+		close(fd);
+		close(ipc->fd_mem);
+		return -1;
+	}
 
 	return 0;
 }
 
 int xf_dma_buf_close(struct xf_proxy_ipc_data *ipc) {
+	/* ...unmap shared memory region */
+	(void)munmap(&ipc->shmem, ipc->shmem_size);
 	close(ipc->fd_mem);
+
 	return 0;
 }
 
