@@ -352,6 +352,7 @@ int xf_dma_buf_open(struct xf_proxy_ipc_data *ipc) {
 		return -1;
 	}
 
+	close(fd);
 	return 0;
 }
 
