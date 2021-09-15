@@ -10,6 +10,7 @@ Outgoing License:   LA_OPT_NXP_Software_License v11 February 2020 - Production U
 Type of Content:    source
 Description:        The firmware running on the DSP core
 Origin:             NXP (proprietary)
+                    NXP (BSD-3-clause)
                     Matt Redfearn (BSD-3-clause)
                     Tensilica (MIT)
                     Cadence (MIT)
