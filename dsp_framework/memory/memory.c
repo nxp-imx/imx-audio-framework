@@ -31,6 +31,8 @@
 #include "xf-debug.h"
 
 #include "memory.h"
+#include "mydefs.h"
+#include "board.h"
 
 /* for one block, its size is 8 bytes */
 #define  ABLKSIZE  (sizeof(union header))
@@ -48,7 +50,6 @@
 #define RESERVED_SIZE   (0x2000000-RESERVED_OFFSET)
 #define RESERVED_END    (RESERVED_PTR + RESERVED_SIZE)
 
-struct dsp_mem_info *DSP_mem_info;
 struct dsp_mem_info OCRAM_A_mem_info_t;
 struct dsp_mem_info *OCRAM_A_mem_info;
 struct dsp_mem_info RESERVED_mem_info_t;
@@ -59,7 +60,6 @@ void MEM_scratch_init(struct dsp_mem_info *mem_info, u32 ptr, u32 size)
 	mem_info->scratch_buf_ptr = (u8 *)ptr;
 	mem_info->scratch_total_size = size;
 	mem_info->scratch_remaining = size;
-	DSP_mem_info = mem_info;
 
 #ifdef PLATF_8MP_LPA
 	OCRAM_A_mem_info = &OCRAM_A_mem_info_t;
@@ -76,10 +76,12 @@ void MEM_scratch_init(struct dsp_mem_info *mem_info, u32 ptr, u32 size)
 
 void *MEM_scratch_ua_malloc(int size)
 {
+	struct dsp_main_struct *dsp = (struct dsp_main_struct *)GLOBAL_DSP_MEM_ADDR;
+
 #ifdef PLATF_8MP_LPA
 	return MEM_scratch_malloc(OCRAM_A_mem_info, size);
 #else
-	return MEM_scratch_malloc(DSP_mem_info, size);
+	return MEM_scratch_malloc(&dsp->scratch_mem_info, size);
 #endif
 }
 /* sample implementation for memory allocation,
@@ -176,10 +178,11 @@ void *MEM_scratch_malloc(struct dsp_mem_info *mem_info, int nb)
 
 void MEM_scratch_ua_mfree(void *ptr)
 {
+	struct dsp_main_struct *dsp = (struct dsp_main_struct *)GLOBAL_DSP_MEM_ADDR;
 #ifdef PLATF_8MP_LPA
 	MEM_scratch_mfree(OCRAM_A_mem_info, ptr);
 #else
-	MEM_scratch_mfree(DSP_mem_info, ptr);
+	MEM_scratch_mfree(&dsp->scratch_mem_info, ptr);
 #endif
 }
 /* Note: This function free up the memory allocations done using
