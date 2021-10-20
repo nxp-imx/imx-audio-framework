@@ -50,7 +50,11 @@
 #define CODEC_FSL_WBAMR_DEC   16
 #define CODEC_FSL_WMA_DEC   17
 #define CODEC_OPUS_DEC      18
-#define CODEC_DEMO_DEC		19
+#define CODEC_PCM_DEC		19
+#define CODEC_DEMO_DEC		20
+
+#define RENDER_ESAI            0x20
+#define RENDER_SAI             0x21
 
 enum DSP_ERROR_TYPE {
 	XA_SUCCESS = 0,
@@ -155,6 +159,18 @@ enum DSP_SbcEncChmode {
 struct shmem_info {
 	unsigned int phys_addr;
 	unsigned int size;
+};
+
+/* ...renderer-specific configuration parameters */
+enum xa_config_param_renderer {
+    XA_RENDERER_CONFIG_PARAM_CB             = 0,
+    XA_RENDERER_CONFIG_PARAM_STATE          = 1,
+    XA_RENDERER_CONFIG_PARAM_PCM_WIDTH      = 2,
+    XA_RENDERER_CONFIG_PARAM_CHANNELS       = 3,
+    XA_RENDERER_CONFIG_PARAM_SAMPLE_RATE    = 4,
+    XA_RENDERER_CONFIG_PARAM_FRAME_SIZE     = 5,
+    XA_RENDERER_CONFIG_PARAM_CONSUMED        = 6,
+    XA_RENDERER_CONFIG_PARAM_NUM            = 7
 };
 
 #endif/* __MXC_DSP_UAPI_H__ */
