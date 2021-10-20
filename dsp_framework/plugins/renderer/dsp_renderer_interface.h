@@ -6,9 +6,11 @@
 #define _DSP_RENDER_INTERFACE_H_
 
 #include "audio/xa-renderer-api.h"
-/* render type */
-#define RENDER_ESAI 0x10
-#define RENDER_SAI 0x11
+/* render type
+ * Define range: 0x20 ~ 0x2F
+ * */
+#define RENDER_ESAI 0x20
+#define RENDER_SAI 0x21
 
 /* hardware address */
 #define IRQSTR_QXP_ADDR       0x51080000
