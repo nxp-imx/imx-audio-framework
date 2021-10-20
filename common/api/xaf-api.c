@@ -225,6 +225,8 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 	char lib_path[200];
 	char lib_wrap_path[200];
 	int ret = 0;
+	int loadlib = 1;
+	int request_inbuf = 1;
 
 	memset((void *)p_comp, 0, sizeof(struct xaf_comp));
 
@@ -235,10 +237,20 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 	/* ...init codec lib and codec wrap lib */
 	strcpy(lib_path, CORE_LIB_PATH);
 	strcpy(lib_wrap_path, CORE_LIB_PATH);
-	p_comp->codec_lib.filename = lib_path;
-	p_comp->codec_wrap_lib.filename = lib_wrap_path;
 
-	p_comp->codec_lib.lib_type = DSP_CODEC_LIB;
+	/* No need to load library for PCM */
+	if (comp_type == RENDER_ESAI || comp_type == RENDER_SAI || comp_type == CODEC_PCM_DEC)
+		loadlib = 0;
+
+	/* Need to allocate in buffer for PCM */
+	if (comp_type == RENDER_ESAI || comp_type == RENDER_SAI)
+		request_inbuf = 0;
+
+	if (loadlib) {
+		p_comp->codec_lib.filename = lib_path;
+		p_comp->codec_wrap_lib.filename = lib_wrap_path;
+		p_comp->codec_lib.lib_type = DSP_CODEC_LIB;
+	}
 	if (comp_type == CODEC_MP3_DEC) {
 		p_comp->dec_id = "audio-decoder/mp3";
 		strcat(lib_path, "lib_dsp_mp3_dec.so");
@@ -283,8 +295,13 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		p_comp->dec_id = "audio-decoder/wma";
 	} else if (comp_type == CODEC_OPUS_DEC) {
 		p_comp->dec_id = "audio-decoder/opus";
+	} else if (comp_type == CODEC_PCM_DEC) {
+		p_comp->dec_id = "audio-decoder/pcm";
+	} else if (comp_type == RENDER_ESAI) {
+		p_comp->dec_id = "renderer/esai";
+	} else if (comp_type == RENDER_SAI) {
+		p_comp->dec_id = "renderer/sai";
 	}
-
 
 	if (comp_type < CODEC_FSL_OGG_DEC)
 		strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
@@ -318,6 +335,8 @@ int xaf_comp_create(struct xaf_adev_s *p_adev,
 		return ret;
 	}
 
+	if (!loadlib)
+		goto request_buf;
 	/* ...load codec wrapper lib */
 reload:
 	ret = xf_load_lib(p_handle, &p_comp->codec_wrap_lib);
@@ -344,6 +363,9 @@ reload:
 		}
 	}
 
+request_buf:
+	if (!request_inbuf)
+		return ret;
 	/* ...allocate input buffer */
 	ret = xf_pool_alloc(p_proxy,
 			    1,
@@ -396,14 +418,20 @@ int xaf_comp_delete(struct xaf_comp *p_comp)
 {
 	struct xf_handle *p_handle;
 	u32 ret = 0;
+	int loadlib = 1;
+
+	if (p_comp->comp_type == RENDER_ESAI || p_comp->comp_type == RENDER_SAI)
+		loadlib = 0;
 
 	p_handle = &p_comp->handle;
 
-	/* ...unload codec wrapper library */
-	xf_unload_lib(p_handle, &p_comp->codec_wrap_lib);
+	if (loadlib) {
+		/* ...unload codec wrapper library */
+		xf_unload_lib(p_handle, &p_comp->codec_wrap_lib);
 
-	/* ...unload codec library */
-	xf_unload_lib(p_handle, &p_comp->codec_lib);
+		/* ...unload codec library */
+		xf_unload_lib(p_handle, &p_comp->codec_lib);
+	}
 
 	/* ...delete component */
 	xf_close(p_handle);
