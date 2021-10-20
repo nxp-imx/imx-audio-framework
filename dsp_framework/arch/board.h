@@ -77,6 +77,16 @@ enum {
 #define UART_BASE             (0x30a60000)
 #define UART_CLK_ROOT         (24000000)
 
+#define I2C3_ADDR             0x30A40000
+#define I2C_ADDR              I2C3_ADDR
+#define I2C_CLK               (24000000UL)
+/*
+ * This limit caused by an i.MX7D hardware issue(e7805 in Errata).
+ * If there is no limit, when the bitrate set up to 400KHz, it will
+ * cause the SCK low level period less than 1.3us.
+ */
+#define I2C_BITRATE           (375000)
+
 #else /* PLATF_8M */
 #ifdef PLATF_8ULP
 
@@ -111,6 +121,11 @@ enum {
 #define LPUART_BASE           (0x29860000)
 #define UART_CLK_ROOT         (48000000)
 
+/* TODO */
+#define I2C_ADDR              0
+#define I2C_CLK               0
+#define I2C_BITRATE           (375000)
+
 #else /* !PLATF_8ULP && ! PLATF_8M  (8QXP || 8QM)*/
 
 #define BOARD_TYPE (DSP_IMX8QXP_TYPE)
@@ -140,6 +155,11 @@ enum {
 
 #define LPUART_BASE           (0x5a090000)
 #define UART_CLK_ROOT         (80000000)
+
+/* TODO */
+#define I2C_ADDR              0
+#define I2C_CLK               0
+#define I2C_BITRATE           (375000)
 
 #endif /*PLATF_8ULP */
 #endif /*PLATF_8M */
