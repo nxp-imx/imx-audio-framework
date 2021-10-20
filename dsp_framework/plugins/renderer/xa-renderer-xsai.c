@@ -36,6 +36,7 @@
 #include "asrc.h"
 #include "easrc.h"
 #include "irqstr.h"
+#include "wm8960.h"
 #include "io.h"
 #include "wrap_dma.h"
 #include "board.h"
@@ -301,6 +302,8 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);
 	_xtos_ints_on((1 << d->irq_2_dsp));
 #endif
+
+	WM8960_Init();
 
 	LOG("hw_init finished\n");
 	return 0;
