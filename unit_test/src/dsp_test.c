@@ -34,6 +34,9 @@
 #define ENABLE_ID3  1
 #define ENABLE_BSAC_HEADER  1
 
+#define COMP_CODEC		(1 << 0)
+#define COMP_RENDER		(1 << 1)
+
 typedef int WORD32;
 
 struct AudioOption {
@@ -115,6 +118,8 @@ void help_info(int ac, char *av[])
 	printf("                        DRM        for 6\n");
 	printf("                        SBCDEC     for 7\n");
 	printf("                        SBCENC     for 8\n");
+	printf("                        RENDER_ESAI     for 32\n");
+	printf("                        RENDER_SAI      for 33\n");
 	printf("          -l Show the performance data\n");
 	printf("**************************************************\n\n");
 }
@@ -162,7 +167,9 @@ int GetParameter(int argc_t, char *argv_t[], struct AudioOption *pAOption)
 				break;
 			case 'c':
 				pAOption->AudioFormatRoute = atoi(in);
-				pAOption->comp_routed = 1;
+				pAOption->comp_routed = COMP_CODEC;
+				if (pAOption->AudioFormatRoute >= RENDER_ESAI)
+					pAOption->comp_routed = COMP_RENDER;
 				break;
 			case 'l':
 				log_of_perf = 1;
@@ -434,17 +441,21 @@ int main(int ac, char *av[])
 	TRACE("Audio Format type = %d\n", AOption.AudioFormat);
 	type = AOption.AudioFormat;
 
+	TRACE("Audio Format route type = %d\n", AOption.AudioFormatRoute);
+
 	TRACE("infile: %s\n", AOption.InFileName);
 	fd_src = fopen(AOption.InFileName, "rb");
 	if (!fd_src) {
 		TRACE("infile: %s open failed!\n", AOption.InFileName);
 		return -ENOENT;
 	}
-	TRACE("outfile: %s\n", AOption.OutFileName);
-	fd_dst = fopen(AOption.OutFileName, "wb");
-	if (!fd_dst) {
-		TRACE("outfile: %s open failed!\n", AOption.OutFileName);
-		return -ENOENT;
+	if (!(AOption.comp_routed & COMP_RENDER)) {
+		TRACE("outfile: %s\n", AOption.OutFileName);
+		fd_dst = fopen(AOption.OutFileName, "wb");
+		if (!fd_dst) {
+			TRACE("outfile: %s open failed!\n", AOption.OutFileName);
+			return -ENOENT;
+		}
 	}
 
 	/* ...open proxy */
@@ -486,6 +497,36 @@ int main(int ac, char *av[])
 	/* ...add routed component into pipeline */
 	if (AOption.comp_routed)
 		err = xaf_comp_add(&pipeline, &component[1]);
+
+	if (AOption.comp_routed & COMP_RENDER) {
+		/* set render parameters */
+		s_param.id = XA_RENDERER_CONFIG_PARAM_SAMPLE_RATE;
+		s_param.mixData.value = 48000;
+		err = xaf_comp_set_config(&component[1], 1, &s_param);
+		if (err) {
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
+				s_param.id, s_param.mixData.value, err);
+			goto Fail;
+		}
+
+		s_param.id = XA_RENDERER_CONFIG_PARAM_CHANNELS;
+		s_param.mixData.value = 2;
+		err = xaf_comp_set_config(&component[1], 1, &s_param);
+		if (err) {
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
+				s_param.id, s_param.mixData.value, err);
+			goto Fail;
+		}
+
+		s_param.id = XA_RENDERER_CONFIG_PARAM_PCM_WIDTH;
+		s_param.mixData.value = 16;
+		err = xaf_comp_set_config(&component[1], 1, &s_param);
+		if (err) {
+			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
+				s_param.id, s_param.mixData.value, err);
+			goto Fail;
+		}
+	}
 
 #if ENABLE_ID3
 	/* ID3V1 handling */
@@ -685,7 +726,7 @@ int main(int ac, char *av[])
 	}
 
 
-	if (AOption.comp_routed) {
+	if (AOption.comp_routed & COMP_CODEC) {
 		/* ...issue asynchronous buffer to routed
 		 * output port (port-id=1)
 		 */
@@ -697,7 +738,7 @@ int main(int ac, char *av[])
 			printf("Failed to send XF_FILL_THIS_BUFFER cmd to routed output port, err = %d\n", err);
 			goto Fail;
 		}
-	} else {
+	} else if (!AOption.comp_routed) {
 		/* ...issue asynchronous buffer to output port (port-id=1) */
 		err = xaf_comp_process(&component[0],
 				       component[0].outptr,
@@ -737,7 +778,7 @@ int main(int ac, char *av[])
 		       comp_process_entry, &component[0]);
 
 	/* ...create thread to process component[1] message */
-	if (AOption.comp_routed)
+	if (AOption.comp_routed & COMP_CODEC)
 		pthread_create(&thread[1], 0,
 			       comp_process_entry, &component[1]);
 
@@ -745,7 +786,7 @@ int main(int ac, char *av[])
 	pthread_join(thread[0], &thread_ret[0]);
 
 	/* ...wait component[1] thread end */
-	if (AOption.comp_routed)
+	if (AOption.comp_routed & COMP_CODEC)
 		pthread_join(thread[1], &thread_ret[1]);
 
 	/* ...judge the return value of thread */
@@ -753,7 +794,7 @@ int main(int ac, char *av[])
 		printf("thread response timeout\n");
 		return -ETIMEDOUT;
 	}
-	if (AOption.comp_routed) {
+	if (AOption.comp_routed & COMP_CODEC) {
 		if ((int)(intptr_t)(thread_ret[1]) == -ETIMEDOUT) {
 			printf("thread response timeout\n");
 			return -ETIMEDOUT;
