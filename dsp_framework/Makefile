@@ -57,6 +57,8 @@ C_OBJS      = $(SRC_DIR)/arch/peripheral.o                               \
 			  $(SRC_DIR)/plugins/renderer/sai.o                          \
 			  $(SRC_DIR)/plugins/renderer/esai.o                         \
 			  $(SRC_DIR)/plugins/renderer/irqstr.o                       \
+			  $(SRC_DIR)/plugins/renderer/i2c.o                          \
+			  $(SRC_DIR)/plugins/renderer/wm8960.o                       \
 			  $(SRC_DIR)/init/main.o                                     \
 			  $(SRC_DIR)/ipc/xf-shmem.o                                  \
 			  $(SRC_DIR)/ipc/xf-msg.o                                    \
