@@ -634,6 +634,8 @@ int xf_output_port_produce(struct xf_output_port *port, u32 n, u32 ret)
 int xf_output_port_flush(struct xf_output_port *port, u32 opcode)
 {
 	struct xf_message   *m;
+	u32 src;
+	u32 dst;
 
 	/* ...if port is routed, we shall pass flush command to sink port */
 	if (xf_output_port_routed(port)) {
@@ -662,9 +664,18 @@ int xf_output_port_flush(struct xf_output_port *port, u32 opcode)
 		return 0;
 	}
 	/* ...for non-routed port just complete all queued messages */
-	while ((m = xf_msg_dequeue(&port->queue)) != NULL)
+	while ((m = xf_msg_dequeue(&port->queue)) != NULL) {
 		/* ...pass generic zero-length "okay" response - tbd */
-		xf_response_ok(m);
+		/* if output msg is generated internal, ignore it
+		 * cause dsp already unrouted.
+		 * */
+		src = XF_MSG_SRC(m->id);
+		dst = XF_MSG_DST(m->id);
+		m->id = __XF_MSG_ID(dst, src);
+		if (XF_MSG_DST_PROXY(m->id)) {
+			xf_response_ok(m);
+		}
+	}
 
 	/* ...non-zero result indicates the flushing is done */
 	return 1;
