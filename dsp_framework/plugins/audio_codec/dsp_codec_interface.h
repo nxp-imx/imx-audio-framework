@@ -10,6 +10,7 @@
 
 #include "fsl_unia.h"
 
+/* codec comp define range: 0x1 ~ 0x1F */
 typedef enum {
 	CODEC_MP3_DEC = 1,
 	CODEC_AAC_DEC,
