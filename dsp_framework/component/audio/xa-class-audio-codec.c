@@ -374,10 +374,10 @@ static UA_ERROR_TYPE xa_codec_port_unroute(struct XACodecBase *base,
 	struct XAAudioCodec *codec = (struct XAAudioCodec *)base;
 
 	/* ...command is allowed only in "postinit" state */
-	XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR);
+	/* XF_CHK_ERR(base->state & XA_BASE_FLAG_POSTINIT, ACODEC_PARA_ERROR); */
 
 	/* ...make sure output port is addressed */
-	XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 1, ACODEC_PARA_ERROR);
+	/* XF_CHK_ERR(XF_MSG_DST_PORT(m->id) == 1, ACODEC_PARA_ERROR); */
 
 	/* ...cancel any pending processing */
 	xa_base_cancel(base);
