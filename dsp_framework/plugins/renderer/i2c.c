@@ -204,9 +204,3 @@ void i2c_reset()
 	i2c_write(IMX_I2C_I2CR, ~I2CR_IEN);
 	i2c_write(IMX_I2C_I2SR, 0);
 }
-
-int i2c_suspend()
-{}
-
-int i2c_resume()
-{}

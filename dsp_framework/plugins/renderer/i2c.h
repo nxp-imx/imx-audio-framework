@@ -33,7 +33,5 @@ int i2c_transfer_data(uint32_t slave_addr, int reg, char data);
 void i2c_start();
 void i2c_stop();
 void i2c_reset();
-int i2c_suspend();
-int i2c_resume();
 
 #endif
