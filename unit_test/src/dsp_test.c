@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <pthread.h>
+#include <signal.h>
 #include "id3_tag_decode.h"
 #include "common.h"
 #include "xaf-api.h"
@@ -65,6 +66,7 @@ FILE *fd_dst;
 FILE *fd_src;
 u32 frame_count;
 int log_of_perf;
+int quit;
 
 void help_info(int ac, char *av[])
 {
@@ -183,6 +185,12 @@ int GetParameter(int argc_t, char *argv_t[], struct AudioOption *pAOption)
 
 Error:
 	return 1;
+}
+
+void sighandler(int signum)
+{
+	printf("signal %d dectecd!\n", signum);
+	quit = 1;
 }
 
 void *comp_process_entry(void *arg)
@@ -333,7 +341,7 @@ void *comp_process_entry(void *arg)
 				TRACE("Get XF_EMPTY_THIS_BUFFER response from dsp, msg.buffer = %lx\n", p_info.buf);
 				size = fread(p_comp->inptr, 1, size_read, fd_src);
 				TRACE("size_read = %d\n", size);
-				if (size > 0) {
+				if ((size > 0) && !quit) {
 					ret = xaf_comp_process(p_comp,
 							       p_comp->inptr,
 							       size,
@@ -426,6 +434,8 @@ int main(int ac, char *av[])
 
 	TRACE("Hi...\n");
 
+	quit = 0;
+	signal(SIGINT, sighandler);
 	//Initialize Audio Option structure
 	AOption.SampleRate = -1;
 	AOption.Channel = -1;
