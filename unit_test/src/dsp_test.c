@@ -123,6 +123,7 @@ void help_info(int ac, char *av[])
 	printf("                        RENDER_ESAI     for 32\n");
 	printf("                        RENDER_SAI      for 33\n");
 	printf("          -l Show the performance data\n");
+	printf("Must set correct parameters for stream\n");
 	printf("**************************************************\n\n");
 }
 
@@ -511,7 +512,10 @@ int main(int ac, char *av[])
 	if (AOption.comp_routed & COMP_RENDER) {
 		/* set render parameters */
 		s_param.id = XA_RENDERER_CONFIG_PARAM_SAMPLE_RATE;
-		s_param.mixData.value = 48000;
+		if (AOption.SampleRate > 0)
+			s_param.mixData.value = AOption.SampleRate;
+		else
+			s_param.mixData.value = 48000;
 		err = xaf_comp_set_config(&component[1], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
@@ -520,7 +524,10 @@ int main(int ac, char *av[])
 		}
 
 		s_param.id = XA_RENDERER_CONFIG_PARAM_CHANNELS;
-		s_param.mixData.value = 2;
+		if (AOption.Channel > 0)
+			s_param.mixData.value = AOption.Channel;
+		else
+			s_param.mixData.value = 2;
 		err = xaf_comp_set_config(&component[1], 1, &s_param);
 		if (err) {
 			printf("set param[cmd:0x%x|val:0x%x] error, err = %d\n",
@@ -529,6 +536,8 @@ int main(int ac, char *av[])
 		}
 
 		s_param.id = XA_RENDERER_CONFIG_PARAM_PCM_WIDTH;
+		if (AOption.Width != 16)
+			printf("render can't support Width:%d\n", AOption.Width);
 		s_param.mixData.value = 16;
 		err = xaf_comp_set_config(&component[1], 1, &s_param);
 		if (err) {
