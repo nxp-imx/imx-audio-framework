@@ -811,12 +811,12 @@ int main(int ac, char *av[])
 	/* ...judge the return value of thread */
 	if ((int)(intptr_t)(thread_ret[0]) == -ETIMEDOUT) {
 		printf("thread response timeout\n");
-		return -ETIMEDOUT;
+		goto Fail;
 	}
 	if (AOption.comp_routed & COMP_CODEC) {
 		if ((int)(intptr_t)(thread_ret[1]) == -ETIMEDOUT) {
 			printf("thread response timeout\n");
-			return -ETIMEDOUT;
+			goto Fail;
 		}
 	}
 
