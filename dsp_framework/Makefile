@@ -10,7 +10,7 @@
 SRC_DIR     = ./
 INC_DIR     = ./include
 
-LINK_DIR    = $(TOOL_PATH)/builds/RI-2020.4-linux/$(XTENSA_CORE)/xtensa-elf/lib/mainsim
+LINK_DIR    = ./memmap/$(PLATF)
 SYSTEM_DIR  = $(TOOL_PATH)/builds/RI-2020.4-linux/$(XTENSA_CORE)/config
 
 CFLAGS      += -mlongcalls -fmessage-length=0 -DPROC_$(XTENSA_CORE)       \
@@ -89,6 +89,8 @@ endif
 ifeq ($(PLATF), imx8ulp)
 	TARGET = hifi4_imx8ulp.bin
 endif
+
+PLATF ?= imx8
 
 all: $(C_OBJS)
 	$(CPLUS) $(CPLUS_FLAGS) $(C_OBJS) -o dsp_framework
