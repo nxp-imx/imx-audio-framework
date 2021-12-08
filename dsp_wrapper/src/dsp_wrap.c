@@ -677,6 +677,11 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle,
 		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
 		parameter->depth = msg.mixData.value;
 		break;
+	case UNIA_BITRATE:
+		msg.id = UNIA_BITRATE;
+		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
+		parameter->depth = msg.mixData.value;
+		break;
 	case UNIA_CONSUMED_LENGTH:
 		msg.id = UNIA_CONSUMED_LENGTH;
 		err = xaf_comp_get_config(&pDSP_handle->component, 1, &msg);
