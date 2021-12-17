@@ -117,7 +117,7 @@ void wake_on_ints(struct dsp_main_struct *dsp_config)
 int main(void)
 {
 	int ret, i;
-	struct dsp_main_struct *dsp = (struct dsp_main_struct *)GLOBAL_DSP_MEM_ADDR;
+	struct dsp_main_struct *dsp;
 
 	/* set the cache attribute */
 	xthal_set_icacheattr(I_CACHE_ATTRIBUTE);
@@ -126,6 +126,7 @@ int main(void)
 	/* set the interrupt */
 	xthal_set_intclear(-1);
 
+	dsp = (struct dsp_main_struct *)GLOBAL_DSP_MEM_ADDR;
 #ifdef DEBUG
 	enable_log();
 #endif
