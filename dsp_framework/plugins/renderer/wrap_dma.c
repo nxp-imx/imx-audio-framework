@@ -9,9 +9,9 @@ void xdma_init(struct XADevRenderer *d)
 #ifdef PLATF_8M
 	sdma_pre_init(d->sdma, d->sdma_addr);
 
-	sdma_init(d->sdma, DMA_MEM_TO_DEV, d->fe_dev_fifo_in_off, d->dma_buf, 1,
+	sdma_init(d->sdma, DMA_MEM_TO_DEV, (void *)d->fe_dev_fifo_in_off, d->dma_buf, 1,
 			d->frame_size * d->sample_size);
-	sdma_init(d->sdma, DMA_DEV_TO_DEV, d->dev_addr + d->dev_fifo_off, d->fe_dev_fifo_out_off,
+	sdma_init(d->sdma, DMA_DEV_TO_DEV, d->dev_addr + d->dev_fifo_off, (void *)d->fe_dev_fifo_out_off,
 			2, d->frame_size * d->sample_size);
 #else
 	edma_init(d->fe_edma_addr, DMA_MEM_TO_DEV, d->fe_tcd_align32,

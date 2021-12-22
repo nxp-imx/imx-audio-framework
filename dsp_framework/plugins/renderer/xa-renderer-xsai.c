@@ -261,8 +261,8 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 		d->fe_dev_Int  =   SAI_MP_INT_NUM;
 		d->fe_dev_addr =   d->easrc;
 		d->fe_edma_addr =  NULL;
-		d->fe_dev_fifo_in_off =  (unsigned char*)EASRC_MP_ADDR + REG_EASRC_WRFIFO(0);
-		d->fe_dev_fifo_out_off = (unsigned char*)EASRC_MP_ADDR + REG_EASRC_RDFIFO(0);
+		d->fe_dev_fifo_in_off =  EASRC_MP_ADDR + REG_EASRC_WRFIFO(0);
+		d->fe_dev_fifo_out_off = EASRC_MP_ADDR + REG_EASRC_RDFIFO(0);
 
 		d->irqstr_addr =  (void *)IRQSTR_MP_ADDR;
 
@@ -296,7 +296,7 @@ static inline int xa_hw_renderer_init(struct XADevRenderer *d)
 	xdma_config(d);
 
 #if XCHAL_SW_VERSION >= 1404000
-	xtos_set_interrupt_handler(d->irq_2_dsp, xa_hw_renderer_isr, d, NULL);
+	xtos_set_interrupt_handler(d->irq_2_dsp, (xtos_handler)xa_hw_renderer_isr, d, NULL);
 	xtos_interrupt_enable(d->irq_2_dsp);
 #else
 	_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);
@@ -892,7 +892,7 @@ static UA_ERROR_TYPE xf_renderer_resume(struct XADevRenderer *d,
 		xdma_resume(d);
 
 #if XCHAL_SW_VERSION >= 1404000
-		xtos_set_interrupt_handler(d->irq_2_dsp, xa_hw_renderer_isr, d, NULL);
+		xtos_set_interrupt_handler(d->irq_2_dsp, (xtos_handler)xa_hw_renderer_isr, d, NULL);
 		xtos_interrupt_enable(d->irq_2_dsp);
 #else
 		_xtos_set_interrupt_handler_arg(d->irq_2_dsp, xa_hw_renderer_isr, d);

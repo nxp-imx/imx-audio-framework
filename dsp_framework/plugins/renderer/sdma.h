@@ -4,6 +4,9 @@
 
 #ifndef   _SDMA_H
 #define   _SDMA_H
+
+#include "xf-types.h"
+
 /* SDMA registers */
 #define SDMA_H_C0PTR		0x000
 #define SDMA_H_INTR		0x004
@@ -170,8 +173,6 @@
 #define MXC_SDMA_RESERVED_REG (SDMA_CHNPRI_0 - SDMA_XTRIG_CONF2 - 4)
 #define MXC_SDMA_SAVED_REG_NUM (((SDMA_CHNENBL0_IMX35 + 4 * 48) - \
 				MXC_SDMA_RESERVED_REG) / 4)
-
-#define u32 unsigned int
 
 /**
  * struct sdma_state_registers - SDMA context for a channel

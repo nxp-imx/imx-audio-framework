@@ -64,7 +64,7 @@ static int rpmsg_callback(void *payload, uint32_t payload_len, uint32_t src, voi
 	m->id = recd_msg->session_id | ((ept_handle->localAddr & 0x3) - 1);
 	m->opcode = recd_msg->opcode;
 	m->length = recd_msg->length;
-	m->buffer = xf_ipc_a2b(dsp_config, recd_msg->address);
+	m->buffer = (void *)xf_ipc_a2b(dsp_config, recd_msg->address);
 	m->ret = recd_msg->ret;
 
 	/* ...and schedule message execution on proper core */

@@ -5,7 +5,7 @@
 #ifndef _FSL_EASRC_H
 #define _FSL_EASRC_H
 
-#define BIT(nr)			((1) << (nr))
+#include "xf-types.h"
 /* EASRC Register Map */
 
 /* ASRC Input Write FIFO */

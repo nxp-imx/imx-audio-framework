@@ -6,7 +6,8 @@
 #ifndef _IRQSTR_H
 #define _IRQSTR_H
 
-#define BIT(x) (1 << x)
+#include "xf-types.h"
+
 #define IRQSTEER_CHnCTL       0x0
 #define IRQSTEER_CHnCTL_CH(n) BIT(n)
 #define IRQSTEER_CHnMASK(n)   ((n) + 4)

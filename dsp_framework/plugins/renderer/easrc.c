@@ -300,7 +300,7 @@ static int fsl_easrc_prefilter_config(struct fsl_easrc *easrc,
 		offset = ((selected_prefil->st1_taps + 1) / 2) *
 				sizeof(selected_prefil->coeff[0]);
 		ctx->st2_num_taps = selected_prefil->st2_taps;
-		ctx->st2_coeff    = (uint64_t *)((uint64_t)selected_prefil->coeff + offset);
+		ctx->st2_coeff    = (uint64_t *)((uint32_t)selected_prefil->coeff + offset);
 
 		if (ctx->in_params.sample_format == SNDRV_PCM_FORMAT_FLOAT_LE &&
 		    ctx->out_params.sample_format != SNDRV_PCM_FORMAT_FLOAT_LE) {
@@ -1177,7 +1177,7 @@ void easrc_probe(struct fsl_easrc *easrc, int rstap, int easrc_rate, int width)
 	easrc->paddr = (unsigned char *)EASRC_MP_ADDR;
 	/*Set default value*/
 	easrc->chn_avail = 32;
-	easrc->const_coeff = 0x3FF0000000000000;
+	easrc->const_coeff = 0x3FF0000000000000ULL;
 
 	switch (rstap) {
 	case 32:

@@ -3,12 +3,12 @@
  *
  * sdma.c - SDMA driver
  */
+#include <string.h>
+
 #include "sdma.h"
 #include "sdma_script_code_imx7d_4_5.h"
 
 #include "xf-debug.h"
-
-#define BIT(nr)			(1 << (nr))
 
 #define PAGE_SIZE 0x400
 #define SDMA_H_CONFIG_DSPDMA	BIT(12) /* indicates if the DSPDMA is used */
@@ -431,7 +431,7 @@ void sdma_resume(struct SDMA* sdma)
 	/* Do nothing if mega/fast mix not turned off */
 	if (read32(sdma->regs + SDMA_H_C0PTR)) {
 		LOG("mix not turned off\n");
-		return 0;
+		return;
 	}
 
 	/* Firmware was lost, mark as "not ready" */

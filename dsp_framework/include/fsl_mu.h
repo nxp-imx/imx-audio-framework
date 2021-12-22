@@ -10,8 +10,6 @@
 #include <stdint.h>
 #include "xf-types.h"
 
-#define BIT(x) (1 << x)
-
 enum mu_type {
 	MU_V1,
 	MU_V2,

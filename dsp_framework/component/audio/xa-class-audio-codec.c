@@ -153,16 +153,16 @@ static UA_ERROR_TYPE xa_codec_lib_load(struct XACodecBase *base,
 		return ACODEC_INIT_ERR;
 	}
 
-	cmd->pil_info.dst_addr      = xf_ipc_a2b(dsp_config, cmd->pil_info.dst_addr);
-	cmd->pil_info.dst_data_addr = xf_ipc_a2b(dsp_config, cmd->pil_info.dst_data_addr);
-	cmd->pil_info.start_sym     = xf_ipc_a2b(dsp_config, cmd->pil_info.start_sym);
-	cmd->pil_info.text_addr     = xf_ipc_a2b(dsp_config, cmd->pil_info.text_addr);
-	cmd->pil_info.init          = xf_ipc_a2b(dsp_config, cmd->pil_info.init);
-	cmd->pil_info.fini          = xf_ipc_a2b(dsp_config, cmd->pil_info.fini);
-	cmd->pil_info.rel           = xf_ipc_a2b(dsp_config, cmd->pil_info.rel);
-	cmd->pil_info.hash          = xf_ipc_a2b(dsp_config, cmd->pil_info.hash);
-	cmd->pil_info.symtab        = xf_ipc_a2b(dsp_config, cmd->pil_info.symtab);
-	cmd->pil_info.strtab        = xf_ipc_a2b(dsp_config, cmd->pil_info.strtab);
+	cmd->pil_info.dst_addr      = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.dst_addr);
+	cmd->pil_info.dst_data_addr = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.dst_data_addr);
+	cmd->pil_info.start_sym     = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.start_sym);
+	cmd->pil_info.text_addr     = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.text_addr);
+	cmd->pil_info.init          = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.init);
+	cmd->pil_info.fini          = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.fini);
+	cmd->pil_info.rel           = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.rel);
+	cmd->pil_info.hash          = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.hash);
+	cmd->pil_info.symtab        = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.symtab);
+	cmd->pil_info.strtab        = (void *)xf_ipc_a2b(dsp_config, cmd->pil_info.strtab);
 
 	lib_interface = dpu_process_init_pi_lib(&cmd->pil_info, lib_stat, 0);
 	if (!lib_interface) {

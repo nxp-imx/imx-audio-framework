@@ -6,8 +6,7 @@
 #define _EDMA_H
 
 #include "mydefs.h"
-
-#define BIT(x) (1 << x)
+#include "xf-types.h"
 
 #define EDMA_CH_CSR                     0x00
 #define EDMA_CH_ES                      0x04
