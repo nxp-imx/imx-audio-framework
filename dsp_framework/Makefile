@@ -14,8 +14,7 @@ LINK_DIR    = ./memmap/$(PLATF)
 SYSTEM_DIR  = $(TOOL_PATH)/builds/RI-2020.4-linux/$(XTENSA_CORE)/config
 
 CFLAGS      += -mlongcalls -fmessage-length=0 -DPROC_$(XTENSA_CORE)       \
-			  -DCONFIG_$(XTENSA_CORE) -DINCL_DEMO_DEC=0 -DPROC_hifi2_std     \
-			  -DCONFIG_hifi2_std -DDPU_LOCAL_MEM_DIRECT_MAP -DINCL_MP3_DEC=0       \
+			  -DCONFIG_$(XTENSA_CORE) \
 			  --xtensa-core=$(XTENSA_CORE)                                         \
 			  --xtensa-system=$(SYSTEM_DIR)
 
