@@ -473,21 +473,21 @@ int main(int ac, char *av[])
 	err = xaf_adev_open(&adev);
 	if (err) {
 		printf("open proxy error, err = %d\n", err);
-		goto Fail2;
+		goto Fail3;
 	}
 
 	/* ...create pipeline */
 	err = xaf_pipeline_create(&adev, &pipeline);
 	if (err) {
 		printf("create pipeline error, err = %d\n", err);
-		goto Fail1;
+		goto Fail2;
 	}
 
 	/* ...create component */
 	err = xaf_comp_create(&adev, &component[0], type);
 	if (err) {
 		printf("create component failed, type = %d, err = %d\n", type, err);
-		goto Fail;
+		goto Fail2;
 	}
 
 	/* ...create routed component */
@@ -498,7 +498,7 @@ int main(int ac, char *av[])
 		if (err) {
 			printf("create component failed, type = %d, err = %d\n",
 						AOption.AudioFormatRoute, err);
-			goto Fail;
+			goto Fail1;
 		}
 	}
 
@@ -851,14 +851,16 @@ int main(int ac, char *av[])
 	}
 
 Fail:
-	xaf_comp_delete(&component[0]);
 	if (AOption.comp_routed)
 		xaf_comp_delete(&component[1]);
 
 Fail1:
-	xaf_pipeline_delete(&pipeline);
+	xaf_comp_delete(&component[0]);
 
 Fail2:
+	xaf_pipeline_delete(&pipeline);
+
+Fail3:
 	xaf_adev_close(&adev);
 
 	if (fd_src)
