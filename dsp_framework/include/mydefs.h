@@ -110,6 +110,7 @@ struct dsp_main_struct {
 	u32 is_interrupt;
 	u32 is_suspend;
 	u32 is_resume;
+	u32 render_num;
 
 	struct icm_dpu_ext_msg dpu_ext_msg;
 	struct dsp_mem_info scratch_mem_info;

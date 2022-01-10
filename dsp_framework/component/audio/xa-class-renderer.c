@@ -33,6 +33,7 @@
 #include "xa-class-base.h"
 #include "xf-io.h"
 #include "xf-hal.h"
+#include "board.h"
 #include "audio/xa-renderer-api.h"
 
 /*******************************************************************************
@@ -522,12 +523,17 @@ struct xf_component * xa_renderer_factory(struct dsp_main_struct *dsp_config,
 {
 	struct XARenderer *renderer;
 
+	if (dsp_config->render_num >= MAX_RENDER_NUM) {
+		LOG("render is busying...\n");
+		return NULL;
+	}
 	/* ...construct generic audio component */
 	XF_CHK_ERR(renderer = (struct XARenderer *)xa_base_factory(dsp_config,
 								sizeof(*renderer),
 								process,
 								type),
 								NULL);
+	dsp_config->render_num++;
 
 	/* ...set generic codec API */
 	renderer->base.memtab = xa_renderer_memtab;

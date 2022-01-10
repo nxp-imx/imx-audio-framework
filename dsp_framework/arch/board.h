@@ -12,6 +12,7 @@ enum {
 	DSP_IMX8ULP_TYPE,
 };
 
+#define MAX_RENDER_NUM 1
 /*
  * Memory allocation for reserved memory:
  * We alway reserve 32M memory from DRAM
