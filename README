@@ -3,7 +3,7 @@
    Before you build the case, you should set up related build toolchain firstly,
    you can see the DSP User's Guide to know how to install these toolchians.
    This document is placed in the following location:
-      docs/DSP_User_Guide.pdf
+   https://www.nxp.com/design/software/embedded-software/i-mx-software/embedded-linux-for-i-mx-applications-processors:IMXLINUX
 
 2. Build the DSP framework
 
