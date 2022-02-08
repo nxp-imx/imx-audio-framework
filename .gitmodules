@@ -1,0 +1,3 @@
+[submodule "rpmsg-lite"]
+	path = rpmsg-lite
+	url = https://github.com/NXPmicro/rpmsg-lite.git
