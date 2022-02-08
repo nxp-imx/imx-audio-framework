@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BuildTarget version="1.0" tool="xtensa">
+<BuildSettings>
+<BaseSettings path="project">
+
+<PreprocessorOptions>
+<StringListMapOptions>
+<StringListMapEntry>
+<key>Includes</key>
+<value inheritance="prepend" flag="-I">
+
+<ListEntry>${workspace_loc}/libxa_af_hostless/include/sysdeps/xos/include</ListEntry>
+<ListEntry>${workspace_loc}/testxa_af_hostless/test/build/../../test/include</ListEntry>
+<ListEntry>${workspace_loc}/testxa_af_hostless/test/build/../../test/plugins</ListEntry>
+<ListEntry>${workspace_loc}/testxa_af_hostless/test/build/../../test/include/audio</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/include</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/include/audio</ListEntry>
+<ListEntry>${workspace_loc}/testxa_af_hostless/test/build/../../test/plugins/cadence/pcm_gain</ListEntry>
+</value>
+</StringListMapEntry>
+</StringListMapOptions>
+
+<KeyValueListMapOptions>
+<KeyValueListMapEntry>
+<key>Defines</key>
+<value inheritance="append" flag="-D">
+<ListEntry key="ISS_RUN" value=""/>
+<ListEntry key="XAF_PROFILE" value=""/>
+<ListEntry key="HIFI_ONLY_XAF" value=""/>
+<ListEntry key="FIO_LOCAL_FS" value=""/>
+<ListEntry key="HAVE_XOS" value=""/>
+<ListEntry key="XA_PCM_GAIN" value="1"/>
+</value>
+</KeyValueListMapEntry>
+</KeyValueListMapOptions>
+</PreprocessorOptions>
+<CompilerOptions>
+<FlagValueMapOptions>
+<FlagValueMapEntry>
+<key>Debug</key>
+<value level="-3" flag="-g" use="true"/>
+</FlagValueMapEntry>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>WarningSetting</key>
+<value flag="-Wall" use="true"/>
+</SingleFlagMapEntry>
+<SingleFlagMapEntry>
+<key>WarningAsError</key>
+<value flag="-Werror" use="true"/>
+</SingleFlagMapEntry>
+<SingleFlagMapEntry>
+<key>CompilerEnableLongCall</key>
+<value flag="-mlongcalls" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+<StringListMapOptions>
+<StringListMapEntry>
+<key>CompilerAdditionalOptions</key>
+<value inheritance="append" flag="">
+<ListEntry>-fsigned-char</ListEntry>
+</value>
+</StringListMapEntry>
+</StringListMapOptions>
+</CompilerOptions>
+<AssemblerOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>AssemblerIncludeDebug</key>
+<value flag="--gdwarf-2" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</AssemblerOptions>
+<LinkerOptions>
+<StringListMapOptions>
+<StringListMapEntry>
+<key>LinkerAdditionalOptions</key>
+<value flag="" inheritance="append">
+<ListEntry>-lxos</ListEntry>
+</value>
+</StringListMapEntry>
+</StringListMapOptions>
+<LinkerSupport value="sim" key="-mlsp=" custom="false"/>
+</LinkerOptions>
+
+</BaseSettings>
+</BuildSettings>
+</BuildTarget>
+

@@ -1,0 +1,85 @@
+<html>
+<head>
+<title>README.html</title>
+</head>
+<body>
+
+<h2>testxa_af_hostless Audio Software Test Program</h2>
+
+<p>This executable project contains source files, header files and sample 
+data and is a test programs for the <b>xa_af_hostless</b> audio software.
+It is a managed Xtensa executable project.
+See Xplorer Help <b>&quot;Xtensa Xplorer > Concepts > Software Projects&quot;</b> for more details regarding managed Xtensa projects.</p>
+
+
+<h3>Audio Software Source Package</h3>
+
+<p>If you receive this test program inside the <b>xa_af_hostless</b> audio software source package, then the source code of the library
+and documentation are in <b>libxa_af_hostless</b> and possibly some other managed library projects, and this test program 
+is configured to depend on those libraries with appropriate build properties.
+Building this test program project will automatically build and link-in the
+dependent library projects.</p>
+
+<p>The build properties for this project have already been set, and include appropriate 
+compiler flags and include directories. Where the values are common to both Debug 
+and Release targets, they are set on the Common target; where they differ,
+they are set on the appropriate target.<p>
+
+<p>First, select this project, an appropriate HiFi processor configuration and a build target
+in the active set toolbar. Then you can Build, Run, Debug or Profile this test program (and its supporting libraries).</p>
+
+<h3>Audio Software Object Package</h3>
+
+<p>If you receive this test program inside the <b>xa_af_hostless</b> audio software object package, 
+then the object library (.a) and documentation are in <b>ulibxa_af_hostless</b> and possibly some other unmanaged library projects.</p>
+
+<p>The build properties for this project have already been set, and include appropriate 
+compiler flags and include directories. Where the values are common to both Debug 
+and Release targets, they are set on the Common target; where they differ,
+they are set on the appropriate target.
+This project is almost completely configured to build and run with the provided unmanaged libraries, 
+just follow the steps below:</p>
+
+<ol>
+	<li>Right-click on a library (.a) file in the Project Xplorer and select <b>Unmanaged Binary Info</b>.</li>
+	<li>Select the HiFi processor configuration (e.g. 5 or 7 stage) that matches the binary.</li>
+	<li>Repeat the above steps for all the dependent libraries.</li>
+	<li>Right-click on this project and select <b>Library Dependencies...</b>.</li>
+	<li>Add the unmanaged libraries as dependencies of this project by clicking <b>[Add]</b> and <b>[OK]</b>.</li>
+	<li>Select the appropriate HiFi processor configuration and a target in the active set toolbar.
+</ol>
+
+<p>Note that for Xplorer version 4.0.4 or later,
+this project is completely configured to build and run with the provided unmanaged libraries and the steps listed above are not required.
+Regardless of your version of Xplorer, you will always see a warning box. This is the way that Xplorer tells you that you are using unmanaged libraries.</p> 
+
+
+<h3>Switching Between Source and Object Packages</h3>
+
+<p>This project is provided with either the source or object package, and
+has been configured appropriately. If you have both, it is easy to switch 
+between the different libraries. All you need to do is change the library
+dependencies, and switch the include paths to point to the appropriate
+library projects. If switching to reference the binary package, see also the
+steps described above.</p>
+
+<h3>Running</h3>
+
+<p>Now you can build and run this test program. Select "Open Run Dialog..." and select one
+of the two customized launches provided with
+this project: cycle accurate mode launch (af_hostless_cycle) or fast functional mode launch (af_hostless_turbo).
+Note that many launches do not provide any arguments; they set
+the working directory to the location of a default parameter file and run
+the program from there. The test program automatically extracts parameters
+from that file.</p>
+
+<h3>See Also</h3>
+
+<ul>
+<li>The <a href="../libxa_af_hostless/README.txt">README.txt</a> in the audio software library project for audio software release history and details.</li>
+<li>The corresponding <a href="../libxa_af_hostless/README.html">README.html</a> in the audio software library project for a description of that Xplorer project.</li>
+</ul>
+
+</body>
+</html>
+

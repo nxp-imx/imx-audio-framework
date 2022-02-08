@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BuildTarget version="1.0" tool="xtensa">
+<BuildSettings>
+<BaseSettings path="project">
+
+<CompilerOptions>
+<FlagValueMapOptions>
+<FlagValueMapEntry>
+<key>Optimization</key>
+<value level="2" flag="-O" use="true"/>
+</FlagValueMapEntry>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</BaseSettings>
+<OverriddenSettings>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/rbtree.c</key>
+<value path="algo/hifi-dpf/src/rbtree.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xa-class-audio-codec.c</key>
+<value path="algo/hifi-dpf/src/xa-class-audio-codec.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xa-class-base.c</key>
+<value path="algo/hifi-dpf/src/xa-class-base.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xa-class-mimo-proc.c</key>
+<value path="algo/hifi-dpf/src/xa-class-mimo-proc.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xa-class-mixer.c</key>
+<value path="algo/hifi-dpf/src/xa-class-mixer.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xf-core.c</key>
+<value path="algo/hifi-dpf/src/xf-core.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xf-io.c</key>
+<value path="algo/hifi-dpf/src/xf-io.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xf-main.c</key>
+<value path="algo/hifi-dpf/src/xf-main.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xf-mem.c</key>
+<value path="algo/hifi-dpf/src/xf-mem.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xf-msg.c</key>
+<value path="algo/hifi-dpf/src/xf-msg.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xf-msgq.c</key>
+<value path="algo/hifi-dpf/src/xf-msgq.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xf-msgq1.c</key>
+<value path="algo/hifi-dpf/src/xf-msgq1.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/hifi-dpf/src/xf-sched.c</key>
+<value path="algo/hifi-dpf/src/xf-sched.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/host-apf/src/xaf-api.c</key>
+<value path="algo/host-apf/src/xaf-api.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/host-apf/src/xf-proxy.c</key>
+<value path="algo/host-apf/src/xf-proxy.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+<OverriddenSettingsEntry>
+<key>algo/host-apf/src/xf-trace.c</key>
+<value path="algo/host-apf/src/xf-trace.c">
+<CompilerOptions>
+<FlagValueMapOptions>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>UseDspCoprocessor</key>
+<value flag="-mcoproc" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</value>
+</OverriddenSettingsEntry>
+</OverriddenSettings>
+</BuildSettings>
+</BuildTarget>
+

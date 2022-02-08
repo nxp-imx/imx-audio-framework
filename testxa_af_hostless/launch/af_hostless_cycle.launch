@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="com.tensilica.xide.cdt.launch.ISSLaunch">
+<booleanAttribute key="com.tensilica.xide.cdt.autoLaunch" value="false"/>
+<stringAttribute key="com.tensilica.xide.cdt.launch.LaunchType" value="ISS"/>
+<stringAttribute key="com.tensilica.xide.cdt.launch.attachingdo" value="resume and stop in main"/>
+<stringAttribute key="com.tensilica.xide.cdt.launch.attachingdo.stop.at.symbol" value="main"/>
+<listAttribute key="com.tensilica.xide.cdtcommandlist"/>
+<booleanAttribute key="com.tensilica.xide.cdtrunscriptafterload" value="false"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.blockrepeat" value="0"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.blockwriterepeat" value="0"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.cacheass.dcache" value="XPG default"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.cacheass.icache" value="XPG default"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.cachelinesize.dcache" value="XPG default"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.cachelinesize.icache" value="XPG default"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.cachesize.dcache" value="XPG default"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.cachesize.icache" value="XPG default"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.configcache.dcache" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.configcache.icache" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.energyprofile" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.ferret" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.isaprofile" value="false"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.memlatency" value="0"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.memmodel" value="false"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.memwritelatency" value="0"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.pchistory" value="false"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.samplecycles" value="1000000"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.sampleratio" value="100"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.simmode" value="Cycle-Accurate"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.start" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.startturbo" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.tieprint" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.trace" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.turbocache" value="false"/>
+<booleanAttribute key="com.tensilica.xide.core.CLaunchSimTab.when_profiling" value="false"/>
+<stringAttribute key="com.tensilica.xide.core.CLaunchSimTab.writebuffers" value="default"/>
+<stringAttribute key="cyclemodel" value="--pipe"/>
+<stringAttribute key="extraargs" value="--summary"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_ARGUMENTS" value="-infile:test/test_inp/sine.pcm -outfile:test/test_out/sine_pcmgain_out.pcm"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="bin/${xt_config}/${xt_target}/testxa_af_hostless"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="testxa_af_hostless"/>
+<stringAttribute key="org.eclipse.cdt.launch.WORKING_DIRECTORY" value="${workspace_loc:testxa_af_hostless}"/>
+<booleanAttribute key="org.eclipse.debug.ui.ATTR_LAUNCH_IN_BACKGROUND" value="false"/>
+</launchConfiguration>
+

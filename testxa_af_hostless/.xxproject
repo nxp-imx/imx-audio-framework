@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<xxProperties>
+<propertyGroup name="project.information">
+<version value="3.0"/>
+</propertyGroup>
+<propertyGroup name="build.property">
+<buildTarget defaultTarget="Debug"/>
+</propertyGroup>
+<propertyGroup name="library.dependencies">
+<libraryDependencies targetMappingRule="2">
+<library config="" libProjName="libxa_af_hostless" resType="projectType">
+<targetMappings/>
+</library>
+</libraryDependencies>
+</propertyGroup>
+<propertyGroup name="build.exclusion.data">
+<buildExclusionDatas>
+<exclusionSet name="Default" selected="1">
+<excludedEntry data="/.*/bin/.*"/>
+<excludedEntry data="/.*/test/plugins/cadence/aac_dec/xa-aac-decoder\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/aec22/xa-aec22\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/aec23/xa-aec23\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/amr_wb/xa-amr-wb-decoder\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/capturer/xa-capturer\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/mimo_mix/xa-mimo-mix\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/mixer/xa-mixer\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/mp3_dec/xa-mp3-decoder\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/mp3_enc/xa-mp3-encoder\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/opus/xa-opus-encoder\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/pcm_split/xa-pcm-split\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/renderer/xa-renderer\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/src-pp/xa-src-pp\.c"/>
+<excludedEntry data="/.*/test/plugins/cadence/vorbis_dec/xa-vorbis-decoder\.c"/>
+<excludedEntry data="/.*/test/src/xaf-aac-dec-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-amr-wb-dec-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-capturer-mp3-enc-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-capturer-pcm-gain-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-dec-mix-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-dec-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-full-duplex-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-gain-renderer-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-mimo-mix-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-mp3-dec-rend-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-playback-usecase-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-renderer-ref-port-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-src-test\.c"/>
+<excludedEntry data="/.*/test/src/xaf-vorbis-dec-test\.c"/>
+</exclusionSet>
+</buildExclusionDatas>
+</propertyGroup>
+</xxProperties>

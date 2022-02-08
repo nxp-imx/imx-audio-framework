@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BuildTarget version="1.0" tool="xtensa">
+<BuildSettings>
+<BaseSettings path="project">
+
+<PreprocessorOptions>
+<StringListMapOptions>
+<StringListMapEntry>
+<key>Includes</key>
+<value inheritance="prepend" flag="-I">
+
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../include/sysdeps/xos/include</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../algo/hifi-dpf/include</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../algo/hifi-dpf/include/audio</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../algo/hifi-dpf/include/lib</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../algo/hifi-dpf/include/sys/xos-msgq</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../algo/host-apf/include</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../algo/xa_af_hostless/include</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../include</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../include/audio</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../algo/host-apf/include/sys/xos-msgq</ListEntry>
+<ListEntry>${workspace_loc}/libxa_af_hostless/build/../algo/hifi-dpf/include/sys/xos-msgq/iss</ListEntry>
+</value>
+</StringListMapEntry>
+</StringListMapOptions>
+
+<KeyValueListMapOptions>
+<KeyValueListMapEntry>
+<key>Defines</key>
+<value inheritance="append" flag="-D">
+<ListEntry key="HAVE_XOS" value=""/>
+<ListEntry key="HIFI_ONLY_XAF" value=""/>
+</value>
+</KeyValueListMapEntry>
+</KeyValueListMapOptions>
+</PreprocessorOptions>
+<CompilerOptions>
+<FlagValueMapOptions>
+<FlagValueMapEntry>
+<key>Debug</key>
+<value level="-3" flag="-g" use="true"/>
+</FlagValueMapEntry>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>WarningSetting</key>
+<value flag="-Wall" use="true"/>
+</SingleFlagMapEntry>
+<SingleFlagMapEntry>
+<key>WarningAsError</key>
+<value flag="-Werror" use="true"/>
+</SingleFlagMapEntry>
+<SingleFlagMapEntry>
+<key>CompilerEnableLongCall</key>
+<value flag="-mlongcalls" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+<StringListMapOptions>
+<StringListMapEntry>
+<key>CompilerAdditionalOptions</key>
+<value inheritance="append" flag="">
+<ListEntry>-mno-mul16 -mno-mul32 -mno-div32 -fsigned-char -INLINE:requested</ListEntry>
+</value>
+</StringListMapEntry>
+</StringListMapOptions>
+</CompilerOptions>
+<AssemblerOptions>
+<SingleFlagMapOptions>
+<SingleFlagMapEntry>
+<key>AssemblerIncludeDebug</key>
+<value flag="--gdwarf-2" use="true"/>
+</SingleFlagMapEntry>
+</SingleFlagMapOptions>
+</AssemblerOptions>
+<LinkerOptions>
+<LinkerSupport value="sim" key="-mlsp=" custom="false"/>
+</LinkerOptions>
+
+</BaseSettings>
+</BuildSettings>
+</BuildTarget>
+

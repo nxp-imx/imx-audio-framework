@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BuildTarget version="1.0" tool="xtensa">
+<BuildSettings>
+<BaseSettings path="project">
+
+<CompilerOptions>
+<FlagValueMapOptions>
+<FlagValueMapEntry>
+<key>Optimization</key>
+<value level="2" flag="-O" use="true"/>
+</FlagValueMapEntry>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</BaseSettings>
+<OverriddenSettings>
+</OverriddenSettings>
+</BuildSettings>
+</BuildTarget>
+

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BuildTarget version="1.0" tool="xtensa">
+<BuildSettings>
+<BaseSettings path="project">
+
+<PreprocessorOptions>
+<KeyValueListMapOptions>
+<KeyValueListMapEntry>
+<key>Defines</key>
+<value inheritance="append" flag="-D">
+<ListEntry key="XF_DEBUG" value="1"/>
+</value>
+</KeyValueListMapEntry>
+</KeyValueListMapOptions>
+</PreprocessorOptions>
+<CompilerOptions>
+<FlagValueMapOptions>
+<FlagValueMapEntry>
+<key>Optimization</key>
+<value level="0" flag="-O" use="true"/>
+</FlagValueMapEntry>
+</FlagValueMapOptions>
+<SingleFlagMapOptions>
+</SingleFlagMapOptions>
+</CompilerOptions>
+</BaseSettings>
+<OverriddenSettings>
+</OverriddenSettings>
+</BuildSettings>
+</BuildTarget>
+

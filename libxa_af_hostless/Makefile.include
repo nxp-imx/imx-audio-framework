@@ -1,0 +1,40 @@
+
+include ${xt_tools}/misc/version.mk
+
+ifeq ($(ARCH_OSTYPE), unix)
+MI_RM = rm -f 
+else
+MI_RM = cmd /c del 
+endif
+
+
+
+# Object file list for each release from target
+#
+
+OBJS = algo/hifi-dpf/src/xa-class-audio-codec.o algo/host-apf/src/xaf-api.o algo/hifi-dpf/src/xf-isr.o algo/hifi-dpf/src/xf-sched.o algo/hifi-dpf/src/xa-class-capturer.o algo/hifi-dpf/src/xf-core.o algo/hifi-dpf/src/xf-ipi.o algo/hifi-dpf/src/xa-class-mixer.o algo/host-apf/src/xf-proxy.o algo/hifi-dpf/src/xf-mem.o algo/hifi-dpf/src/xf-msgq1.o algo/hifi-dpf/src/xa-class-renderer.o algo/hifi-dpf/src/xa-class-mimo-proc.o algo/hifi-dpf/src/xf-msg.o algo/hifi-dpf/src/xa-class-base.o algo/hifi-dpf/src/xf-io.o algo/hifi-dpf/src/xf-msgq.o algo/hifi-dpf/src/rbtree.o algo/hifi-dpf/src/xf-main.o algo/host-apf/src/xf-trace.o
+
+#
+# IPA settings for each release from target
+#
+
+LDFLAGS_IPA_Debug =
+LDFLAGS_IPA_Debug_Feedback =
+LDFLAGS_IPA_Release =
+LDFLAGS_IPA_Release_Feedback =
+
+
+IPA_Debug =
+IPA_Release =
+IPA_Debug_Feedback =
+IPA_Release_Feedback =
+
+
+post-all:
+	-$(MI_RM) $(PROJECT_NAME).a
+	xt-xcc ${xt_sysargs} -o $(PROJECT_NAME).o.1 $(OBJS) \
+		--no-standard-libraries -Wl,-r,-Map,$(PROJECT_NAME).map.txt \
+		$(IPA_${xt_target}) -Wl,--script,$(PROJECT_HOME)/ldscript.txt
+	xt-objcopy ${xt_sysargs} --keep-global-symbols=$(PROJECT_HOME)/build/symbols_af_hostless.txt $(PROJECT_NAME).o.1 $(PROJECT_NAME).o
+	-$(MI_RM) $(PROJECT_NAME).o.1
+	xt-ar rc $(PROJECT_NAME).a $(PROJECT_NAME).o
