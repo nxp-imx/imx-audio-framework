@@ -154,8 +154,14 @@
 /* ...channel setup */
 #define XF_EVENT                        __XF_OPCODE(1, 0, 20)
 
+/* ... system suspend */
+#define XF_SUSPEND                      __XF_OPCODE(0, 0, 21)
+
+/* ... system resume, pair to XF_SUSPEND */
+#define XF_SUSPEND_RESUME               __XF_OPCODE(0, 0, 22)
+
 /* ...total amount of supported decoder commands */
-#define __XF_OP_NUM                     21
+#define __XF_OP_NUM                     23
 
 /*******************************************************************************
  * XF_START message definition

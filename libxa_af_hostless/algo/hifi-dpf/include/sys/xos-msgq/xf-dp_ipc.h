@@ -107,13 +107,17 @@ static inline int xf_ipi_deinit(UWORD32 core)
 /* ...translate buffer address to shared proxy address */
 static inline UWORD32 xf_ipc_b2a(UWORD32 core, void *b)
 {
-    return (UWORD32) b;
+	void *start = xf_g_dsp->xf_ap_shmem_buffer;
+
+	return (UWORD32)(b - start);
 }
 
 /* ...translate shared proxy address to local pointer */
 static inline void * xf_ipc_a2b(UWORD32 core, UWORD32 address)
 {
-    return (void *) address;
+	void *start = xf_g_dsp->xf_ap_shmem_buffer;
+
+	return (void *) (start + address);
 }
 
 /* ...system-specific IPC layer initialization */
