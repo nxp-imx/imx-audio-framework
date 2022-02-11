@@ -945,7 +945,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 				pDSP_handle->dsp_out_buf = NULL;
 				*OutputBuf = NULL;
 			}
-			err = XA_NO_OUTPUT;
 		}
 		return err;
 	}
