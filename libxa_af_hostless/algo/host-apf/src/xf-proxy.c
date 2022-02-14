@@ -337,8 +337,10 @@ int xf_proxy_init(xf_proxy_t *proxy, UWORD32 core)
     /* ...initialize thread attributes (joinable, with minimal stack) */
 #if defined(HAVE_FREERTOS)
     if ((r = __xf_thread_create(&proxy->thread, xf_proxy_thread, proxy, proxy_thread_name, NULL, PROXY_THREAD_STACK_SIZE, proxy->proxy_thread_priority)) < 0)
-#else
+#elif defined(HAVE_XOS)
     if ((r = __xf_thread_create(&proxy->thread, xf_proxy_thread, proxy, proxy_thread_name, xf_g_ap->proxy_thread_stack, PROXY_THREAD_STACK_SIZE, proxy->proxy_thread_priority)) < 0)
+#elif defined(HAVE_LINUX)
+    if ((r = __xf_thread_create(&proxy->thread, xf_proxy_thread, proxy, proxy_thread_name, NULL, PROXY_THREAD_STACK_SIZE, proxy->proxy_thread_priority)) < 0)
 #endif
     {
         TRACE(ERROR, _x("Failed to create polling thread: %d"), r);
@@ -359,14 +361,14 @@ void xf_proxy_close(xf_proxy_t *proxy)
     /* ...trigger proxy IPC interface close event */
     xf_ipc_close_set_event(&proxy->ipc, core);
 
+    /* ...terminate proxy thread */
+    __xf_thread_destroy(&proxy->thread);
+
     /* TENA-2117*/
     __xf_thread_join(&proxy->thread, NULL); //wait for the proxy to complete
 
     /* ...close proxy IPC interface */
     xf_ipc_close(&proxy->ipc, core); //close after proxy thread stops waiting in loop with ipc_wait()
-
-    /* ...terminate proxy thread */
-    __xf_thread_destroy(&proxy->thread);
 
     /* ...destroy proxy lock */
     __xf_lock_destroy(&proxy->lock);

@@ -373,104 +373,66 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 		parameter.codecData.buf = NULL;
 		parameter.codecData.size = *(UWORD32 *)pv_value;
 		break;
-	case UNIA_CHAN_MAP_TABLE:
-		memcpy(&parameter.chan_map_tab, (UWORD32 *)pv_value, sizeof(CHAN_TABLE));
+	/*****dedicate for mp3 dec and mp2 dec*****/
+	case UNIA_MP3_DEC_CRC_CHECK:
+		parameter.crc_check = *(UWORD32 *)pv_value;
 		break;
+	case UNIA_MP3_DEC_MCH_ENABLE:
+		parameter.mch_enable = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_MP3_DEC_NONSTD_STRM_SUPPORT:
+		parameter.nonstd_strm_support = *(UWORD32 *)pv_value;
+		break;
+	/*****dedicate for bsac dec***************/
+	case UNIA_BSAC_DEC_DECODELAYERS:
+		parameter.layers = *(UWORD32 *)pv_value;
+		break;
+	/*****dedicate for aacplus dec***********/
+	case UNIA_AACPLUS_DEC_BDOWNSAMPLE:
+		parameter.bdownsample = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_AACPLUS_DEC_BBITSTREAMDOWNMIX:
+		parameter.bbitstreamdownmix = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_AACPLUS_DEC_CHANROUTING:
+		parameter.chanrouting = *(UWORD32 *)pv_value;
+		break;
+	/*****************dedicate for dabplus dec******************/
+	case UNIA_DABPLUS_DEC_BDOWNSAMPLE:
+		parameter.bdownsample = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_DABPLUS_DEC_BBITSTREAMDOWNMIX:
+		parameter.bbitstreamdownmix = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_DABPLUS_DEC_CHANROUTING:
+		parameter.chanrouting = *(UWORD32 *)pv_value;
+		break;
+	/*******************dedicate for sbc enc******************/
+	case UNIA_SBC_ENC_SUBBANDS:
+		parameter.enc_subbands = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_SBC_ENC_BLOCKS:
+		parameter.enc_blocks = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_SBC_ENC_SNR:
+		parameter.enc_snr = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_SBC_ENC_BITPOOL:
+		parameter.enc_bitpool = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_SBC_ENC_CHMODE:
+		parameter.enc_chmode = *(UWORD32 *)pv_value;
+		break;
+	/*******************dedicate for wma dec******************/
+	case UNIA_WMA_BlOCKALIGN:
+		parameter.blockalign = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_WMA_VERSION:
+		parameter.version = *(UWORD32 *)pv_value;
+		break;
+	case UNIA_CHAN_MAP_TABLE:
 	default:
 		return ret;
-	}
-
-	if ((d->codec_id == CODEC_MP2_DEC) ||
-		(d->codec_id == CODEC_MP3_DEC)) {
-		switch (i_idx) {
-		/*****dedicate for mp3 dec and mp2 dec*****/
-		case UNIA_MP3_DEC_CRC_CHECK:
-			parameter.crc_check = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_MP3_DEC_MCH_ENABLE:
-			parameter.mch_enable = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_MP3_DEC_NONSTD_STRM_SUPPORT:
-			parameter.nonstd_strm_support = *(UWORD32 *)pv_value;
-			break;
-		default:
-			break;
-		}
-	} else if (d->codec_id == CODEC_BSAC_DEC) {
-		switch (i_idx) {
-		/*****dedicate for bsac dec***************/
-		case UNIA_BSAC_DEC_DECODELAYERS:
-			parameter.layers = *(UWORD32 *)pv_value;
-			break;
-		default:
-			break;
-		}
-	} else if ((d->codec_id == CODEC_AAC_DEC)) {
-		switch (i_idx) {
-		/*****dedicate for aacplus dec***********/
-		case UNIA_CHANNEL:
-			if (*(UWORD32 *)pv_value > 2) {
-				return ACODEC_PROFILE_NOT_SUPPORT;
-			}
-			break;
-		case UNIA_AACPLUS_DEC_BDOWNSAMPLE:
-			parameter.bdownsample = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_AACPLUS_DEC_BBITSTREAMDOWNMIX:
-			parameter.bbitstreamdownmix = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_AACPLUS_DEC_CHANROUTING:
-			parameter.chanrouting = *(UWORD32 *)pv_value;
-			break;
-		default:
-			break;
-		}
-	} else if (d->codec_id == CODEC_DAB_DEC) {
-		switch (i_idx) {
-		/*****************dedicate for dabplus dec******************/
-		case UNIA_DABPLUS_DEC_BDOWNSAMPLE:
-			parameter.bdownsample = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_DABPLUS_DEC_BBITSTREAMDOWNMIX:
-			parameter.bbitstreamdownmix = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_DABPLUS_DEC_CHANROUTING:
-			parameter.chanrouting = *(UWORD32 *)pv_value;
-			break;
-		default:
-			break;
-		}
-	} else if (d->codec_id == CODEC_SBC_ENC) {
-		switch (i_idx) {
-		/*******************dedicate for sbc enc******************/
-		case UNIA_SBC_ENC_SUBBANDS:
-			parameter.enc_subbands = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_SBC_ENC_BLOCKS:
-			parameter.enc_blocks = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_SBC_ENC_SNR:
-			parameter.enc_snr = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_SBC_ENC_BITPOOL:
-			parameter.enc_bitpool = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_SBC_ENC_CHMODE:
-			parameter.enc_chmode = *(UWORD32 *)pv_value;
-			break;
-		default:
-			break;
-		}
-	} else if (d->codec_id == CODEC_FSL_WMA_DEC) {
-		switch (i_idx) {
-		/*******************dedicate for wma dec******************/
-		case UNIA_WMA_BlOCKALIGN:
-			parameter.blockalign = *(UWORD32 *)pv_value;
-			break;
-		case UNIA_WMA_VERSION:
-			parameter.version = *(UWORD32 *)pv_value;
-			break;
-		}
 	}
 
 	if (!d->WrapFun.SetPara) {

@@ -210,13 +210,13 @@ static inline UWORD32 xf_proxy_b2a(xf_proxy_t *proxy, void *b)
 /* ...submit asynchronous response message */
 static inline int xf_proxy_response_put(xf_proxy_t *proxy, xf_proxy_msg_t *msg)
 {
-    return __xf_msgq_send(proxy->ipc.lresp_msgq, msg, sizeof(*msg));
+	return xf_proxy_ipc_response_put(&proxy->ipc, msg);
 }
 
 /* ...retrieve asynchronous response message */
 static inline int xf_proxy_response_get(xf_proxy_t *proxy, xf_proxy_msg_t *msg)
 {
-    return __xf_msgq_recv(proxy->ipc.lresp_msgq, msg, sizeof(*msg));
+	return xf_proxy_ipc_response_get(&proxy->ipc, msg);
 }
 
 /*******************************************************************************
@@ -345,11 +345,11 @@ static inline void * xf_handle_aux(xf_handle_t *handle)
 /* ...put asynchronous response into local IPC */
 static inline int xf_response_put(xf_handle_t *handle, xf_user_msg_t *msg)
 {
-    return __xf_msgq_send(handle->ipc.resp_msgq, msg, sizeof(*msg));
+	return xf_ipc_response_put(&handle->ipc, msg);
 }
 
 /* ...get asynchronous response from local IPC */
 static inline int xf_response_get(xf_handle_t *handle, xf_user_msg_t *msg)
 {
-    return __xf_msgq_recv(handle->ipc.resp_msgq, msg, sizeof(*msg));
+	return xf_ipc_response_get(&handle->ipc, msg);
 }

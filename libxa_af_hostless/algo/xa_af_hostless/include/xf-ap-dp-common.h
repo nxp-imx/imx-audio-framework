@@ -36,6 +36,11 @@
 #define XF_DSP_OBJ_SIZE_DSP_LOCAL_POOL      216
 #define XF_DSP_OBJ_SIZE_CORE_RO_DATA        256
 #define XF_DSP_OBJ_SIZE_CORE_RW_DATA        256
+#elif defined(HAVE_LINUX)
+#define XF_DSP_OBJ_SIZE_CORE_DATA           552
+#define XF_DSP_OBJ_SIZE_DSP_LOCAL_POOL      216
+#define XF_DSP_OBJ_SIZE_CORE_RO_DATA        256
+#define XF_DSP_OBJ_SIZE_CORE_RW_DATA        256
 #else
 #error Unrecognized OS
 #endif

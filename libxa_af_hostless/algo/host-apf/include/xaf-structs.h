@@ -20,7 +20,11 @@
 * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+#if defined(HAVE_XOS)
 #include <xtensa/simcall-errno.h>
+#elif defined(HAVE_LINUX)
+#include <string.h>
+#endif
 #include "xaf-api.h"
 
 /* ...size of auxiliary pool for communication with HiFi */
@@ -117,6 +121,8 @@ struct xaf_comp {
 #ifndef XA_DISABLE_EVENT
     UWORD32         error_channel_ctl;
 #endif
+    void *codec_lib;
+    void *codec_wrap_lib;
 };
 
 typedef struct xaf_adev_s {

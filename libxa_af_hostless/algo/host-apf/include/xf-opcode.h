@@ -150,8 +150,14 @@
 /* ...channel setup */
 #define XF_EVENT                        __XF_OPCODE(1, 0, 20)
 
+/* ...load lib for component operation */
+#define XF_LOAD_LIB                     __XF_OPCODE(0, 0, 21)
+
+/* ...unload lib for component operation */
+#define XF_UNLOAD_LIB                   __XF_OPCODE(0, 0, 22)
+
 /* ...total amount of supported decoder commands */
-#define __XF_OP_NUM                     21
+#define __XF_OP_NUM                     23
 
 /*******************************************************************************
  * XF_START message definition

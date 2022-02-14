@@ -160,7 +160,7 @@ int consume_output(void *p_buf, int buf_length, void *p_output, xaf_comp_type co
 }
 
 /* ... align pointer to 8 bytes */
-#define XA_ALIGN_8BYTES(ptr)                (((unsigned int)(ptr) + 7) & ~7)
+#define XA_ALIGN_8BYTES(ptr)                (((unsigned long)(ptr) + 7) & ~7)
 #define COMP_MAX_IO_PORTS                   8
 
 int consume_probe_output(void *p_buf, int buf_length, int cid)
@@ -301,6 +301,42 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask, char * pcTaskName )
 }
 #endif
 
+#ifdef HAVE_LINUX
+#define MAIN_STACK_SIZE 65536
+
+struct args {
+    int argc;
+    char **argv;
+    int (*main_task)(int argc, char **argv);
+};
+
+static void *main_task_wrapper(void *arg)
+{
+    struct args *args = arg;
+    exit(args->main_task(args->argc, args->argv));
+}
+
+int init_rtos(int argc, char **argv, int (*main_task)(int argc, char **argv))
+{
+    struct args args = {
+        .argc = argc,
+        .argv = argv,
+        .main_task = main_task,
+    };
+    xf_thread_t thread;
+    int exit_code;
+
+    __xf_thread_create(&thread, main_task_wrapper, &args, "main task",
+                       NULL, MAIN_STACK_SIZE , XAF_MAIN_THREAD_PRIORITY);
+    __xf_thread_join(&thread, &exit_code);
+    return 1;
+}
+unsigned short start_rtos(void)
+{
+    return 0;
+}
+#endif
+
 int main(int argc, char **argv)
 {
     int ret;
@@ -310,12 +346,12 @@ int main(int argc, char **argv)
     return ret;
 }
 
-static int _comp_process_entry(void *arg)
+static long _comp_process_entry(void *arg)
 {
     void *p_adev, *p_comp;
     void *p_input, *p_output;
     xaf_comp_status comp_status;
-    int comp_info[4];
+    long comp_info[4];
     int input_over, read_length;
     void * (*arg_arr)[10];
     xaf_comp_type comp_type;
@@ -372,7 +408,7 @@ static int _comp_process_entry(void *arg)
             {
 
                 void *p_buf = (void *)comp_info[0];
-                int size = comp_info[1];
+                long size = comp_info[1];
                 static int frame_count = 0;
 
 #ifdef XAF_PROFILE
@@ -406,7 +442,7 @@ static int _comp_process_entry(void *arg)
         if (comp_status == XAF_OUTPUT_READY)
         {
             void *p_buf = (void *)comp_info[0];
-            int size = comp_info[1];
+            long size = comp_info[1];
 
 #ifdef XAF_PROFILE
             fwrite_start = clk_read_start(CLK_SELN_THREAD);
@@ -425,7 +461,7 @@ static int _comp_process_entry(void *arg)
         if (comp_status == XAF_PROBE_READY)
         {
             void *p_buf = (void *)comp_info[0];
-            int size = comp_info[1];
+            long size = comp_info[1];
 
             TST_CHK_API(consume_probe_output(p_buf, size, cid), "consume_probe_output");
 
@@ -449,7 +485,7 @@ void *comp_process_entry(void *arg)
     return (void *)_comp_process_entry(arg);
 }
 
-static int _comp_disconnect_entry(void *arg)
+static long _comp_disconnect_entry(void *arg)
 {
     TST_CHK_PTR(arg, "comp_disconnect_entry");
 
@@ -819,7 +855,7 @@ int xa_app_receive_events_cb(void *comp, UWORD32 event_id, void *buf, UWORD32 bu
     e = (event_info_t *) malloc(sizeof(event_info_t));
     e->event_buf = malloc(buf_size);
 
-    e->comp_addr = (UWORD32)comp;
+    e->comp_addr = (long)comp;
     e->event_id = event_id;
     e->comp_error_flag = comp_error_flag;
     e->buf_size = buf_size;

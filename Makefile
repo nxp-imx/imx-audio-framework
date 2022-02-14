@@ -43,7 +43,7 @@ ifeq ($(TIME_PROFILE), 1)
 	CFLAGS += -DTIME_PROFILE
 endif
 
-all: DSP_FRAMEWORK
+all: DSP_FRAMEWORK UNIT_TEST
 	echo "--- Build all dsp library ---"
 
 DSP_FRAMEWORK: $(FRAMEWORK_DIR)
@@ -80,6 +80,7 @@ help:
 
 clean:
 	make -C $(FRAMEWORK_DIR) clean
+	make -C $(UNIT_TEST_DIR) clean
 	rm -rf ./$(RELEASE_DIR)/*.so
 	rm -rf ./$(RELEASE_DIR)/exe
 	rm -rf ./$(RELEASE_DIR)/wrapper

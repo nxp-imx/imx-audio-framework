@@ -27,7 +27,9 @@
 #define XAF_SIZEOFPROXY                     2272
 #define XAF_SIZEOFHANDLE                    44
 
+#if defined(HAVE_XOS)
 #include "xtensa/xos_errors.h"
+#endif
 
 #define XA_NUM_API_ERRS    7
 
@@ -77,7 +79,7 @@ typedef struct _api_err_t{
 ({                                                                                     \
     int __ret;                                                                         \
                                                                                        \
-    if ((__ret = (int)(ptr)) == 0)                                                     \
+    if ((__ret = (int64_t)(ptr)) == 0)                                                     \
     {                                                                                  \
         FIO_PRINTF(stderr,"%s failed, Null pointer error : %d\n\n", func_name, __ret);    \
         return XAF_INVALIDPTR_ERR;                                                          \

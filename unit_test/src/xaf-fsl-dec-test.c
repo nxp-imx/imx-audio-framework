@@ -24,10 +24,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
-#include "audio/xa_mp3_dec_api.h"
 #include "xaf-utils-test.h"
 #include "xaf-fio-test.h"
+
+#include "fsl_unia.h"
 
 #define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s -infile:filename.mp3 -outfile:filename.pcm\n\n", argv[0]);
 
@@ -50,37 +52,17 @@ double strm_duration;
     extern double dsp_mcps;
 #endif
 
-/* Dummy unused functions */
-XA_ERRORCODE xa_aac_decoder(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_mixer(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_pcm_gain(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_mp3_encoder(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_src_pp_fx(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_renderer(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_capturer(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_amr_wb_decoder(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_hotword_decoder(xa_codec_handle_t p_xa_module_obj, WORD32 i_cmd, WORD32 i_idx, pVOID pv_value){return 0;}
-XA_ERRORCODE xa_vorbis_decoder(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_dummy_aec22(xa_codec_handle_t p_xa_module_obj, WORD32 i_cmd, WORD32 i_idx, pVOID pv_value) {return 0;}
-XA_ERRORCODE xa_dummy_aec23(xa_codec_handle_t p_xa_module_obj, WORD32 i_cmd, WORD32 i_idx, pVOID pv_value) {return 0;}
-XA_ERRORCODE xa_pcm_split(xa_codec_handle_t p_xa_module_obj, WORD32 i_cmd, WORD32 i_idx, pVOID pv_value) {return 0;}
-XA_ERRORCODE xa_mimo_mix(xa_codec_handle_t p_xa_module_obj, WORD32 i_cmd, WORD32 i_idx, pVOID pv_value) {return 0;}
-XA_ERRORCODE xa_dummy_wwd(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_dummy_hbuf(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_opus_encoder(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_dummy_wwd_msg(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-XA_ERRORCODE xa_dummy_hbuf_msg(xa_codec_handle_t var1, WORD32 var2, WORD32 var3, pVOID var4){return 0;}
-
 static int mp3_setup(void *p_decoder)
 {
     int param[2];
 
-    param[0] = XA_MP3DEC_CONFIG_PARAM_PCM_WDSZ;
-    param[1] = MP3_DEC_PCM_WIDTH;
+#if 1 /*by S.J*/
+    param[0] = UNIA_DEPTH;
+    param[1] = 16;
+#endif
 
     return(xaf_comp_set_config(p_decoder, 1, &param[0]));
 }
-
 
 static int get_comp_config(void *p_comp, xaf_format_t *comp_format)
 {
@@ -90,11 +72,12 @@ static int get_comp_config(void *p_comp, xaf_format_t *comp_format)
     
     TST_CHK_PTR(p_comp, "get_comp_config");
     TST_CHK_PTR(comp_format, "get_comp_config");
-    
+
+#if 0 /* by S.J */
     param[0] = XA_MP3DEC_CONFIG_PARAM_NUM_CHANNELS;
     param[2] = XA_MP3DEC_CONFIG_PARAM_PCM_WDSZ;
     param[4] = XA_MP3DEC_CONFIG_PARAM_SAMP_FREQ;
-    
+#endif
     
     ret = xaf_comp_get_config(p_comp, 3, &param[0]);
     if(ret < 0)
@@ -120,7 +103,7 @@ int main_task(int argc, char **argv)
     xf_thread_t dec_thread;
     unsigned char dec_stack[STACK_SIZE];
     xaf_comp_status dec_status;
-    int dec_info[4];
+    long dec_info[4];
     char *filename_ptr;
     void *dec_thread_args[NUM_THREAD_ARGS];
     FILE *fp, *ofp;
@@ -195,7 +178,7 @@ int main_task(int argc, char **argv)
                 FIO_PRINTF(stderr, "Unknown Decoder Extension '%s'\n", ext);
                 exit(-1);
             }
-		}	
+        }
         else
         {
             FIO_PRINTF(stderr, "Failed to open infile\n");
@@ -249,6 +232,9 @@ int main_task(int argc, char **argv)
     /* ...create decoder component */
     comp_type = XAF_DECODER;
     TST_CHK_API_COMP_CREATE(p_adev, &p_decoder, dec_id, 2, 1, &dec_inbuf[0], comp_type, "xaf_comp_create");
+#ifdef XA_FSL_UNIA_CODEC
+    TST_CHK_API(xaf_load_library(p_adev, p_decoder, dec_id), "xaf_load_library");
+#endif
     TST_CHK_API(dec_setup(p_decoder), "dec_setup");
 
     /* ...start decoder component */            
@@ -278,7 +264,7 @@ int main_task(int argc, char **argv)
         if (dec_status == XAF_NEED_INPUT)
         {
             void *p_buf = (void *) dec_info[0]; 
-            int size    = dec_info[1];
+            long size    = dec_info[1];
             
             TST_CHK_API(read_input(p_buf, size, &read_length, p_input, comp_type), "read_input");
 
@@ -346,9 +332,11 @@ int main_task(int argc, char **argv)
     
     mem_exit();    
 
+#ifdef XAF_PROFILE
     dsp_comps_cycles = dec_cycles;
 
     dsp_mcps = compute_comp_mcps(num_bytes_write, dec_cycles, dec_format, &strm_duration);
+#endif
 
     TST_CHK_API(print_mem_mcps_info(mem_handle, num_comp), "print_mem_mcps_info");
 

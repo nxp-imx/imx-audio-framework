@@ -72,6 +72,8 @@
 #define BUILD_RTOS  "XOS"
 #elif defined(HAVE_FREERTOS)
 #define BUILD_RTOS  "FreeRTOS"
+#elif defined(HAVE_LINUX)
+#define BUILD_RTOS  "Linux"
 #else
 #error "error: RTOS is neither XOS nor FreeRTOS"
 #endif
@@ -207,7 +209,7 @@ typedef struct event_info event_info_t;
 struct event_info
 {
     event_info_t *next;
-    UWORD32 comp_addr;
+    unsigned long comp_addr;
     UWORD32 comp_error_flag;
     UWORD32 event_id;
     UWORD32 buf_size;

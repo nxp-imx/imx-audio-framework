@@ -20,11 +20,12 @@
 * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-#include "xf.h"
+#include <stdbool.h>
+#include "library_load.h"
 #include "xaf-api.h"
-#include "xaf-structs.h"
 #include "xaf-version.h"
 #include "xaf-threads-priority.h"
+#include "dsp_codec_interface.h"
 
 #define MODULE_TAG                      DEVAPI
 
@@ -45,7 +46,7 @@
 ({                                                          \
     int __ret;                                              \
                                                             \
-    if ((__ret = (int)(ptr)) == 0)                          \
+    if ((__ret = (long int)(ptr)) == 0)                          \
     {                                                       \
         TRACE(ERROR, _x("Null pointer error: %d"), __ret);  \
         return XAF_INVALIDPTR_ERR;                               \
@@ -111,11 +112,6 @@
 #define XA_AUDIO_FRMWK_BUF_SIZE_MAX ((1UL<<31)-1)
 
 xf_ap_t    *xf_g_ap;
-extern xf_dsp_t *xf_g_dsp;
-
-extern void *dsp_thread_entry(void  *arg);
-extern void *dsp_worker_entry(void  *arg);
-extern const int xf_io_ports[XAF_MAX_COMPTYPE][2];
 
 #ifndef XA_DISABLE_EVENT
 
@@ -167,7 +163,7 @@ static int xaf_sync_chain_add_node(xaf_node_chain_t *chain, void *node)
 {
     __xf_lock(&chain->lock);
 
-    *(xaf_node_chain_t **)((UWORD32)node + chain->next_offset) = chain->head;
+    *(xaf_node_chain_t **)((long)node + chain->next_offset) = chain->head;
     chain->head = (xaf_node_chain_t *)node;
 
     __xf_unlock(&chain->lock);
@@ -193,7 +189,7 @@ static int xaf_sync_chain_delete_node(xaf_node_chain_t *chain, void *node)
 
         if (p_curr_node == node) break;
         
-        pp_curr_node = (xaf_node_chain_t **)((UWORD32)p_curr_node + next_offset);
+        pp_curr_node = (xaf_node_chain_t **)((unsigned long)p_curr_node + next_offset);
 
     } while(1);
 
@@ -203,7 +199,7 @@ static int xaf_sync_chain_delete_node(xaf_node_chain_t *chain, void *node)
         return -1;
     }   
 
-    *pp_curr_node = *(xaf_node_chain_t **)((UWORD32)p_curr_node + next_offset);
+    *pp_curr_node = *(xaf_node_chain_t **)((unsigned long)p_curr_node + next_offset);
 
     __xf_unlock(&chain->lock);
 
@@ -372,7 +368,7 @@ XAF_ERR_CODE xaf_malloc(void **buf_ptr, int size, int id)
     XAF_CHK_PTR(*buf_ptr);
     memset(*buf_ptr, 0, size);
 
-    if((UWORD32)*buf_ptr & (XAF_4BYTE_ALIGN - 1))
+    if((unsigned long)*buf_ptr & (XAF_4BYTE_ALIGN - 1))
     {
        TRACE(INFO, _b("Memory allocation failed : %p is not 4-byte aligned"), *buf_ptr);
        return XAF_INVALIDPTR_ERR;
@@ -551,7 +547,7 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
     XAF_CHK_PTR(pTmp);
     memset(pTmp, 0, size);
 
-    p_adev = (xaf_adev_t *) (((UWORD32)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
+    p_adev = (xaf_adev_t *) (((unsigned long)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
     p_adev->adev_ptr = pTmp;
     *pp_adev = (void *)p_adev;
     
@@ -564,7 +560,7 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
     memset(p_adev->p_apMem, 0, size);
 
 
-    xf_g_ap = (xf_ap_t *) (((UWORD32)p_adev->p_apMem + (XAF_8BYTE_ALIGN-1))& ~(XAF_8BYTE_ALIGN-1));
+    xf_g_ap = (xf_ap_t *) (((unsigned long)p_adev->p_apMem + (XAF_8BYTE_ALIGN-1))& ~(XAF_8BYTE_ALIGN-1));
 
     xf_g_ap->xf_mem_malloc_fxn = mem_malloc;
     xf_g_ap->xf_mem_free_fxn = mem_free;
@@ -576,20 +572,21 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
     p_adev->cdata.cb = xaf_event_relay;
 #endif
 
+#if 0 /* by S.J*/
     // DSP Interface Layer memory allocation (BSS)
     size = sizeof(xf_dsp_t)+(XAF_8BYTE_ALIGN-1);
     ret = xaf_malloc(&(p_adev->p_dspMem), size, XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;
 
-    xf_g_dsp = (xf_dsp_t *) (((UWORD32)p_adev->p_dspMem + (XAF_8BYTE_ALIGN-1)) & ~(XAF_8BYTE_ALIGN-1));
+    xf_g_dsp = (xf_dsp_t *) (((UWORD64)p_adev->p_dspMem + (XAF_8BYTE_ALIGN-1)) & ~(XAF_8BYTE_ALIGN-1));
 
 
     size = audio_frmwk_buf_size + (XAF_32BYTE_ALIGN-1); 
     ret = xaf_malloc(&(p_adev->p_apSharedMem), size, XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;
-    xf_g_dsp->xf_ap_shmem_buffer = (UWORD8 *) (((UWORD32)p_adev->p_apSharedMem + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
+    xf_g_dsp->xf_ap_shmem_buffer = (UWORD8 *) (((UWORD64)p_adev->p_apSharedMem + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
     xf_g_dsp->xf_ap_shmem_buffer_size = audio_frmwk_buf_size;
 
 
@@ -597,7 +594,7 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
     ret = xaf_malloc(&(p_adev->p_dspLocalBuff), size, XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;
-    xf_g_dsp->xf_dsp_local_buffer = (UWORD8 *) (((UWORD32)p_adev->p_dspLocalBuff + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
+    xf_g_dsp->xf_dsp_local_buffer = (UWORD8 *) (((UWORD64)p_adev->p_dspLocalBuff + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
     xf_g_dsp->xf_dsp_local_buffer_size = audio_comp_buf_size*XF_CFG_CORES_NUM_DSP;
     
 
@@ -620,7 +617,6 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
 		    p_worker_scratch[i] = pconfig->worker_thread_scratch_size[i];
         }
     }
-
     p_adev->dsp_thread_priority = dsp_thread_priority;
 #if defined(HAVE_FREERTOS)
     ret = __xf_thread_create(&xf_g_ap->dsp_thread, dsp_thread_entry, (void *)xf_g_dsp->dsp_thread_args, "DSP-thread", NULL, STACK_SIZE, dsp_thread_priority);
@@ -629,7 +625,8 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
 #endif
     if (ret != 0)
         return XAF_RTOS_ERR;
-    
+#endif
+
     p_proxy = &p_adev->proxy;
 
     p_proxy->proxy_thread_priority = proxy_thread_priority;
@@ -695,7 +692,7 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
     XAF_CHK_PTR(pTmp);
     memset(pTmp, 0, size);
 
-    p_adev = (xaf_adev_t *) (((UWORD32)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
+    p_adev = (xaf_adev_t *) (((unsigned long)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
     p_adev->adev_ptr = pTmp;
     *pp_adev = (void *)p_adev;
     
@@ -707,7 +704,7 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
     XAF_CHK_PTR(p_adev->p_apMem);
     memset(p_adev->p_apMem, 0, size);
 
-    xf_g_ap = (xf_ap_t *) (((UWORD32)p_adev->p_apMem + (XAF_8BYTE_ALIGN-1))& ~(XAF_8BYTE_ALIGN-1));
+    xf_g_ap = (xf_ap_t *) (((unsigned long)p_adev->p_apMem + (XAF_8BYTE_ALIGN-1))& ~(XAF_8BYTE_ALIGN-1));
 
     xf_g_ap->xf_mem_malloc_fxn = mem_malloc;
     xf_g_ap->xf_mem_free_fxn = mem_free;
@@ -724,14 +721,14 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
     if(ret != XAF_NO_ERR)
         return ret;
 
-    xf_g_dsp = (xf_dsp_t *) (((UWORD32)p_adev->p_dspMem + (XAF_8BYTE_ALIGN-1)) & ~(XAF_8BYTE_ALIGN-1));
+    xf_g_dsp = (xf_dsp_t *) (((unsigned long)p_adev->p_dspMem + (XAF_8BYTE_ALIGN-1)) & ~(XAF_8BYTE_ALIGN-1));
 
 
     size = audio_frmwk_buf_size + (XAF_32BYTE_ALIGN-1); 
     ret = xaf_malloc(&(p_adev->p_apSharedMem), size, XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;
-    xf_g_dsp->xf_ap_shmem_buffer = (UWORD8 *) (((UWORD32)p_adev->p_apSharedMem + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
+    xf_g_dsp->xf_ap_shmem_buffer = (UWORD8 *) (((unsigned long)p_adev->p_apSharedMem + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
     xf_g_dsp->xf_ap_shmem_buffer_size = audio_frmwk_buf_size;
 
 
@@ -739,7 +736,7 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
     ret = xaf_malloc(&(p_adev->p_dspLocalBuff), size, XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;
-    xf_g_dsp->xf_dsp_local_buffer = (UWORD8 *) (((UWORD32)p_adev->p_dspLocalBuff + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
+    xf_g_dsp->xf_dsp_local_buffer = (UWORD8 *) (((unsigned long)p_adev->p_dspLocalBuff + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
     xf_g_dsp->xf_dsp_local_buffer_size = audio_comp_buf_size*XF_CFG_CORES_NUM_DSP;
     
 
@@ -841,18 +838,21 @@ XAF_ERR_CODE xaf_adev_close(pVOID adev_ptr, xaf_adev_close_flag flag)
         __xf_unlock(&xf_g_ap->g_comp_delete_lock);
 #endif
     }
-
+#if 0 /* by S.J*/
     TRACE(INFO, _b("dsp buffer usage(bytes): component=%d, framework=%d xaf=%d"),\
             xf_g_dsp->dsp_comp_buf_size_peak, xf_g_dsp->dsp_frmwk_buf_size_peak, \
             (xf_g_ap->xaf_memory_used + XAF_DEV_AND_AP_STRUCT_MEM_SIZE -  (xf_g_dsp->xf_dsp_local_buffer_size + xf_g_dsp->xf_ap_shmem_buffer_size)));
-
-    if(xf_g_dsp != NULL)
+#endif
+    if(xf_g_ap != NULL)
     {
+#if 0 /*by S.j*/
         __xf_event_set(p_proxy->ipc.msgq_event, DSP_DIE_MSGQ_ENTRY);
         XF_CHK_API(__xf_thread_join(&xf_g_ap->dsp_thread, NULL));
         XF_CHK_API(__xf_thread_destroy(&xf_g_ap->dsp_thread));
+#endif
         xf_proxy_close(p_proxy);
 
+#if 0 /*by S.j*/
         xf_g_ap->xf_mem_free_fxn(p_adev->p_apSharedMem, XAF_MEM_ID_DEV);
         p_adev->p_apSharedMem = NULL;
 #if XF_CFG_CORES_NUM_DSP > 1
@@ -863,10 +863,13 @@ XAF_ERR_CODE xaf_adev_close(pVOID adev_ptr, xaf_adev_close_flag flag)
         p_adev->p_dspLocalBuff = NULL;
         xf_g_ap->xf_mem_free_fxn(p_adev->p_dspMem, XAF_MEM_ID_DEV);
         p_adev->p_dspMem = NULL;
-
+#endif
+#if TENA_2356
         __xf_lock_destroy(&xf_g_ap->g_comp_delete_lock);
+#endif
+#if 0 /*by S.j*/
         __xf_lock_destroy(&xf_g_ap->g_msgq_lock);
-
+#endif
 #ifndef XA_DISABLE_EVENT
         xaf_sync_chain_deinit(&p_adev->event_chain);
 #endif
@@ -1022,6 +1025,57 @@ static XAF_ERR_CODE xaf_destroy_event_channel(xaf_comp_t *src_comp, UWORD32 src_
 }
 #endif /* XA_DISABLE_EVENT */
 
+#ifdef TGT_OS_ANDROID
+#define CORE_LIB_PATH   "/vendor/lib/"
+#else
+#define CORE_LIB_PATH   "/usr/lib/imx-mm/audio-codec/dsp/"
+#endif
+
+XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t comp_id)
+{
+	xf_handle_t *p_handle;
+	char lib_path[200];
+	char lib_wrap_path[200];
+	struct lib_info *codec_lib;
+	struct lib_info *codec_wrap_lib;
+	int dec_type;
+	int ret;
+
+	p_handle = &p_comp->handle;
+
+	/* ...init codec lib and codec wrap lib */
+	strcpy(lib_path, CORE_LIB_PATH);
+	strcpy(lib_wrap_path, CORE_LIB_PATH);
+	ret = xaf_malloc(&p_comp->codec_lib, sizeof(struct lib_info), XAF_MEM_ID_COMP);
+	codec_lib = (struct lib_info *)p_comp->codec_lib;
+	ret = xaf_malloc(&p_comp->codec_wrap_lib, sizeof(struct lib_info), XAF_MEM_ID_COMP);
+	codec_wrap_lib = (struct lib_info *)p_comp->codec_wrap_lib;
+
+	if (!strcmp(comp_id, "audio-decoder/mp3")) {
+		strcat(lib_path, "lib_dsp_mp3_dec.so");
+		dec_type = CODEC_MP3_DEC;
+	}
+	strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
+
+	codec_lib->filename = lib_path;
+	codec_lib->lib_type = DSP_CODEC_LIB;
+	codec_wrap_lib->filename = lib_wrap_path;
+	codec_wrap_lib->lib_type = (DSP_CODEC_WRAP_LIB | dec_type << 2);
+
+	/* wrap load after codec lib */
+	ret = xf_load_lib(p_comp, p_comp->codec_lib);
+	if (ret)
+		TRACE(REG, _b("load codec lib error\n"));
+
+	ret = xf_load_lib(p_comp, p_comp->codec_wrap_lib);
+	if (ret) {
+		TRACE(REG, _b("load codec wrap lib error\n"));
+		return ret;
+	}
+
+	TRACE(REG, _b("load library done\n"));
+}
+
 XAF_ERR_CODE xaf_comp_create(pVOID adev_ptr, pVOID *pp_comp, xaf_comp_config_t *pcomp_config)
 {
     xaf_adev_t *p_adev;
@@ -1061,7 +1115,7 @@ XAF_ERR_CODE xaf_comp_create(pVOID adev_ptr, pVOID *pp_comp, xaf_comp_config_t *
     ret = xaf_malloc(&pTmp, size, XAF_MEM_ID_COMP);
     if(ret != XAF_NO_ERR)
         return ret;
-    p_comp = (xaf_comp_t *) (((UWORD32)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
+    p_comp = (xaf_comp_t *) (((unsigned long)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
 
     p_comp->comp_ptr = pTmp;
     *pp_comp = (void*)p_comp;
@@ -1118,8 +1172,10 @@ XAF_ERR_CODE xaf_comp_create(pVOID adev_ptr, pVOID *pp_comp, xaf_comp_config_t *
         p_comp->inp_ports = 4; p_comp->out_ports = 1;
         break;
     case XAF_MIMO_PROC_12 ... (XAF_MAX_COMPTYPE-1):
+#if 0 /* by S.J*/
         p_comp->inp_ports  = xf_io_ports[comp_type][0];
         p_comp->out_ports  = xf_io_ports[comp_type][1];
+#endif
         break;
     case XAF_RENDERER:
         p_comp->inp_ports = 1; p_comp->out_ports = 1; /* optional outport */
@@ -1185,7 +1241,7 @@ XAF_ERR_CODE xaf_comp_create_deprecated(pVOID adev_ptr, pVOID *pp_comp, xf_id_t 
     ret = xaf_malloc(&pTmp, size, XAF_MEM_ID_COMP);
     if(ret != XAF_NO_ERR)
         return ret;
-    p_comp = (xaf_comp_t *) (((UWORD32)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
+    p_comp = (xaf_comp_t *) (((unsigned long)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
 
     p_comp->comp_ptr = pTmp;
     *pp_comp = (void*)p_comp;
@@ -1278,6 +1334,11 @@ XAF_ERR_CODE xaf_comp_delete(pVOID comp_ptr)
     XAF_CHK_PTR(p_comp);
 
     XAF_COMP_STATE_CHK(p_comp);
+
+    if (p_comp->codec_wrap_lib) xf_unload_lib(p_comp, p_comp->codec_wrap_lib);
+    if (p_comp->codec_lib) xf_unload_lib(p_comp, p_comp->codec_lib);
+    if (p_comp->codec_lib) xaf_free(p_comp->codec_lib, XAF_MEM_ID_COMP);
+    if (p_comp->codec_wrap_lib) xaf_free(p_comp->codec_wrap_lib, XAF_MEM_ID_COMP);
 
     p_comp->comp_state = XAF_COMP_RESET;
 
@@ -1477,9 +1538,9 @@ XAF_ERR_CODE xaf_comp_get_status(pVOID adev_ptr, pVOID comp_ptr, xaf_comp_status
             }
             else 
             {
-                WORD32 *p_buf = (WORD32 *) p_info;
-                p_buf[0] = (WORD32) rmsg.buffer;
-                p_buf[1] = (WORD32) rmsg.length;
+                long *p_buf = (long *) p_info;
+                p_buf[0] = (long) rmsg.buffer;
+                p_buf[1] = (long) rmsg.length;
 
                 p_comp->pending_resp--;
 
@@ -1532,9 +1593,9 @@ XAF_ERR_CODE xaf_comp_get_status(pVOID adev_ptr, pVOID comp_ptr, xaf_comp_status
         {
             /* ...make sure response is expected */
             XF_CHK_ERR((rmsg.opcode == XF_EMPTY_THIS_BUFFER), XAF_API_ERR);
-            WORD32 *p_buf = (WORD32 *) p_info;
-            p_buf[0] = (WORD32) rmsg.buffer;
-            p_buf[1] = (WORD32) rmsg.length;
+            long *p_buf = (long *) p_info;
+            p_buf[0] = (long) rmsg.buffer;
+            p_buf[1] = (long) rmsg.length;
             
             p_comp->pending_resp--;
             
@@ -1871,10 +1932,12 @@ XAF_ERR_CODE xaf_get_mem_stats(pVOID adev_ptr, WORD32 *pmem_info)
 
     /* mem stats info is complete only after components are initialzed. 
      * Recommended to capture stats before device is closed. */
+#if 0 /* by S.J */
     *((WORD32 *)pmem_info + 0) = xf_g_dsp->dsp_comp_buf_size_peak;
     *((WORD32 *)pmem_info + 1) = xf_g_dsp->dsp_frmwk_buf_size_peak;
     *((WORD32 *)pmem_info + 2) = xf_g_ap->xaf_memory_used + XAF_DEV_AND_AP_STRUCT_MEM_SIZE -  (xf_g_dsp->xf_dsp_local_buffer_size + xf_g_dsp->xf_ap_shmem_buffer_size);
-#if 1
+#endif
+#if 0
     *((WORD32 *)pmem_info + 3) = xf_g_dsp->dsp_comp_buf_size_curr;
     *((WORD32 *)pmem_info + 4) = xf_g_dsp->dsp_frmwk_buf_size_curr;
 #endif    
