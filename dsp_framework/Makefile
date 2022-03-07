@@ -67,6 +67,7 @@ INCLUDES   +=	-I$(INC_DIR)/include							\
 INCLUDES   +=   -I$(ROOT_DIR)/common/include/fsl_unia
 INCLUDES   +=   -I$(INC_DIR)/include/plugins
 INCLUDES   +=   -I$(INC_DIR)/include/libloader
+INCLUDES   +=   -I$(INC_DIR)/include/driver
 
 # Put common C files here
 C_OBJS  =	$(SRC_DIR)/src/board.o						\
@@ -88,6 +89,8 @@ C_OBJS  =	$(SRC_DIR)/src/board.o						\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-sched.o	\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/rbtree.o	\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-audio-codec.o	\
+		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-renderer.o	\
+		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-isr.o		\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-io.o		\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-base.o	\
 		$(ROOT_DIR)/testxa_af_hostless/test/plugins/xa-factory.o	\
@@ -96,10 +99,22 @@ C_OBJS  =	$(SRC_DIR)/src/board.o						\
 		$(ROOT_DIR)/rpmsg-lite/lib/virtio/virtqueue.o			\
 		$(ROOT_DIR)/rpmsg-lite/lib/common/llist.o
 C_OBJS  +=	$(SRC_DIR)/src/plugins/xa-unia-codec.o				\
+		$(SRC_DIR)/src/plugins/xa-fsl-renderer.o			\
 		$(SRC_DIR)/src/libloader/dpu_lib_load.o				\
 		$(SRC_DIR)/src/libloader/common.o				\
 		$(SRC_DIR)/src/libloader/pi_library_load.o			\
-		$(SRC_DIR)/src/libloader/pi_relocate_lib.o
+		$(SRC_DIR)/src/libloader/pi_relocate_lib.o 			\
+		$(SRC_DIR)/src/driver/asrc.o					\
+		$(SRC_DIR)/src/driver/easrc.o 					\
+		$(SRC_DIR)/src/driver/edma.o 					\
+		$(SRC_DIR)/src/driver/esai.o 					\
+		$(SRC_DIR)/src/driver/i2c.o 					\
+		$(SRC_DIR)/src/driver/irqstr.o 					\
+		$(SRC_DIR)/src/driver/sai.o 					\
+		$(SRC_DIR)/src/driver/sdma.o 					\
+		$(SRC_DIR)/src/driver/wm8960.o 					\
+		$(SRC_DIR)/src/driver/wrap_dma.o
+
 
 TARGET = hifi4_imx8qmqxp.bin
 
@@ -130,6 +145,7 @@ clean:
 	rm -f $(SRC_DIR)/src/driver/*.o
 	rm -f $(SRC_DIR)/src/libloader/*.o
 	rm -f $(SRC_DIR)/src/plugins/*.o
+	rm -f $(SRC_DIR)/src/hardware/*.o
 	rm -f $(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/*.o
 	rm -f $(ROOT_DIR)/testxa_af_hostless/test/plugins/*.o
 	rm -f $(ROOT_DIR)/rpmsg-lite/lib/rpmsg_lite/*.o

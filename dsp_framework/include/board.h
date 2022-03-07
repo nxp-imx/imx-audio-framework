@@ -88,6 +88,17 @@ enum {
  */
 #define I2C_BITRATE           (375000)
 
+#define IRQSTR_MP_ADDR		0x30A80000
+#define SAI_MP_ADDR		0x30c30000
+#define EASRC_MP_ADDR		0x30c90000
+#define SDMA2_ADDR		0x30e10000
+#define SDMA3_ADDR		0x30e00000
+/* module interrupte number */
+#define SAI_MP_INT_NUM		50
+#define SDMA2_INT_NUM		103
+#define SDMA3_INT_NUM		34
+#define EASRC_MP_INT_NUM	122
+
 #else /* PLATF_8M */
 #ifdef PLATF_8ULP
 
@@ -164,7 +175,31 @@ enum {
 #define I2C_CLK               0
 #define I2C_BITRATE           (375000)
 
+#define IRQSTR_QXP_ADDR		0x51080000
+#define IRQSTR_QM_ADDR		0x510A0000
+#define ESAI_ADDR		0x59010000
+#define EDMA_ADDR_ESAI_TX	0x59270000
+#define EDMA_ADDR_ESAI_RX	0x59260000
+#define ASRC_ADDR		0x59000000
+#define EDMA_ADDR_ASRC_RXA	0x59200000
+#define EDMA_ADDR_ASRC_TXA	0x59230000
+#define SAI_INT_NUM		314
+#define EDMA_SAI_INT_NUM	315
+#define ESAI_INT_NUM		409
+#define EDMA_ESAI_INT_NUM	410
+#define ASRC_INT_NUM		372
+#define EDMA_ASRC_INT_NUM	374
+
 #endif /*PLATF_8ULP */
 #endif /*PLATF_8M */
+
+#define INT_NUM_IRQSTR_DSP_0   19
+#define INT_NUM_IRQSTR_DSP_1   20
+#define INT_NUM_IRQSTR_DSP_2   21
+#define INT_NUM_IRQSTR_DSP_3   22
+#define INT_NUM_IRQSTR_DSP_4   23
+#define INT_NUM_IRQSTR_DSP_5   24
+#define INT_NUM_IRQSTR_DSP_6   25
+#define INT_NUM_IRQSTR_DSP_7   26
 
 #endif /* _BOARD_H_ */

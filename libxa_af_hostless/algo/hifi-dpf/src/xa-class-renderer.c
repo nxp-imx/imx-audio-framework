@@ -711,6 +711,28 @@ static XA_ERRORCODE xa_renderer_port_unroute(XACodecBase *base, xf_message_t *m)
     return XA_NO_ERROR;
 }
 
+static XA_ERRORCODE xa_renderer_suspend(XACodecBase *base, xf_message_t *m)
+{
+	UWORD32        state = XA_RENDERER_STATE_PAUSE;
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_RENDERER_CONFIG_PARAM_STATE, &state);
+
+	state = XA_RENDERER_STATE_SUSPEND;
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_RENDERER_CONFIG_PARAM_STATE, &state);
+	return XA_NO_ERROR;
+}
+static XA_ERRORCODE xa_renderer_suspend_resume(XACodecBase *base, xf_message_t *m)
+{
+	UWORD32        state = XA_RENDERER_STATE_SUSPEND_RESUME;
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_RENDERER_CONFIG_PARAM_STATE, &state);
+
+	state = XA_RENDERER_STATE_RUN;
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_RENDERER_CONFIG_PARAM_STATE, &state);
+	return XA_NO_ERROR;
+}
 /*******************************************************************************
  * Command-processing function
  ******************************************************************************/
@@ -729,6 +751,9 @@ static XA_ERRORCODE (* const xa_renderer_cmd[])(XACodecBase *, xf_message_t *) =
 
     [XF_OPCODE_TYPE(XF_ROUTE)]  = xa_renderer_port_route,
     [XF_OPCODE_TYPE(XF_UNROUTE)]  = xa_renderer_port_unroute,
+
+    [XF_OPCODE_TYPE(XF_SUSPEND)] = xa_renderer_suspend,
+    [XF_OPCODE_TYPE(XF_SUSPEND_RESUME)] = xa_renderer_suspend_resume,
 };
 
 /* ...total number of commands supported */

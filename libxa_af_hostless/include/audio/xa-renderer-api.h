@@ -63,7 +63,9 @@ enum xa_randerer_state {
     XA_RENDERER_STATE_START = 0,
     XA_RENDERER_STATE_IDLE  = 1,
     XA_RENDERER_STATE_RUN   = 2,
-    XA_RENDERER_STATE_PAUSE = 3
+    XA_RENDERER_STATE_PAUSE = 3,
+    XA_RENDERER_STATE_SUSPEND        = 4,
+    XA_RENDERER_STATE_SUSPEND_RESUME = 5
 };
     
 /* ...component identifier (informative) */

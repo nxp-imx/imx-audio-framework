@@ -57,6 +57,9 @@
 #include "xf-debug.h"
 #include <string.h>
 
+#include "hardware.h"
+#include "debug.h"
+
 #ifdef XAF_PROFILE
 #include "xaf-clk-test.h"
 extern clk_t renderer_cycles;
@@ -67,10 +70,10 @@ extern clk_t renderer_cycles;
  ******************************************************************************/
 
 /* ...total length of HW FIFO in bytes */
-#define HW_FIFO_LENGTH                  8192
+#define HW_FIFO_LENGTH                  8192*2
 
 /* maximum allowed framesize in bytes per channel. This is the default framesize */
-#define MAX_FRAME_SIZE_IN_BYTES_DEFAULT    ( HW_FIFO_LENGTH / 4 )      
+#define MAX_FRAME_SIZE_IN_BYTES_DEFAULT    ( 4096 )      
 
 /* minimum allowed framesize in bytes per channel */
 #define MIN_FRAME_SIZE_IN_BYTES    ( 128 )
@@ -174,8 +177,62 @@ typedef struct XARenderer
     /* ...framesize in samples per channel */
     UWORD32     frame_size;
 
-}   XARenderer;
+	void                  *dev_addr;
+	void                  *fe_dev_addr;
 
+	void                  *edma_addr;
+	void                  *sdma_addr;
+	void                  *fe_edma_addr;
+
+	void                  *irqstr_addr;
+
+	void                  *sdma;
+	struct fsl_easrc      *easrc;
+	void                  *ctx;
+	/* struct nxp_edma_hw_tcd  tcd[MAX_PERIOD_COUNT];*/
+	void                  *tcd;
+	void                  *tcd_align32;
+
+	void                  *fe_tcd;
+	void                  *fe_tcd_align32;
+
+	void                  (*dev_init)(volatile void * dev_addr, int mode,
+					  int channel, int rate, int width, int mclk_rate);
+	void                  (*dev_start)(volatile void * dev_addr, int tx);
+	void                  (*dev_stop)(volatile void * dev_addr, int tx);
+	void                  (*dev_isr)(volatile void * dev_addr);
+	void                  (*dev_suspend)(volatile void * dev_addr, u32 *cache_addr);
+	void                  (*dev_resume)(volatile void * dev_addr, u32 *cache_addr);
+	void                  (*fe_dev_isr)(volatile void * dev_addr);
+
+
+	void                  (*fe_dev_init)(volatile void * dev_addr, int mode,
+					     int channel, int rate, int width, int mclk_rate);
+	void                  (*fe_dev_start)(volatile void * dev_addr, int tx);
+	void                  (*fe_dev_stop)(volatile void * dev_addr, int tx);
+	void                  (*fe_dev_suspend)(volatile void * dev_addr, u32 *cache_addr);
+	void                  (*fe_dev_resume)(volatile void * dev_addr, u32 *cache_addr);
+	int                   (*fe_dev_hw_params)(volatile void * dev_addr, int channel,
+						  int rate, int in_format, volatile void * private_data);
+
+	u32                   dev_Int;
+	u32                   dev_fifo_off;
+	u32                   dma_Int;
+
+	u32                   fe_dev_Int;
+	u32                   fe_dma_Int;
+	u32                   fe_dev_fifo_in_off;
+	u32                   fe_dev_fifo_out_off;
+	u32                   irq_2_dsp;
+
+	u32                   dev_cache[40];
+	u32                   fe_dev_cache[120];
+	u32                   edma_cache[40];
+	u32                   fe_edma_cache[40];
+	dma_t                 dma;
+	dma_config_t          dma_cfg;
+
+}   XARenderer;
 
 #define MAX_UWORD32 ((UWORD64)0xFFFFFFFF)
 /*******************************************************************************
@@ -191,44 +248,76 @@ typedef struct XARenderer
  * global variables
  ******************************************************************************/
 
-static xf_timer_t rend_timer;
-const char grenderer_out_file[] = "renderer_out.pcm";
-UWORD8 g_fifo_renderer[HW_FIFO_LENGTH];
+UWORD8 *g_fifo_renderer;
 
-/*******************************************************************************
- * xa_fw_fifo_handler
- *
- * Process FIFO exchange / underrun interrupt. Do a copy from ring buffer into
- * I2S high-buffer (normal operation). In case of low-buffer emptiness
- * (underrun) reset the FIFO and perform a recovery
- ******************************************************************************/
-
-static void xa_fw_handler(void *arg)
+/* ...start HW-renderer operation */
+static inline int xa_hw_renderer_start(struct XARenderer *d)
 {
-    XARenderer *d = arg;
+	LOG(("HW-renderer started\n"));
 
-    //d->consumed = d->submited_inbytes;
-    //d->fifo_avail = d->fifo_avail + d->submited_inbytes;
-    d->fifo_avail = d->fifo_avail + (d->frame_size_bytes * d->channels);
+	irqstr_start(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+	dma_start(&d->dma);
+	d->fe_dev_start(d->fe_dev_addr, 1);
+	d->dev_start(d->dev_addr, 1);
+	return 0;
+}
 
-    if((d->fifo_avail)>HW_FIFO_LENGTH)
-       {/*under run case*/
-           d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
-           d->fifo_avail = HW_FIFO_LENGTH;
-           __xf_timer_stop(&rend_timer);
-           d->cdata->cb(d->cdata, 0);
-       }
-      else if(((int)d-> fifo_avail) <= 0)
-       {/* over run */
-           d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
-           d->fifo_avail=HW_FIFO_LENGTH;
-           __xf_timer_stop(&rend_timer);
-           d->cdata->cb(d->cdata, 0);
-       }
-      else
-      {
-           d->cdata->cb(d->cdata, 0);
-      }
+/* ...close hardware renderer */
+static inline void xa_hw_renderer_close(struct XARenderer *d)
+{
+	LOG(("HW-renderer closed\n"));
+	if (!d->irqstr_addr)
+		return;
+	irqstr_stop(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+	dma_stop(&d->dma);
+	d->dev_stop(d->dev_addr, 1);
+	d->fe_dev_stop(d->fe_dev_addr, 1);
+}
+
+/* ...emulation of renderer interrupt service routine */
+static void xa_hw_renderer_isr(XARenderer *d)
+{
+	s32     avail;
+	u32     status;
+	u32     num;
+
+	/* period elapse */
+	status = read32(d->irqstr_addr + IRQSTEER_CHnSTATUS(IRQ_TO_MASK_OFFSET(d->fe_dev_Int+32)));
+
+	LOG1("xa_hw_renderer_isr status %x\n", status);
+
+	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->dev_Int+32)))
+		d->dev_isr(d->dev_addr);
+
+	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dev_Int+32)))
+		d->fe_dev_isr(d->fe_dev_addr);
+
+	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dma_Int+32))) {
+		dma_irq_handler(&d->dma);
+
+		READ_FIFO(d->frame_size_bytes * d->channels);
+		d->fifo_avail = d->fifo_avail + (d->frame_size_bytes * d->channels);
+		LOG2("fifo_avail %x, fifo_ptr_r %x\n", d->fifo_avail, d->pfifo_r);
+		/* ...notify user on input-buffer (idx = 0) consumption */
+		if((d->fifo_avail) > d->frame_size_bytes * d->channels * 2)
+		{
+			LOG("isr under run\n");
+			/*under run case*/
+			d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
+			d->fifo_avail = d->frame_size_bytes * d->channels * 2;
+			xa_hw_renderer_close(d);
+		} else if(((int)d-> fifo_avail) <= 0) {
+			/* over run */
+			LOG("isr over run\n");
+#if 0
+			d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
+			d->fifo_avail=HW_FIFO_LENGTH;
+			xa_hw_renderer_close(d);
+#endif
+		}
+
+		d->cdata->cb(d->cdata, 0);
+	}
 }
 
 /*******************************************************************************
@@ -238,8 +327,9 @@ static void xa_fw_handler(void *arg)
 static inline void xa_fw_renderer_close(XARenderer *d)
 {
     fclose(d->fw);
-    __xf_timer_stop(&rend_timer);
-    __xf_timer_destroy(&rend_timer);
+    xa_hw_renderer_close(d);
+    //__xf_disable_interrupt(d->irq_2_dsp);
+    //__xf_unset_threaded_irq_handler(d->irq_2_dsp);
 }
 
 /* ...submit data (in bytes) into internal renderer ring-buffer */
@@ -287,12 +377,12 @@ static inline UWORD32 xa_fw_renderer_submit(XARenderer *d, void *b, UWORD32 byte
             //if (avail <= (HW_FIFO_LENGTH - (2 * payload)))
             if (avail == 0)
             {
-                __xf_timer_start(&rend_timer,__xf_timer_ratio_to_period((d->frame_size_bytes / d->sample_size ),
-                            d->rate));
+		/* trigger start*/
+		xa_hw_renderer_start(d);
                 d->state ^= XA_RENDERER_FLAG_IDLE | XA_RENDERER_FLAG_RUNNING;
 
                 /* ...write one frame worth data written to FIFO to output file */
-                READ_FIFO(payload);
+                //READ_FIFO(payload);
 
                 TRACE(OUTPUT, _b("FIFO/timer started after buffer full:IDLE->RUNNING"));
             }
@@ -300,7 +390,7 @@ static inline UWORD32 xa_fw_renderer_submit(XARenderer *d, void *b, UWORD32 byte
         else
         {
             /* ...write one frame worth data written to FIFO to output file */
-            READ_FIFO(payload);
+            //READ_FIFO(payload);
 
         }
 
@@ -310,7 +400,7 @@ static inline UWORD32 xa_fw_renderer_submit(XARenderer *d, void *b, UWORD32 byte
         if(d->exec_done) 
         {
             /* ... stop interrupts as soon as exec is done */
-            __xf_timer_stop(&rend_timer);
+	    xa_hw_renderer_close(d);
             d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
         
             TRACE(OUTPUT, _b("exec done, timer stopped"));
@@ -334,30 +424,161 @@ static XA_ERRORCODE xa_renderer_get_api_size(XARenderer *d, WORD32 i_idx, pVOID 
     return XA_NO_ERROR;
 }
 
+/* ...initialize hardware renderer */
+static inline int xa_hw_renderer_init(struct XARenderer *d)
+{
+	int             r;
+	int             board_type;
+	dma_t           *dma     = &d->dma;
+	dma_config_t    *dma_cfg = &d->dma_cfg;
+
+	board_type = BOARD_TYPE;
+
+	/*initially FIFO will be empty so fifo_avail is 2x framesize bytes for ping and pong */
+	d->fifo_avail = d->frame_size_bytes * d->channels * 2;
+	/* ...make sure that the frame_size_bytes is within the FIFO length */
+	XF_CHK_ERR(d->fifo_avail <= HW_FIFO_LENGTH, XA_RENDERER_CONFIG_NONFATAL_RANGE);
+
+	/* alloc internal buffer for DMA/SAI/ESAI*/
+	dmabuf_malloc(dma, d->frame_size_bytes * d->channels * 2);
+
+	g_fifo_renderer = dmabuf_get(dma);
+	/* ...initialize FIFO params, zero fill FIFO and init pointers to start of FIFO */
+	d->pfifo_w = d->pfifo_r = (void *)g_fifo_renderer;
+
+	xaf_malloc(&d->tcd, MAX_PERIOD_COUNT * sizeof(struct nxp_edma_hw_tcd) + 32, 0);
+
+	d->tcd_align32 = (void *)(((u32)d->tcd + 31) & ~31);
+
+	xaf_malloc(&d->fe_tcd, MAX_PERIOD_COUNT * sizeof(struct nxp_edma_hw_tcd) + 32, 0);
+
+	d->fe_tcd_align32 = (void *)(((u32)d->fe_tcd + 31) & ~31);
+
+	/*It is better to send address through the set_param */
+	if ((board_type == DSP_IMX8QXP_TYPE) || (board_type ==DSP_IMX8QM_TYPE)) {
+		d->dev_addr    =  (void *)DEV_ADDR;
+		d->dev_Int     =  DEV_INT;
+		d->dev_fifo_off=  DEV_FIFO_OFF;
+
+		d->fe_dma_Int  =   FE_DMA_INT;
+		d->fe_dev_Int  =   FE_DEV_INT;
+		d->fe_dev_addr = (void *)FE_DEV_ADDR;
+		d->fe_edma_addr = (void *)FE_DMA_ADDR;
+		d->fe_dev_fifo_in_off = FE_DEV_FIFO_IN_OFF;
+		d->fe_dev_fifo_out_off = FE_DEV_FIFO_OUT_OFF;
+
+		d->irqstr_addr =  (void *)IRQ_STR_ADDR;
+
+		d->dev_init     = esai_init;
+		d->dev_start    = esai_start;
+		d->dev_stop     = esai_stop;
+		d->dev_isr      = esai_irq_handler;
+		d->dev_suspend  = esai_suspend;
+		d->dev_resume   = esai_resume;
+
+		d->fe_dev_init  = asrc_init;
+		d->fe_dev_start = asrc_start;
+		d->fe_dev_stop  = asrc_stop;
+		d->fe_dev_isr   = asrc_irq_handler;
+		d->fe_dev_suspend  = asrc_suspend;
+		d->fe_dev_resume   = asrc_resume;
+		d->fe_dev_hw_params = asrc_hw_params;
+
+		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_6;
+
+		dma->dev_int                   = DMA_INT;
+		dma->p_dev_addr                = (void *)DMA_ADDR;
+		dma->p_tcd                     = d->tcd;
+		dma->p_tcd_aligned             = d->tcd_align32;
+		dma->dma_cfg                   = dma_cfg;
+
+		dma_cfg->p_fe_dma_addr         = (void *)FE_DMA_ADDR;
+		dma_cfg->p_fe_tcd              = d->fe_tcd;
+		dma_cfg->p_fe_tcd_aligned      = d->fe_tcd_align32;
+		dma_cfg->p_fe_dev_addr         = FE_DEV_ADDR;
+		dma_cfg->fe_dev_fifo_in_off    = FE_DEV_FIFO_IN_OFF;
+		dma_cfg->fe_dev_fifo_out_off   = FE_DEV_FIFO_OUT_OFF;
+		dma_cfg->p_dev_addr            = (void *)DEV_ADDR;
+		dma_cfg->dev_fifo_off          = DEV_FIFO_OFF;
+		dma_cfg->period_len            = d->frame_size_bytes * d->channels;
+	} else {
+		xaf_malloc(&d->easrc, sizeof(struct fsl_easrc), 0);
+		xaf_malloc(&d->ctx, sizeof(struct fsl_easrc_context), 0);
+		if (!d->ctx || !d->easrc)
+			return -1;
+		memset(d->easrc, 0, sizeof(struct fsl_easrc));
+		memset(d->ctx, 0, sizeof(struct fsl_easrc_context));
+		d->easrc->paddr = (unsigned char *)FE_DEV_ADDR;
+
+		d->dev_addr    =  (void *)DEV_ADDR;
+		d->dev_Int     =  DEV_INT;
+		d->dev_fifo_off=  DEV_FIFO_OFF;
+
+		d->fe_dma_Int  =   FE_DMA_INT;
+		/* not enable easrc Int and enable sai Int */
+		d->fe_dev_Int  =   FE_DEV_INT;
+		d->fe_dev_addr =   d->easrc;
+		d->fe_edma_addr =  FE_DMA_ADDR;
+		d->fe_dev_fifo_in_off =  FE_DEV_FIFO_IN_OFF;
+		d->fe_dev_fifo_out_off = FE_DEV_FIFO_OUT_OFF;
+
+		d->irqstr_addr =  (void *)IRQ_STR_ADDR;
+
+		d->dev_init     = sai_init;
+		d->dev_start    = sai_start;
+		d->dev_stop     = sai_stop;
+		d->dev_isr      = sai_irq_handler;
+		d->dev_suspend  = sai_suspend;
+		d->dev_resume   = sai_resume;
+		d->fe_dev_init  = easrc_init;
+		d->fe_dev_start = easrc_start;
+		d->fe_dev_stop  = easrc_stop;
+		d->fe_dev_isr   = easrc_irq_handler;
+		d->fe_dev_suspend  = easrc_suspend;
+		d->fe_dev_resume   = easrc_resume;
+		d->fe_dev_hw_params = fsl_easrc_hw_params;
+
+		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_1;
+
+		xaf_malloc(&dma->p_dev, sizeof(struct SDMA), 0);
+		dma->p_dev_addr                = (void *)DMA_ADDR;
+		dma->type                      = SDMA;
+		dma->dma_cfg                   = dma_cfg;
+
+		dma_cfg->p_fe_dev_addr         = FE_DEV_ADDR;
+		dma_cfg->fe_dev_fifo_in_off    = FE_DEV_FIFO_IN_OFF;
+		dma_cfg->fe_dev_fifo_out_off   = FE_DEV_FIFO_OUT_OFF;
+		dma_cfg->p_dev_addr            = (void *)DEV_ADDR;
+		dma_cfg->dev_fifo_off          = DEV_FIFO_OFF;
+		dma_cfg->period_len            = d->frame_size_bytes * d->channels;
+	}
+
+	dma_init(dma);
+
+	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+
+	d->fe_dev_init(d->fe_dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
+	d->fe_dev_hw_params(d->easrc, d->channels, d->rate, 2, d->ctx);
+
+	d->dev_init(d->dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
+
+	dma_config(dma);
+
+	xos_register_interrupt_handler(d->irq_2_dsp, xa_hw_renderer_isr, d);
+	xos_interrupt_enable(d->irq_2_dsp);
+
+	WM8960_Init();
+
+	LOG("hw_init finished\n");
+	return 0;
+}
+
 static XA_ERRORCODE xa_fw_renderer_init (XARenderer *d)
 {
    d->consumed = 0;
    d->fw = NULL;
 
-   /*opening the output file*/
-   d->fw = fopen(grenderer_out_file,"wb");
-   if ( d->fw == NULL )
-   {
-     /*file open failed*/
-     return XA_FATAL_ERROR;
-   }
-   /*initially FIFO will be empty so fifo_avail is 2x framesize bytes for ping and pong */
-   d->fifo_avail = d->frame_size_bytes * d->channels * 2;
-
-   /* ...make sure that the frame_size_bytes is within the FIFO length */
-   XF_CHK_ERR(d->fifo_avail <= HW_FIFO_LENGTH, XA_RENDERER_CONFIG_NONFATAL_RANGE);
-
-   /* ...initialize FIFO params, zero fill FIFO and init pointers to start of FIFO */
-   d->pfifo_w = d->pfifo_r = (void *)g_fifo_renderer;
-   memset(d->pfifo_w, 0, d->fifo_avail);
-   
-   /*initialises the timer ;timer0 is used as system timer*/
-   __xf_timer_init(&rend_timer, xa_fw_handler, d, 1);
+   XF_CHK_ERR(xa_hw_renderer_init(d) == 0, XA_RENDERER_CONFIG_FATAL_HW);
    return XA_NO_ERROR;
 }
 
@@ -379,7 +600,7 @@ static XA_ERRORCODE xa_renderer_init(XARenderer *d, WORD32 i_idx, pVOID pv_value
         d->pcm_width = 16;
         d->rate = 48000;
         d->sample_size = ( d->pcm_width >> 3 ); /* convert bits to bytes */ 
-        d->frame_size_bytes = MAX_FRAME_SIZE_IN_BYTES_DEFAULT; 
+        d->frame_size_bytes = MAX_FRAME_SIZE_IN_BYTES_DEFAULT;
         d->frame_size = MAX_FRAME_SIZE_IN_BYTES_DEFAULT/d->sample_size; 
         
         /* ...and mark renderer has been created */
@@ -438,13 +659,14 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
             d->pfifo_r = d->pfifo_w;
 
             /* ...write one frame worth data written to FIFO to output file */
-            READ_FIFO(payload);
+            //READ_FIFO(payload);
 
             /* ...to always start with full FIFO worth data */
             d->fifo_avail = 0;
 
             /* ...start-up transmission with zero filled FIFO */
-            __xf_timer_start(&rend_timer, __xf_timer_ratio_to_period((d->frame_size_bytes / d->sample_size ), d->rate));
+            //__xf_timer_start(&rend_timer, __xf_timer_ratio_to_period((d->frame_size_bytes / d->sample_size ), d->rate));
+	    xa_hw_renderer_start(d);
 
             /* ...change state to Running */
             d->state ^= (XA_RENDERER_FLAG_IDLE | XA_RENDERER_FLAG_RUNNING);
@@ -462,6 +684,12 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
         XF_CHK_ERR(d->state & XA_RENDERER_FLAG_PAUSED, XA_RENDERER_EXEC_NONFATAL_STATE);
         /* ...mark renderer is running */
         d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED;
+
+	g_fifo_renderer = dmabuf_get(&d->dma);
+	d->pfifo_w = d->pfifo_r = (void *)g_fifo_renderer;
+	d->fifo_avail = 0;
+	xa_hw_renderer_start(d);
+
         return XA_NO_ERROR;
 
     case XA_RENDERER_STATE_PAUSE:
@@ -469,6 +697,7 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
         XF_CHK_ERR(d->state & XA_RENDERER_FLAG_RUNNING, XA_RENDERER_EXEC_NONFATAL_STATE);
         /* ...pause renderer operation */
         //xa_hw_renderer_pause(d);
+	xa_hw_renderer_close(d);
         /* ...mark renderer is paused */
         d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED;
         return XA_NO_ERROR;
@@ -480,6 +709,26 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
         /* ...reset renderer flags */
         d->state &= ~(XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED);
         return XA_NO_ERROR;
+
+    case XA_RENDERER_STATE_SUSPEND:
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, XA_RENDERER_EXEC_NONFATAL_STATE);
+
+	d->dev_suspend(d->dev_addr, d->dev_cache);
+	d->fe_dev_suspend(d->fe_dev_addr, d->fe_dev_cache);
+	dma_suspend(&d->dma);
+	return XA_NO_ERROR;
+
+    case XA_RENDERER_STATE_SUSPEND_RESUME:
+	XF_CHK_ERR(d->state & XA_RENDERER_FLAG_POSTINIT_DONE, XA_RENDERER_EXEC_NONFATAL_STATE);
+
+	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
+	d->dev_resume(d->dev_addr, d->dev_cache);
+	d->fe_dev_resume(d->fe_dev_addr, d->fe_dev_cache);
+	dma_resume(&d->dma);
+	xos_register_interrupt_handler(d->irq_2_dsp, xa_hw_renderer_isr, d);
+	xos_interrupt_enable(d->irq_2_dsp);
+	return XA_NO_ERROR;
+
 
     default:
         /* ...unrecognized command */
@@ -834,12 +1083,12 @@ static XA_ERRORCODE xa_renderer_get_mem_info_size(XARenderer *d, WORD32 i_idx, p
     {
     case 0:
         /* ...input buffer specification; accept exact audio frame */
-        i_value = d->frame_size_bytes * d->channels;
+        i_value = 4096;
         break;
 
     case 1:
         /* ...output buffer specification; accept exact audio frame */
-        i_value = d->frame_size_bytes * d->channels;
+        i_value = 0;
         break;
 
     default:
@@ -918,7 +1167,7 @@ static XA_ERRORCODE xa_renderer_set_mem_ptr(XARenderer *d, WORD32 i_idx, pVOID p
 
     case 1:
         /* ...output buffer(optional). Can be NULL as this is optional output. */
-        d->output = pv_value;
+        d->output = NULL;
         return XA_NO_ERROR;
 
     default:

@@ -68,7 +68,7 @@ ifeq ($(ANDROID_BUILD), 1)
 	echo "--- no unit test for android ---"
 else
 	make -C $(UNIT_TEST_DIR)
-	cp ./$(UNIT_TEST_DIR)/dsp_test $(RELEASE_DIR)/exe
+	cp ./$(UNIT_TEST_DIR)/*.out $(RELEASE_DIR)/exe
 endif
 
 help:

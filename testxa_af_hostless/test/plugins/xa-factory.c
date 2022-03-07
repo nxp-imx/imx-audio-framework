@@ -117,6 +117,7 @@ static const xf_component_id_t xf_component_id[] =
 {
 #if XA_FSL_UNIA_CODEC
     { "audio-decoder/mp3",       xa_audio_codec_factory,     xa_unia_codec },
+    { "renderer",                xa_renderer_factory,        xa_renderer },
 #endif
 #if XA_MP3_DECODER
     { "audio-decoder/mp3",       xa_audio_codec_factory,     xa_mp3_decoder },
