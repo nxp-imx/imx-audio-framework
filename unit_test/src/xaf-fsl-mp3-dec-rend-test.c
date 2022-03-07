@@ -20,15 +20,16 @@
 * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-#include "audio/xa_mp3_dec_api.h"
 #include "audio/xa-renderer-api.h"
 #include "xaf-utils-test.h"
 #include "xaf-fio-test.h"
+#include "fsl_unia.h"
 
 #define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s -infile:filename.mp3 \n\n", argv[0]);
 #define AUDIO_FRMWK_BUF_SIZE   (256 << 8)
@@ -74,8 +75,8 @@ static int mp3_setup(void *p_decoder)
 {
     int param[2];
 
-    param[0] = XA_MP3DEC_CONFIG_PARAM_PCM_WDSZ;
-    param[1] = MP3_DEC_PCM_WIDTH;
+    param[0] = UNIA_DEPTH;
+    param[1] = 16;
 
     return(xaf_comp_set_config(p_decoder, 1, &param[0]));
 }
@@ -103,10 +104,9 @@ static int get_comp_config(void *p_comp, xaf_format_t *comp_format)
     TST_CHK_PTR(p_comp, "get_comp_config");
     TST_CHK_PTR(comp_format, "get_comp_config");
 
-    param[0] = XA_MP3DEC_CONFIG_PARAM_NUM_CHANNELS;
-    param[2] = XA_MP3DEC_CONFIG_PARAM_PCM_WDSZ;
-    param[4] = XA_MP3DEC_CONFIG_PARAM_SAMP_FREQ;
-
+    param[0] = UNIA_CHANNEL;
+    param[2] = UNIA_DEPTH;
+    param[4] = UNIA_SAMPLERATE;
 
     ret = xaf_comp_get_config(p_comp, 3, &param[0]);
     if(ret < 0)
@@ -156,7 +156,7 @@ int main_task(int argc, char **argv)
     xf_thread_t dec_thread;
     unsigned char dec_stack[STACK_SIZE];
     xaf_comp_status dec_status;
-    int dec_info[4];
+    long dec_info[4];
     char *filename_ptr;
     void *dec_thread_args[NUM_THREAD_ARGS];
     FILE *fp;
@@ -274,7 +274,9 @@ int main_task(int argc, char **argv)
     comp_type = XAF_DECODER;
 
     TST_CHK_API_COMP_CREATE(p_adev, &p_decoder, dec_id, 2, 0, &dec_inbuf[0], comp_type, "xaf_comp_create");
-
+#ifdef XA_FSL_UNIA_CODEC
+    TST_CHK_API(xaf_load_library(p_adev, p_decoder, dec_id), "xaf_load_library");
+#endif
     TST_CHK_API(dec_setup(p_decoder), "dec_setup");
 
     /* ...start decoder component */
@@ -303,8 +305,8 @@ int main_task(int argc, char **argv)
 
         if (dec_status == XAF_NEED_INPUT)
         {
-            void *p_buf = (void *) dec_info[0];
-            int size    = dec_info[1];
+            void *p_buf = (long *) dec_info[0];
+            long size    = (long)dec_info[1];
 
             TST_CHK_API(read_input(p_buf, size, &read_length, p_input, comp_type), "read_input");
 
@@ -386,11 +388,13 @@ int main_task(int argc, char **argv)
 
     mem_exit();
 
+#ifdef XAF_PROFILE
     dsp_comps_cycles = dec_cycles + renderer_cycles;
 
     dsp_mcps = compute_comp_mcps(renderer_format.output_produced, dec_cycles, dec_format, &strm_duration);
     dsp_mcps += compute_comp_mcps(renderer_format.output_produced, renderer_cycles, renderer_format, &strm_duration);
     TST_CHK_API(print_mem_mcps_info(mem_handle, num_comp), "print_mem_mcps_info");
+#endif
 
     if (fp)  fio_fclose(fp);
     

@@ -63,8 +63,7 @@ INCLUDES  =	-I$(INC_DIR)								\
 		-I$(COM_DIR)/include/fsl_unia
 
 # Put common C files here
-C_OBJS  =	$(SRC_DIR)/xaf-fsl-dec-test.o					\
-		$(COM_DIR)/src/xaf-fsl-api.o					\
+C_OBJS  =	$(COM_DIR)/src/xaf-fsl-api.o					\
 		$(COM_DIR)/src/xf-fsl-ipc.o					\
 		$(SRC_DIR)/id3_tag_decode.o					\
 		$(COM_DIR)/src/library_load.o					\
@@ -74,8 +73,18 @@ C_OBJS  =	$(SRC_DIR)/xaf-fsl-dec-test.o					\
 		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-fio-test.o		\
 		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-mem-test.o
 
-all: $(C_OBJS)
-	$(CC) $(CFLAGS) $(C_OBJS) -o dsp_test
+C_OBJS_REND  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-mp3-dec-rend-test.o
+OUT_REND     =	dsp_rend_test.out
+
+C_OBJS_DEC  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-dec-test.o
+OUT_DEC     =	dsp_test.out
+
+all: DEC REND
+
+DEC: $(C_OBJS_DEC)
+	$(CC) $(CFLAGS) $(C_OBJS_DEC) -o $(OUT_DEC)
+REND: $(C_OBJS_REND)
+	$(CC) $(CFLAGS) $(C_OBJS_REND) -o $(OUT_REND)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
@@ -86,5 +95,5 @@ clean:
 	rm -f $(ROOT_DIR)/libxa_af_hostless/algo/host-apf/src/*.o
 	rm -f $(ROOT_DIR)/testxa_af_hostless/test/src/*.o
 	rm -f $(COM_DIR)/src/*.o
-	rm -f ./dsp_test
+	rm -f ./*.out
 
