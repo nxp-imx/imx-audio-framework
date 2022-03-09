@@ -1054,11 +1054,70 @@ XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t co
 	if (!strcmp(comp_id, "audio-decoder/mp3")) {
 		strcat(lib_path, "lib_dsp_mp3_dec.so");
 		dec_type = CODEC_MP3_DEC;
+	} else if (!strcmp(comp_id, "audio-decoder/aac")) {
+		strcat(lib_path, "lib_dsp_aac_dec.so");
+		dec_type = CODEC_AAC_DEC;
+	} else if (!strcmp(comp_id, "audio-decoder/bsac")) {
+		strcat(lib_path, "lib_dsp_bsac_dec.so");
+		dec_type = CODEC_BSAC_DEC;
+	} else if (!strcmp(comp_id, "audio-decoder/dabplus")) {
+		strcat(lib_path, "lib_dsp_dabplus_dec.so");
+		dec_type = CODEC_DAB_DEC;
+	} else if (!strcmp(comp_id, "audio-decoder/mp2")) {
+		strcat(lib_path, "lib_dsp_mp2_dec.so");
+		dec_type = CODEC_MP2_DEC;
+	} else if (!strcmp(comp_id, "audio-decoder/drm")) {
+		strcat(lib_path, "lib_dsp_drm_dec.so");
+		dec_type = CODEC_DRM_DEC;
+	} else if (!strcmp(comp_id, "audio-decoder/sbc")) {
+		strcat(lib_path, "lib_dsp_sbc_dec.so");
+		dec_type = CODEC_SBC_DEC;
+	} else if (!strcmp(comp_id, "audio-encoder/sbc")) {
+		strcat(lib_path, "lib_dsp_sbc_enc.so");
+		dec_type = CODEC_SBC_ENC;
+	} else if (!strcmp(comp_id, "audio-decoder/fsl-ogg")) {
+		dec_type = CODEC_FSL_OGG_DEC;
+		strcat(lib_wrap_path, "lib_vorbisd_wrap_dsp.so");
+	} else if (!strcmp(comp_id, "audio-decoder/fsl-mp3")) {
+		dec_type = CODEC_FSL_MP3_DEC;
+		strcat(lib_wrap_path, "lib_mp3d_wrap_dsp.so");
+	} else if (!strcmp(comp_id, "audio-decoder/fsl-aac")) {
+		dec_type = CODEC_FSL_AAC_DEC;
+		strcat(lib_wrap_path, "lib_aacd_wrap_dsp.so");
+	} else if (!strcmp(comp_id, "audio-decoder/fsl-aacplus")) {
+		dec_type = CODEC_FSL_AAC_PLUS_DEC;
+		strcat(lib_wrap_path, "lib_aacd_wrap_dsp.so");
+	}else if (!strcmp(comp_id, "audio-decoder/fsl-ac3")) {
+		dec_type = CODEC_FSL_AC3_DEC;
+		strcat(lib_wrap_path, "lib_ac3d_wrap_dsp.so");
+	} else if (!strcmp(comp_id, "audio-decoder/fsl-ddp")) {
+		dec_type = CODEC_FSL_DDP_DEC;
+		strcat(lib_wrap_path, "lib_ddpd_wrap_dsp.so");
+	} else if (!strcmp(comp_id, "audio-decoder/fsl-nbamr")) {
+		dec_type = CODEC_FSL_NBAMR_DEC;
+		strcat(lib_wrap_path, "lib_nbamrd_wrap_dsp.so");
+	} else if (!strcmp(comp_id, "audio-decoder/fsl-wbamr")) {
+		dec_type = CODEC_FSL_WBAMR_DEC;
+		strcat(lib_wrap_path, "lib_wbamrd_wrap_dsp.so");
+	} else if (!strcmp(comp_id, "audio-decoder/fsl-wma")) {
+		dec_type = CODEC_FSL_WMA_DEC;
+		strcat(lib_wrap_path, "lib_wma10d_wrap_dsp.so");
+	} else if (!strcmp(comp_id, "audio-decoder/opus")) {
+		dec_type = CODEC_OPUS_DEC;
+		strcat(lib_wrap_path, "lib_dsp_codec_opus_dec_wrap.so");
+	} else if (!strcmp(comp_id, "audio-decoder/pcm")) {
+		dec_type = CODEC_PCM_DEC;
 	}
-	strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
 
-	codec_lib->filename = lib_path;
-	codec_lib->lib_type = DSP_CODEC_LIB;
+	if (dec_type <= CODEC_SBC_ENC) {
+		strcat(lib_wrap_path, "lib_dsp_codec_wrap.so");
+		codec_lib->filename = lib_path;
+		codec_lib->lib_type = DSP_CODEC_LIB;
+	} else {
+		/* fsl codec wrap lib include codec */
+		xaf_free(codec_lib, XAF_MEM_ID_COMP);
+		p_comp->codec_lib = NULL;
+	}
 	codec_wrap_lib->filename = lib_wrap_path;
 	codec_wrap_lib->lib_type = (DSP_CODEC_WRAP_LIB | dec_type << 2);
 

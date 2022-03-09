@@ -118,6 +118,23 @@ static const xf_component_id_t xf_component_id[] =
 #if XA_FSL_UNIA_CODEC
     { "audio-decoder/mp3",       xa_audio_codec_factory,     xa_unia_codec },
     { "renderer",                xa_renderer_factory,        xa_renderer },
+    { "audio-decoder/aac",             xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/bsac",            xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/dabplus",         xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/mp2",             xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/drm",             xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/sbc",             xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-encoder/sbc",             xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-ogg",         xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-mp3",         xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-aac",         xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-aacplus",     xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-ac3",         xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-ddp",         xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-nbamr",       xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-wbamr",       xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/fsl-wma",         xa_audio_codec_factory,     xa_unia_codec },
+    { "audio-decoder/opus",            xa_audio_codec_factory,     xa_unia_codec },
 #endif
 #if XA_MP3_DECODER
     { "audio-decoder/mp3",       xa_audio_codec_factory,     xa_mp3_decoder },

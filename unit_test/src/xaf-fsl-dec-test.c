@@ -29,9 +29,7 @@
 #include "xaf-utils-test.h"
 #include "xaf-fio-test.h"
 
-#include "fsl_unia.h"
-
-#define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s -infile:filename.mp3 -outfile:filename.pcm\n\n", argv[0]);
+#include "dsp_codec_interface.h"
 
 #define AUDIO_FRMWK_BUF_SIZE   (256 << 8)
 #define AUDIO_COMP_BUF_SIZE    (1024 << 7)
@@ -62,6 +60,71 @@ static int mp3_setup(void *p_decoder)
 #endif
 
     return(xaf_comp_set_config(p_decoder, 1, &param[0]));
+}
+
+void help_info()
+{
+	FIO_PRINTF(stdout, "\n\n**************************************************\n");
+	FIO_PRINTF(stdout, "* Test aplication for DSP\n");
+	FIO_PRINTF(stdout, "* Options :\n\n");
+	FIO_PRINTF(stdout, "          -f AudFormat  Audio Format(1-8)\n");
+	FIO_PRINTF(stdout, "                        MP3        for 1\n");
+	FIO_PRINTF(stdout, "                        AAC        for 2\n");
+	FIO_PRINTF(stdout, "                        DAB        for 3\n");
+	FIO_PRINTF(stdout, "                        MP2        for 4\n");
+	FIO_PRINTF(stdout, "                        BSAC       for 5\n");
+	FIO_PRINTF(stdout, "                        DRM        for 6\n");
+	FIO_PRINTF(stdout, "                        SBCDEC     for 7\n");
+	FIO_PRINTF(stdout, "                        SBCENC     for 8\n");
+	FIO_PRINTF(stdout, "                        FSLOGGDEC  for 9\n");
+	FIO_PRINTF(stdout, "                        FSLMP3DEC  for 10\n");
+	FIO_PRINTF(stdout, "                        FSLACCDEC  for 11\n");
+	FIO_PRINTF(stdout, "                        FSLAC3DEC  for 13\n");
+	FIO_PRINTF(stdout, "                        FSLDDPDEC  for 14\n");
+	FIO_PRINTF(stdout, "                        FSLNBAMRDEC  for 15\n");
+	FIO_PRINTF(stdout, "                        FSLWBAMRDEC  for 16\n");
+	FIO_PRINTF(stdout, "                        FSLWMADEC    for 17\n");
+	FIO_PRINTF(stdout, "          -i InFileNam  Input File Name\n");
+	FIO_PRINTF(stdout, "          -o OutName    Output File Name\n");
+	FIO_PRINTF(stdout, "          -s Samplerate Sampling Rate of Audio\n");
+	FIO_PRINTF(stdout, "          -n Channel    Channel Number of Audio\n");
+	FIO_PRINTF(stdout, "          -d Width      The Width of Samples\n");
+	FIO_PRINTF(stdout, "          -r bitRate    Bit Rate\n");
+	FIO_PRINTF(stdout, "          -t StreamType Stream Type\n");
+	FIO_PRINTF(stdout, "                        0(STREAM_UNKNOWN)\n");
+	FIO_PRINTF(stdout, "                        1(STREAM_ADTS)\n");
+	FIO_PRINTF(stdout, "                        2(STREAM_ADIF)\n");
+	FIO_PRINTF(stdout, "                        3(STREAM_RAW)\n");
+	FIO_PRINTF(stdout, "                        4(STREAM_LATM)\n");
+	FIO_PRINTF(stdout, "                        5(STREAM_LATM_OUTOFBAND_CONFIG)\n");
+	FIO_PRINTF(stdout, "                        6(STREAM_LOAS)\n");
+	FIO_PRINTF(stdout, "                        48(STREAM_DABPLUS_RAW_SIDEINFO)\n");
+	FIO_PRINTF(stdout, "                        49(STREAM_DABPLUS)\n");
+	FIO_PRINTF(stdout, "                        50(STREAM_BSAC_RAW)\n");
+	FIO_PRINTF(stdout, "          -u Channel modes only for SBC_ENC\n");
+	FIO_PRINTF(stdout, "                        0(CHMODE_MONO)\n");
+	FIO_PRINTF(stdout, "                        1(CHMODE_DUAL)\n");
+	FIO_PRINTF(stdout, "                        2(CHMODE_STEREO)\n");
+	FIO_PRINTF(stdout, "                        3(CHMODE_JOINT)\n");
+	FIO_PRINTF(stdout, "          -c Route AudFormat(1-8)\n");
+	FIO_PRINTF(stdout, "                        MP3        for 1\n");
+	FIO_PRINTF(stdout, "                        AAC        for 2\n");
+	FIO_PRINTF(stdout, "                        DAB        for 3\n");
+	FIO_PRINTF(stdout, "                        MP2        for 4\n");
+	FIO_PRINTF(stdout, "                        BSAC       for 5\n");
+	FIO_PRINTF(stdout, "                        DRM        for 6\n");
+	FIO_PRINTF(stdout, "                        SBCDEC     for 7\n");
+	FIO_PRINTF(stdout, "                        SBCENC     for 8\n");
+	FIO_PRINTF(stdout, "                        RENDER_ESAI     for 32\n");
+	FIO_PRINTF(stdout, "                        RENDER_SAI      for 33\n");
+	FIO_PRINTF(stdout, "          -l Show the performance data\n");
+	FIO_PRINTF(stdout, "Must set correct parameters for stream\n");
+	FIO_PRINTF(stdout, "**************************************************\n\n");
+}
+
+static int dummy_setup(void *p_decoder)
+{
+	return XAF_NO_ERR;
 }
 
 static int get_comp_config(void *p_comp, xaf_format_t *comp_format)
@@ -95,6 +158,74 @@ void fio_quit()
     return;
 }
 
+struct AudioOption {
+	/* General Options */
+	int CodecFormat;
+	int SampleRate;
+	int Channel;
+	int Width;
+	int Bitrate;
+	int streamtype;
+
+	/* Dedicate for SBC ENC */
+	int channel_mode;
+
+	/* Input & Output File Name */
+	char *InFileName;
+	char *OutFileName;
+};
+
+int GetParameter(int argc_t, char *argv_t[], struct AudioOption *pAOption)
+{
+	int i;
+	char *pTmp = NULL, in[256];
+
+	if (argc_t < 3) {
+		goto Error;
+	}
+	for (i = 1; i < argc_t; i++) {
+		pTmp = argv_t[i];
+		if (*pTmp == '-') {
+			strcpy(in, pTmp + 2);
+			switch (pTmp[1]) {
+			case 'f':
+				pAOption->CodecFormat = atoi(in);
+				break;
+			case 'r':
+				pAOption->Bitrate = atoi(in);
+				break;
+			case 's':
+				pAOption->SampleRate = atoi(in);
+				break;
+			case 'n':
+				pAOption->Channel = atoi(in);
+				break;
+			case 'd':
+				pAOption->Width = atoi(in);
+				break;
+			case 't':
+				pAOption->streamtype = atoi(in);
+				break;
+			case 'i':
+				pAOption->InFileName = pTmp + 2;
+				break;
+			case 'o':
+				pAOption->OutFileName = pTmp + 2;
+				break;
+			case 'u':
+				pAOption->channel_mode = atoi(in);
+				break;
+			default:
+				goto Error;
+			}
+		}
+	}
+	return 0;
+
+Error:
+	return 1;
+}
+
 int main_task(int argc, char **argv)
 {
     void *p_adev = NULL;
@@ -105,6 +236,7 @@ int main_task(int argc, char **argv)
     xaf_comp_status dec_status;
     long dec_info[4];
     char *filename_ptr;
+    int  dec_type;
     void *dec_thread_args[NUM_THREAD_ARGS];
     FILE *fp, *ofp;
     void *dec_inbuf[2];
@@ -116,6 +248,7 @@ int main_task(int argc, char **argv)
     int (*dec_setup)(void *p_comp);    
     const char *ext;
 
+    struct AudioOption AOption;
     xaf_format_t dec_format;
     int num_comp;
     pUWORD8 ver_info[3] = {0,0,0};    //{ver,lib_rev,api_rev}
@@ -151,66 +284,113 @@ int main_task(int argc, char **argv)
     TST_CHK_API(xaf_get_verinfo(ver_info), "xaf_get_verinfo");
 
     /* ...show xaf version info*/
-    TST_CHK_API(print_verinfo(ver_info,(pUWORD8)"\'Mp3 Decoder\'"), "print_verinfo");
+    TST_CHK_API(print_verinfo(ver_info,(pUWORD8)"\'Decoder\'"), "print_verinfo");
 
     /* ...initialize tracing facility */
-    TRACE_INIT("Xtensa Audio Framework - \'Mp3 Decoder\' Sample App");
+    TRACE_INIT("Xtensa Audio Framework - \'Decoder\' Sample App");
 
-    /* ...check input arguments */
-    if (argc != 3)
-    {
-        PRINT_USAGE;
+    //Initialize Audio Option structure
+    AOption.SampleRate = -1;
+    AOption.Channel = -1;
+    AOption.Width = -1;
+    AOption.Bitrate = -1;
+    AOption.streamtype = -1;
+    AOption.channel_mode = -1;
+
+    if (GetParameter(argc, argv, &AOption)) {
+        help_info();
         return 0;
     }
-    
-    if(NULL != strstr(argv[1], "-infile:"))
-    {
-        filename_ptr = (char *)&(argv[1][8]);
-        ext = strrchr(argv[1], '.');
-        if(ext!=NULL)
-        {
-            ext++;
-            if (!strcmp(ext, "mp3")) {
-                dec_id    = "audio-decoder/mp3";
-                dec_setup = mp3_setup;
-            }
-            else {
-                FIO_PRINTF(stderr, "Unknown Decoder Extension '%s'\n", ext);
-                exit(-1);
-            }
-        }
-        else
-        {
-            FIO_PRINTF(stderr, "Failed to open infile\n");
-            exit(-1);
-        }
-
-        /* ...open file */
-        if ((fp = fio_fopen(filename_ptr, "rb")) == NULL)
-        {
-           FIO_PRINTF(stderr, "Failed to open '%s': %d\n", filename_ptr, errno);
-           exit(-1);
-        }
+    fp = fopen(AOption.InFileName, "rb");
+    if (!fp) {
+        FIO_PRINTF(stderr, "infile: %s open failed!\n", AOption.InFileName);
+        return -ENOENT;
     }
-    else
-    {
-        PRINT_USAGE;
-        return 0;
+    ofp = fopen(AOption.OutFileName, "wb");
+    if (!ofp) {
+        FIO_PRINTF(stderr, "outfile: %s open failed!\n", AOption.OutFileName);
+        return -ENOENT;
     }
 
-    if(NULL != strstr(argv[2], "-outfile:"))
-    {
-        filename_ptr = (char *)&(argv[2][9]);
-        if ((ofp = fio_fopen(filename_ptr, "wb")) == NULL)
-        {
-           FIO_PRINTF(stderr, "Failed to open '%s': %d\n", filename_ptr, errno);
-           exit(-1);
-        }
-    }
-    else
-    {
-        PRINT_USAGE;
-        return 0;
+    switch (AOption.CodecFormat) {
+    case CODEC_MP3_DEC:
+        dec_id    = "audio-decoder/mp3";
+        dec_setup = mp3_setup;
+        break;
+    case CODEC_AAC_DEC:
+        dec_id    = "audio-decoder/aac";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_DAB_DEC:
+        dec_id    = "audio-decoder/dabplus";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_MP2_DEC:
+        dec_id    = "audio-decoder/mp2";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_BSAC_DEC:
+        dec_id    = "audio-decoder/bsac";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_DRM_DEC:
+        dec_id    = "audio-decoder/drm";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_SBC_DEC:
+        dec_id    = "audio-decoder/sbc";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_SBC_ENC:
+        dec_id    = "audio-encoder/sbc";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_OGG_DEC:
+        dec_id    = "audio-decoder/fsl-ogg";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_MP3_DEC:
+        dec_id    = "audio-decoder/fsl-mp3";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_AAC_DEC:
+        dec_id    = "audio-decoder/fsl-aac";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_AAC_PLUS_DEC:
+        dec_id    = "audio-decoder/fsl-aacplus";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_AC3_DEC:
+        dec_id    = "audio-decoder/fsl-ac3";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_DDP_DEC:
+        dec_id    = "audio-decoder/fsl-ddp";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_NBAMR_DEC:
+        dec_id    = "audio-decoder/fsl-nbamr";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_WBAMR_DEC:
+        dec_id    = "audio-decoder/fsl-wbamr";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_FSL_WMA_DEC:
+        dec_id    = "audio-decoder/fsl-wma";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_OPUS_DEC:
+        dec_id    = "audio-decoder/opus";
+        dec_setup = dummy_setup;
+        break;
+    case CODEC_PCM_DEC:
+        dec_id    = "audio-decoder/pcm";
+        dec_setup = dummy_setup;
+        break;
+    default:
+	return 1;
     }
 
     p_input  = fp;
