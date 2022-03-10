@@ -81,6 +81,7 @@ help:
 clean:
 	make -C $(FRAMEWORK_DIR) clean
 	make -C $(UNIT_TEST_DIR) clean
+	make -C $(WRAPPER_DIR) clean
 	rm -rf ./$(RELEASE_DIR)/*.so
 	rm -rf ./$(RELEASE_DIR)/exe
 	rm -rf ./$(RELEASE_DIR)/wrapper

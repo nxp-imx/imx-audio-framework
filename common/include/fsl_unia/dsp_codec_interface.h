@@ -37,6 +37,15 @@ typedef enum {
 
 } AUDIOCODECFORMAT;
 
+typedef struct {
+	AUDIOCODECFORMAT           codec_type;
+	const char                 *dec_id;
+	const char                 *codec_name;
+	const char                 *codecwrap_name;
+	/* ...Codec data ignored */
+	WORD32                     codecdata_ignored;
+} CODECINFO;
+
 enum lib_type {
 	DSP_CODEC_LIB = 1,
 	DSP_CODEC_WRAP_LIB
