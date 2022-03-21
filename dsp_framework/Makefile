@@ -13,7 +13,8 @@ OBJCOPY     = xt-objcopy
 PKG_LOADLIB = xt-pkg-loadlib
 XTENSA_CORE = hifi4_nxp_v4_3_1_3_dev
 
-CFLAGS  = -O3 -DHAVE_XOS
+CFLAGS  = -O3 -DHAVE_XOS -DXA_DISABLE_EVENT
+CFLAGS += -DXA_FSL_UNIA_CODEC
 TOOL_PATH   := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../../imx-audio-toolchain/Xtensa_Tool
 
 ifeq ($(DEBUG), 1)
@@ -55,6 +56,7 @@ INCLUDES   +=	-I$(INC_DIR)/include							\
 		-I$(ROOT_DIR)/rpmsg-lite/lib/include					\
 		-I$(ROOT_DIR)/rpmsg-lite/lib/include/environment/xos			\
 		-I$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/include   		\
+		-I$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/include/audio		\
 		-I$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/include/sys/xos-msgq	\
 		-I$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/include/sys/xos-msgq/iss	\
 		-I$(ROOT_DIR)/libxa_af_hostless/algo/xa_af_hostless/include		\
@@ -62,6 +64,9 @@ INCLUDES   +=	-I$(INC_DIR)/include							\
 		-I$(ROOT_DIR)/libxa_af_hostless/include/audio				\
 		-I$(ROOT_DIR)/libxa_af_hostless/include/sysdeps/xos/include		\
 		-I$(ROOT_DIR)/testxa_af_hostless/test/include
+INCLUDES   +=   -I$(ROOT_DIR)/common/include/fsl_unia
+INCLUDES   +=   -I$(INC_DIR)/include/plugins
+INCLUDES   +=   -I$(INC_DIR)/include/libloader
 
 # Put common C files here
 C_OBJS  =	$(SRC_DIR)/src/board.o						\
@@ -82,11 +87,19 @@ C_OBJS  =	$(SRC_DIR)/src/board.o						\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-mem.o	\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-sched.o	\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/rbtree.o	\
+		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-audio-codec.o	\
+		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-io.o		\
+		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-base.o	\
 		$(ROOT_DIR)/testxa_af_hostless/test/plugins/xa-factory.o	\
 		$(ROOT_DIR)/rpmsg-lite/lib/rpmsg_lite/rpmsg_lite.o		\
 		$(ROOT_DIR)/rpmsg-lite/lib/rpmsg_lite/rpmsg_ns.o		\
 		$(ROOT_DIR)/rpmsg-lite/lib/virtio/virtqueue.o			\
 		$(ROOT_DIR)/rpmsg-lite/lib/common/llist.o
+C_OBJS  +=	$(SRC_DIR)/src/plugins/xa-unia-codec.o				\
+		$(SRC_DIR)/src/libloader/dpu_lib_load.o				\
+		$(SRC_DIR)/src/libloader/common.o				\
+		$(SRC_DIR)/src/libloader/pi_library_load.o			\
+		$(SRC_DIR)/src/libloader/pi_relocate_lib.o
 
 TARGET = hifi4_imx8qmqxp.bin
 
@@ -115,6 +128,8 @@ all: $(C_OBJS)
 clean:
 	rm -f $(SRC_DIR)/src/*.o
 	rm -f $(SRC_DIR)/src/driver/*.o
+	rm -f $(SRC_DIR)/src/libloader/*.o
+	rm -f $(SRC_DIR)/src/plugins/*.o
 	rm -f $(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/*.o
 	rm -f $(ROOT_DIR)/testxa_af_hostless/test/plugins/*.o
 	rm -f $(ROOT_DIR)/rpmsg-lite/lib/rpmsg_lite/*.o

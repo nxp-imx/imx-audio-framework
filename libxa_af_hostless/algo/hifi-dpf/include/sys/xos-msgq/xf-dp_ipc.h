@@ -109,7 +109,7 @@ static inline UWORD32 xf_ipc_b2a(UWORD32 core, void *b)
 {
 	void *start = xf_g_dsp->xf_ap_shmem_buffer;
 
-	return (UWORD32)(b - start);
+	return (b != NULL) ? (UWORD32)(b - start) : 0;
 }
 
 /* ...translate shared proxy address to local pointer */
@@ -117,7 +117,7 @@ static inline void * xf_ipc_a2b(UWORD32 core, UWORD32 address)
 {
 	void *start = xf_g_dsp->xf_ap_shmem_buffer;
 
-	return (void *) (start + address);
+	return (address != 0) ? (void *) (start + address) : NULL;
 }
 
 /* ...system-specific IPC layer initialization */

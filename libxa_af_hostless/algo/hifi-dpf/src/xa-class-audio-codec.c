@@ -34,6 +34,8 @@
 #include "xf-dp.h"
 #include "xa-class-base.h"
 #include "audio/xa-audio-decoder-api.h"
+#include "fsl_unia.h"
+#include "debug.h"
 
 #define INIT_CHG
 
@@ -1128,6 +1130,16 @@ static XA_ERRORCODE xa_codec_setparam(XACodecBase *base, WORD32 id, pVOID value)
     }
 }
 
+static XA_ERRORCODE xa_codec_suspend(XACodecBase *base, xf_message_t *m)
+{
+        return XA_NO_ERROR;
+}
+
+static XA_ERRORCODE xa_codec_suspend_resume(XACodecBase *base, xf_message_t *m)
+{
+        return XA_NO_ERROR;
+}
+
 /*******************************************************************************
  * Component entry point
  ******************************************************************************/
@@ -1147,6 +1159,9 @@ static XA_ERRORCODE (* const xa_codec_cmd[])(XACodecBase *, xf_message_t *) =
     
     [XF_OPCODE_TYPE(XF_PAUSE)] = xa_codec_port_pause,
     [XF_OPCODE_TYPE(XF_RESUME)] = xa_codec_port_resume,
+
+    [XF_OPCODE_TYPE(XF_SUSPEND)] = xa_codec_suspend,
+    [XF_OPCODE_TYPE(XF_SUSPEND_RESUME)] = xa_codec_suspend_resume,
 };
 
 /* ...total number of commands supported */

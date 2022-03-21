@@ -39,6 +39,7 @@
 #include "xa_error_standards.h"
 #include "xa_apicmd_standards.h"
 #include "xa_memory_standards.h"
+#include "dpu_lib_load.h"
 
 /*******************************************************************************
  * Generic codec structure
@@ -134,6 +135,8 @@ struct XACodecBase
 
     /* ...component type */
     xaf_comp_type           comp_type;
+
+    void                    *codecinterface;
 };
 
 /*******************************************************************************

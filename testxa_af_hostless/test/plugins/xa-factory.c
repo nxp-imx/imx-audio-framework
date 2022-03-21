@@ -65,6 +65,8 @@ typedef struct xf_component_id
 /*******************************************************************************
  * External functions
  ******************************************************************************/
+/* ...fsl components API functions */
+extern XA_ERRORCODE xa_unia_codec(xa_codec_handle_t, WORD32, WORD32, pVOID);
 
 /* ...components API functions */
 extern XA_ERRORCODE xa_mp3_decoder(xa_codec_handle_t, WORD32, WORD32, pVOID);
@@ -113,6 +115,9 @@ const char *comp_id[] = {"audio-decoder",
 /* ...component class id */
 static const xf_component_id_t xf_component_id[] =
 {
+#if XA_FSL_UNIA_CODEC
+    { "audio-decoder/mp3",       xa_audio_codec_factory,     xa_unia_codec },
+#endif
 #if XA_MP3_DECODER
     { "audio-decoder/mp3",       xa_audio_codec_factory,     xa_mp3_decoder },
 #endif

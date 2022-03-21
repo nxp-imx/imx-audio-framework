@@ -36,7 +36,8 @@
 #include <xtensa/config/core.h>
 #include <osal-isr.h>
 #include <osal-timer.h>
-
+#include "board.h"
+#include "debug.h"
 /*******************************************************************************
  * Internal helpers
  ******************************************************************************/
@@ -488,6 +489,56 @@ static int xf_proxy_set_priorities(UWORD32 core, xf_message_t *m)
     return 0;
 }
 
+/* ...deal with suspend command */
+static int xf_proxy_suspend(UWORD32 core, xf_message_t *m)
+{
+	xf_core_data_t *cd = XF_CORE_DATA(core);
+	xf_cmap_link_t *link;
+	xf_component_t *component;
+	UWORD32 i;
+
+	TRACE(info, _b("Process XF_SUSPEND command\n"));
+	/* ...call suspend of each component */
+	for (link = &cd->cmap[i = 0]; i < XF_CFG_MAX_CLIENTS; i++, link++)
+	{
+		if (link->next > XF_CFG_MAX_CLIENTS) {
+			component = link->c;
+			component->entry(component, m);
+		}
+	}
+	/* ???? */
+	xf_msg_pool_put(&XF_CORE_RO_DATA(core)->pool, m);
+
+	/* send message back*/
+	platform_notify(RP_MBOX_SUSPEND_ACK);
+
+	return 0;
+}
+
+static int xf_proxy_suspend_resume(UWORD32 core, xf_message_t *m)
+{
+	xf_core_data_t *cd = XF_CORE_DATA(core);
+	xf_cmap_link_t *link;
+	xf_component_t *component;
+	UWORD32 i;
+
+	TRACE(info, _b("Process XF_RESUME command\n"));
+
+	/* ...call resume of each component */
+	for (link = &cd->cmap[i = 0]; i < XF_CFG_MAX_CLIENTS; i++, link++)
+	{
+		if (link->next > XF_CFG_MAX_CLIENTS) {
+			component = link->c;
+			component->entry(component, m);
+		}
+	}
+
+	xf_msg_pool_put(&XF_CORE_RO_DATA(core)->pool, m);
+
+	/* no message reply to A core */
+	return 0;
+}
+
 /* ...proxy command processing table */
 static int (* const xf_proxy_cmd[])(UWORD32, xf_message_t *) = 
 {
@@ -501,6 +552,8 @@ static int (* const xf_proxy_cmd[])(UWORD32, xf_message_t *) =
     [XF_OPCODE_TYPE(XF_FILL_THIS_BUFFER)] = xf_proxy_output,
     [XF_OPCODE_TYPE(XF_FLUSH)] = xf_proxy_flush,
     [XF_OPCODE_TYPE(XF_SET_PRIORITIES)] = xf_proxy_set_priorities,
+    [XF_OPCODE_TYPE(XF_SUSPEND)] = xf_proxy_suspend,
+    [XF_OPCODE_TYPE(XF_SUSPEND_RESUME)] = xf_proxy_suspend_resume,
 };
 
 /* ...total number of commands supported */

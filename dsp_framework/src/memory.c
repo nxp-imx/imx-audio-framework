@@ -66,3 +66,17 @@ void xaf_free(void *buf_ptr, int id)
 
 	xf_mem_free(ptr, obj_size, 0, 0);
 }
+
+void *xf_uniacodec_malloc(size_t size)
+{
+	int *buf_ptr;
+	xaf_malloc((void **)&buf_ptr, size, 0);
+	return buf_ptr;
+}
+
+void xf_uniacodec_free(void *buf_ptr)
+{
+	if (!buf_ptr)
+		return;
+	xaf_free(buf_ptr, 0);
+}
