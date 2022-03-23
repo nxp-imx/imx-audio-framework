@@ -754,6 +754,26 @@ int xf_get_config(xf_handle_t *comp, void *buffer, UWORD32 length)
 	return 0;
 }
 
+int xf_flush(xf_handle_t *comp, WORD32 port)
+{
+    xf_proxy_t             *proxy = comp->proxy;
+    xf_user_msg_t           msg;
+
+    /* ...set command parameters */
+    msg.id = __XF_MSG_ID(__XF_AP_PROXY(proxy->core), __XF_PORT_SPEC2(comp->id, port));
+    msg.opcode = XF_FLUSH;
+    msg.length = 0;
+    msg.buffer = NULL;
+
+    /* ...synchronously execute command on DSP Interface Layer */
+    XF_CHK_API(xf_proxy_cmd_exec_with_lock(proxy, &msg));
+
+    /* ...check result is successful */
+    XF_CHK_ERR(msg.opcode == XF_FLUSH, XAF_INVALIDVAL_ERR);
+
+    return 0;
+}
+
 int xf_set_priorities(xf_proxy_t *proxy, UWORD32 core, UWORD32 n_rt_priorities,
                       UWORD32 rt_priority_base, UWORD32 bg_priority)
 {

@@ -2040,6 +2040,23 @@ XAF_ERR_CODE xaf_resume(pVOID comp_ptr, WORD32 port)
     return XAF_NO_ERR;
 }
 
+XAF_ERR_CODE xaf_flush(pVOID comp_ptr, WORD32 port)
+{
+    xaf_comp_t    *p_comp;
+
+    p_comp = (xaf_comp_t *)comp_ptr;
+
+    XAF_CHK_PTR(p_comp);
+    XAF_CHK_RANGE(port, 0, (p_comp->inp_ports + p_comp->out_ports - 1));
+
+    XAF_COMP_STATE_CHK(p_comp);
+
+    XF_CHK_API(xf_flush(&p_comp->handle, port));
+
+    return XAF_NO_ERR;
+}
+
+
 XAF_ERR_CODE xaf_probe_start(pVOID comp_ptr)
 {
     xaf_comp_t    *p_comp;
