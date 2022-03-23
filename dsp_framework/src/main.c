@@ -193,10 +193,10 @@ int main(void)
 
 		/* ??? Allocate local pool */
 		xf_g_dsp->xf_ap_shmem_buffer       = (UWORD8 *)SCRATCH_MEM_ADDR;
-		xf_g_dsp->xf_ap_shmem_buffer_size  = SCRATCH_MEM_SIZE - 0xF0000;
+		xf_g_dsp->xf_ap_shmem_buffer_size  = SCRATCH_MEM_SIZE - 0x1F0000;
 		/* ??? Reserved 0xF0000 size for local */
-		xf_g_dsp->xf_dsp_local_buffer      = (UWORD8 *)(SCRATCH_MEM_ADDR + SCRATCH_MEM_SIZE - 0xF0000);
-		xf_g_dsp->xf_dsp_local_buffer_size = 0xF0000;
+		xf_g_dsp->xf_dsp_local_buffer      = (UWORD8 *)(SCRATCH_MEM_ADDR + SCRATCH_MEM_SIZE - 0x1F0000);
+		xf_g_dsp->xf_dsp_local_buffer_size = 0x1F0000;
 
 		XF_CHK_API(xf_mm_init(&(xf_g_dsp->xf_core_data[0]).local_pool, xf_g_dsp->xf_dsp_local_buffer, xf_g_dsp->xf_dsp_local_buffer_size));
 		 __xf_lock_init(&(g_dsp->g_msgq_lock));
