@@ -724,7 +724,8 @@ static UA_ERROR_TYPE xa_uniacodec_get_mem_info_size(struct XFUniaCodec *d, UWORD
 	{
 	case 0:
 		/* ...input buffer specification; accept exact audio frame */
-		i_value = 4096;
+		/* set input length 0 for bypass mode */
+		i_value = 0;
 		break;
 
 	case 1:
