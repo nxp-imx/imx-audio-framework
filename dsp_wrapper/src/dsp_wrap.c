@@ -462,6 +462,8 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 	int param[2] = { 0 };
 	int err = 0;
 	int type;
+	xf_buffer_t *b = NULL;
+	int *p_buf = NULL;
 
 	switch (ParaType) {
 	case UNIA_SAMPLERATE:
@@ -559,16 +561,31 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 	case UNIA_WMA_VERSION:
 		param[1] = parameter->version;
 		break;
-	/* don't set follow two param to dsp */
 	case UNIA_CHAN_MAP_TABLE:
 	{
+		int i;
+		int *channel_tab;
+		void *p_buf;
+		CHAN_TABLE *channel_map;
 		pDSP_handle->chan_map_tab = parameter->chan_map_tab;
-		void *p_buf = xf_buffer_get(pDSP_handle->p_adev->proxy.aux);
-		if (!p_buf)
+		b = xf_buffer_get(pDSP_handle->p_adev->proxy.aux);
+		if (!b)
 			return ACODEC_INSUFFICIENT_MEM;
-		xf_buffer_put(p_buf);
+		channel_map = b->address;
+		param[1] = (UWORD32)xf_proxy_b2a(&pDSP_handle->p_adev->proxy, channel_map);
+		channel_map->size = parameter->chan_map_tab.size;
+		p_buf = (void *)(channel_map + 1);
+		for(i = 1; i < 10; i++) {
+			channel_tab = parameter->chan_map_tab.channel_table[i];
+			if (channel_tab) {
+				channel_map->channel_table[i] = i;
+				memcpy(p_buf, channel_tab, sizeof(int) * i);
+				p_buf += i;
+			} else
+				channel_map->channel_table[i] = NULL;
+		}
+		break;
 	}
-		return ACODEC_SUCCESS;
 	default:
 		fprintf(stderr, "SetPara: para not support!\n");
 		return ACODEC_SUCCESS;
@@ -580,6 +597,8 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 #ifdef DEBUG
 	fprintf(stdout, "SetPara: cmd = 0x%x, value = %d\n", ParaType, param[1]);
 #endif
+	if (b)
+		xf_buffer_put(b);
 
 	if (err)
 		ret = ACODEC_INIT_ERR;
