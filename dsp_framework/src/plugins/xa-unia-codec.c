@@ -89,6 +89,8 @@ struct XFUniaCodec {
 	/* ...private data pointer */
 	void *private_data;
 
+	/* ...chan table buffer */
+	void *chan_map_table;
 };
 
 /*******************************************************************************
@@ -176,6 +178,7 @@ static UA_ERROR_TYPE xf_uniacodec_init(struct XFUniaCodec *d,
 	case XA_CMD_TYPE_INIT_API_PRE_CONFIG_PARAMS:
 	{
 		d->consumed = 0;
+		d->chan_map_table = NULL;
 		/* ...and mark pcm gain component has been created */
 		d->state = XA_DEC_FLAG_PREINIT_DONE;
 
@@ -431,6 +434,42 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 		parameter.version = *(UWORD32 *)pv_value;
 		break;
 	case UNIA_CHAN_MAP_TABLE:
+	{
+		int i;
+		void *p_buf;
+		void *para_buf = xf_ipc_a2b(0, *(UWORD32 *)pv_value);
+		CHAN_TABLE *chan_map_tab;
+
+		if (!d->chan_map_table)
+			ret = xaf_malloc(&d->chan_map_table, 256, 0);
+		if (ret)
+			return ACODEC_PARA_ERROR;
+		memset(d->chan_map_table, 0, 256);
+		memcpy(d->chan_map_table, para_buf, 256);
+
+		chan_map_tab = (CHAN_TABLE *)d->chan_map_table;
+		LOG1("chan map %x\n", chan_map_tab->channel_table[3]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[5]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[7]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[9]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[11]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[13]);
+		/* cause sizeof(int) == 4 in dsp side */
+		p_buf = (void *)(chan_map_tab + 2);
+		for (i = 1; i < 10; i++) {
+			if (chan_map_tab->channel_table[i * 2 + 1]) {
+				chan_map_tab->channel_table[i] = p_buf;
+				p_buf += i * 2;
+			}
+		}
+		LOG1("chan map %x\n", chan_map_tab->channel_table[1]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[2]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[3]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[4]);
+		LOG1("chan map %x\n", chan_map_tab->channel_table[5]);
+		parameter.chan_map_tab = *chan_map_tab;
+		break;
+	}
 	default:
 		return ret;
 	}
