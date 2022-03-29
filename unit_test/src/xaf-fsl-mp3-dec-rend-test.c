@@ -265,6 +265,45 @@ int GetParameter(int argc_t, char *argv_t[], struct AudioOption *pAOption)
 Error:
 	return 1;
 }
+
+int AOption_setparam(void *p_decoder, void *p_AOption)
+{
+	struct AudioOption *AOption = p_AOption;
+	int param[2];
+
+	if (AOption->SampleRate > 0) {
+		param[0] = UNIA_SAMPLERATE;
+		param[1] = AOption->SampleRate;
+		xaf_comp_set_config(p_decoder, 1, &param[0]);
+	}
+	if (AOption->Channel > 0) {
+		param[0] = UNIA_CHANNEL;
+		param[1] = AOption->Channel;
+		xaf_comp_set_config(p_decoder, 1, &param[0]);
+	}
+	if (AOption->Width > 0) {
+		param[0] = UNIA_DEPTH;
+		param[1] = AOption->Width;
+		xaf_comp_set_config(p_decoder, 1, &param[0]);
+	}
+	if (AOption->Bitrate > 0) {
+		param[0] = UNIA_BITRATE;
+		param[1] = AOption->Bitrate;
+		xaf_comp_set_config(p_decoder, 1, &param[0]);
+	}
+	if (AOption->streamtype > 0) {
+		param[0] = UNIA_STREAM_TYPE;
+		param[1] = AOption->streamtype;
+		xaf_comp_set_config(p_decoder, 1, &param[0]);
+	}
+	if (AOption->channel_mode > 0) {
+		param[0] = UNIA_SBC_ENC_CHMODE;
+		param[1] = AOption->channel_mode;
+		xaf_comp_set_config(p_decoder, 1, &param[0]);
+	}
+	return 0;
+}
+
 int main_task(int argc, char **argv)
 {
 
@@ -455,6 +494,8 @@ int main_task(int argc, char **argv)
     TST_CHK_API(xaf_load_library(p_adev, p_decoder, dec_id), "xaf_load_library");
 #endif
     TST_CHK_API(dec_setup(p_decoder), "dec_setup");
+
+    TST_CHK_API(AOption_setparam(p_decoder, &AOption), "AOption setparam");
 
     /* ...start decoder component */
     TST_CHK_API(xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_START_FLAG), "xaf_comp_process");
