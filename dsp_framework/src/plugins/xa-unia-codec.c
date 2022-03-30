@@ -564,12 +564,12 @@ static UA_ERROR_TYPE xf_uniacodec_exec_process(struct XFUniaCodec *d,
 				&d->out_size);
 
 	d->consumed = offset;
-	LOG3("process: consumed = %d, produced = %d, ret = %d\n",
-	     d->consumed, d->out_size, ret);
-
 	/* set ret fatal error for avoiding dead loop in dsp */
 	if (!d->consumed && ret && ret <= ACODEC_INIT_ERR)
 		ret |= XA_FATAL_ERROR;
+
+	LOG3("process: consumed = %d, produced = %d, ret = %d\n",
+	     d->consumed, d->out_size, ret);
 
 	return ret;
 }
@@ -583,6 +583,7 @@ static UA_ERROR_TYPE xf_uniacodec_runtime_init(struct XFUniaCodec *d,
 	if (d->WrapFun.Reset)
 		ret = d->WrapFun.Reset(d->pWrpHdl);
 
+	d->inptr = NULL;
 	d->input_over = 0;
 	d->in_size = 0;
 	d->consumed = 0;

@@ -107,7 +107,7 @@ int xf_input_port_put(xf_input_port_t *port, xf_message_t *m)
         /* ...first message put - set access pointer and length */
         port->access = m->buffer, port->remaining = m->length;
 
-#if 0
+#if 1
         /* ...if first message is empty, mark port is done */
         /* ...The state change is not required here and is done in input_port_fill */
         (!port->access ? port->flags ^= XF_INPUT_FLAG_EOS | XF_INPUT_FLAG_DONE : 0);
