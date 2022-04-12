@@ -661,6 +661,7 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle,
 		break;
 	case UNIA_OUTPUT_PCM_FORMAT:
 		{
+#if 0
 			UniAcodecOutputPCMFormat outputFormat;
 			outputFormat.samplerate = pDSP_handle->samplerate;
 			/* ??? differ width with depth */
@@ -670,8 +671,10 @@ UA_ERROR_TYPE DSPDecGetPara(UniACodec_Handle pua_handle,
 			outputFormat.endian = 0;
 			outputFormat.interleave = 0;
 			memcpy(&outputFormat.layout[0], &pDSP_handle->layout_bak[0], UA_CHANNEL_MAX);
-			outputFormat.chan_pos_set = 0;
+			outputFormat.chan_pos_set = 1;
 			parameter->outputFormat = outputFormat;
+#endif
+			parameter->outputFormat = pDSP_handle->outputFormat;
 		}
 		break;
 	case UNIA_CODEC_DESCRIPTION:
@@ -878,21 +881,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 		fprintf(stdout, "NO_ERROR: consumed length = %d, output size = %d\n",
 		      in_size, out_size);
 #endif
-
-		param[0] = UNIA_SAMPLERATE;
-		param[2] = UNIA_CHANNEL;
-		param[4] = UNIA_DEPTH;
-
-		xaf_comp_get_config(pDSP_handle->p_comp, 3, &param[0]);
-
-		if (pDSP_handle->samplerate != param[1] || pDSP_handle->channels != param[3]
-				|| pDSP_handle->depth != param[5]) {
-			pDSP_handle->samplerate = param[1];
-			pDSP_handle->channels = param[3];
-			pDSP_handle->depth = param[5];
-			err = ACODEC_CAPIBILITY_CHANGE;
-		}
-
 		if (pDSP_handle->codec_type < CODEC_FSL_OGG_DEC) {
 			if ((pDSP_handle->channels == 1) &&
 				((pDSP_handle->audio_type == AAC)      ||
@@ -901,9 +889,75 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 				(pDSP_handle->audio_type == DAB_PLUS))) {
 				cancel_unused_channel_data(*OutputBuf,
 						*OutputSize, pDSP_handle->depth);
-
 				*OutputSize >>= 1;
 			}
+		}
+
+		param[0] = UNIA_SAMPLERATE;
+		param[2] = UNIA_CHANNEL;
+		param[4] = UNIA_DEPTH;
+
+		xaf_comp_get_config(pDSP_handle->p_comp, 3, &param[0]);
+
+		pDSP_handle->samplerate = param[1];
+		pDSP_handle->channels = param[3];
+		pDSP_handle->depth = param[5];
+
+		if ((pDSP_handle->codec_type != CODEC_SBC_ENC) &&
+				(pDSP_handle->chan_map_tab.size != 0) &&
+				(pDSP_handle->outputFormat.chan_pos_set == false) &&
+				(pDSP_handle->channels <= pDSP_handle->chan_map_tab.size)) {
+			int channel;
+			channel = pDSP_handle->channels;
+			channel_map = pDSP_handle->chan_map_tab.channel_table[channel];
+			if (channel_map) {
+				memcpy(pDSP_handle->outputFormat.layout,
+				       channel_map, sizeof(UWORD32) * channel);
+				pDSP_handle->outputFormat.chan_pos_set = true;
+			}
+		}
+
+		if ((pDSP_handle->codec_type != CODEC_SBC_ENC) &&
+				((pDSP_handle->outputFormat.samplerate != pDSP_handle->samplerate) ||
+				(pDSP_handle->outputFormat.channels != pDSP_handle->channels) ||
+				(memcmp(pDSP_handle->outputFormat.layout, pDSP_handle->layout_bak,
+					sizeof(UWORD32) * pDSP_handle->channels))) &&
+				(pDSP_handle->channels != 0)) {
+#ifdef DEBUG
+			printf("output format changed\n");
+#endif
+			pDSP_handle->outputFormat.width = pDSP_handle->depth;
+			pDSP_handle->outputFormat.depth = pDSP_handle->depth;
+			pDSP_handle->outputFormat.channels = pDSP_handle->channels;
+			pDSP_handle->outputFormat.interleave = true;
+			pDSP_handle->outputFormat.samplerate = pDSP_handle->samplerate;
+
+#if 0
+			if ((pDSP_handle->channels > 2)  && (pDSP_handle->channels <= 8) &&
+					(!pDSP_handle->outputFormat.chan_pos_set)) {
+				if (aacd_channel_layouts[pDSP_handle->channels])
+					memcpy(pDSP_handle->outputFormat.layout,
+					       aacd_channel_layouts[pDSP_handle->channels],
+						   sizeof(UWORD32) * pDSP_handle->channels);
+			}
+#endif
+			if (pDSP_handle->channels == 2) {
+				pDSP_handle->outputFormat.layout[0] = UA_CHANNEL_FRONT_LEFT;
+				pDSP_handle->outputFormat.layout[1] = UA_CHANNEL_FRONT_RIGHT;
+			}
+
+			memcpy(pDSP_handle->layout_bak, pDSP_handle->outputFormat.layout,
+				sizeof(UWORD32) * pDSP_handle->channels);
+
+#if 0
+			if ((*OutputSize > 0) && (pDSP_handle->channels > 0))
+				channel_pos_convert(pDSP_handle,
+						    (uint8 *)(*OutputBuf),
+						    *OutputSize,
+						    pDSP_handle->channels,
+						    pDSP_handle->depth);
+#endif
+			err = ACODEC_CAPIBILITY_CHANGE;
 		}
 		if (!out_size)
 			err |= ACODEC_NO_OUTPUT;
