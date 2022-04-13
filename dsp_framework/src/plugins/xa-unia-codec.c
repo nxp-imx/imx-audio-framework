@@ -740,9 +740,17 @@ static UA_ERROR_TYPE xa_uniacodec_get_mem_info_size(struct XFUniaCodec *d, UWORD
 		break;
 
 	case 1:
-		/* ...output buffer specification; accept exact audio frame */
-		i_value = 16384;
-		break;
+		{
+			UniACodecParameter param;
+			if (d->WrapFun.GetPara) {
+				d->WrapFun.GetPara(d->pWrpHdl, UNIA_OUTBUF_ALLOC_SIZE, &param);
+			}
+			if (param.outbuf_alloc_size > 0)
+				i_value = param.outbuf_alloc_size;
+			else
+				i_value = 16384;
+			break;
+		}
 
 	default:
 		/* ...invalid index */
