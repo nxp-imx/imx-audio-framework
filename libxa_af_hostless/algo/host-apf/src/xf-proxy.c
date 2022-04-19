@@ -280,7 +280,7 @@ static void * xf_proxy_thread(void *arg)
             if (m.opcode == XF_EVENT)  
             {
                 /* ...submit the event to application via callback. */
-                xf_g_ap->cdata->cb(xf_g_ap->cdata, XF_MSG_SRC_ID(msg.id), *(UWORD32*)m.address, (void *)m.address, m.length); 
+                xf_g_ap->cdata->cb(xf_g_ap->cdata, XF_MSG_SRC_ID(msg.id), *(UWORD32*)msg.buffer, (void *)msg.buffer, m.length);
             }
             else 
 #endif
