@@ -45,7 +45,7 @@ INCLUDES    += -I$(COMM_SRC_DIR)/include/fsl_unia -I$(COMM_SRC_DIR)/include			\
 		-I$(ROOT_DIR)/testxa_af_hostless/test/include
 
 CARM    =  $(CFLAGS_$(BUILD)) $(INCLUDES) $(OPTIMIZE) $(C_DEFINES)
-CARM    +=      -DHAVE_LINUX -DXA_DISABLE_EVENT -DHIFI_ONLY_XAF \
+CARM    +=      -DHAVE_LINUX -DHIFI_ONLY_XAF \
 		-DFIO_LOCAL_FS -DXA_DISABLE_DEPRECATED_API
 
 ifeq ($(TGT_OS),ANDROID)
