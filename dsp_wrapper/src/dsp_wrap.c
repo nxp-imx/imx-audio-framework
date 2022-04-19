@@ -161,8 +161,6 @@ WORD32 app_event_handler(pVOID comp_ptr, UWORD32 config_param_id, pVOID config_b
 
 	p_comp = (xaf_comp_t *)comp_ptr;
 	p_handle = &p_comp->handle;
-	printf("config para id %x\n", config_param_id);
-	printf("get decode err %x\n", decode_err);
 
 	msg.opcode = XF_EVENT;
 	msg.buffer = malloc(buf_size);
@@ -439,8 +437,6 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle)
 	struct DSP_Handle *pDSP_handle = (struct DSP_Handle *)pua_handle;
 	int ret = ACODEC_SUCCESS;
 	int param[2] = { 0 };
-
-	printf("dec reset\n");
 
 	param[0] = UNIA_RESET_BUF;
 	ret = xaf_comp_set_config(pDSP_handle->p_comp, 1, &param[0]);

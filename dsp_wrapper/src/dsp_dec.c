@@ -295,7 +295,6 @@ int comp_process(UniACodec_Handle pua_handle,
 		/* Get event from dsp */
 		int *config_buf = (long *)comp_info[0];
 		int decode_err = *config_buf;
-		printf("config buf %p, decode_err %d\n", config_buf, decode_err);
 		free(config_buf);
 		return ACODEC_ERROR_STREAM;
 	}
