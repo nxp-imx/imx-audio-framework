@@ -148,7 +148,31 @@ static enum ChipCode getChipCodeFromSocid(void)
 	return code;
 }
 
+#ifndef XA_DISABLE_EVENT
+WORD32 app_event_handler(pVOID comp_ptr, UWORD32 config_param_id, pVOID config_buf_ptr, UWORD32 buf_size, UWORD32 comp_error_flag)
+{
+	int ret;
+	xaf_comp_t *p_comp;
+	xf_handle_t *p_handle;
+	xf_user_msg_t msg;
+	if (!comp_error_flag)
+		return 1;
+	UWORD32 decode_err = *(UWORD32 *)config_buf_ptr;
 
+	p_comp = (xaf_comp_t *)comp_ptr;
+	p_handle = &p_comp->handle;
+	printf("config para id %x\n", config_param_id);
+	printf("get decode err %x\n", decode_err);
+
+	msg.opcode = XF_EVENT;
+	msg.buffer = malloc(buf_size);
+	memcpy(msg.buffer, config_buf_ptr, buf_size);
+
+	p_handle->response(p_handle, &msg);
+
+	return 0;
+}
+#endif
 
 /* codec info */
 static const CODECINFO codecinfo_factory[] = {
@@ -313,7 +337,9 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	mem_init();
 	adev_config->pmem_malloc = mem_malloc;
 	adev_config->pmem_free = mem_free;
-
+#ifndef XA_DISABLE_EVENT
+	adev_config->app_event_handler_cb = app_event_handler;
+#endif
 	err = xaf_adev_open((pVOID *)&pDSP_handle->p_adev, adev_config);
 	if (err) {
 		fprintf(stderr, "open dev error: %d\n", err);
@@ -330,6 +356,9 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	comp_config.num_input_buffers = 1;
 	comp_config.num_output_buffers = 1;
 	comp_config.pp_inbuf = (pVOID (*)[XAF_MAX_INBUFS])&dec_inbuf[0];
+#ifndef XA_DISABLE_EVENT
+	comp_config.error_channel_ctl = XAF_ERR_CHANNEL_ALL;
+#endif
 	err = xaf_comp_create((pVOID)p_adev, (pVOID *)&pDSP_handle->p_comp, &comp_config);
 	if (err) {
 		fprintf(stderr, "create comp error: %d\n", err);

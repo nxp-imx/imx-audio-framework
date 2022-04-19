@@ -288,8 +288,15 @@ int comp_process(UniACodec_Handle pua_handle,
 
 	/* ...wait until result is delivered */
 	error = xaf_comp_get_status(p_adev, p_decoder, comp_status, &comp_info[0]);
-	if (error != XAF_NO_ERR) {
+	if (error < XAF_NO_ERR) {
 		fprintf(stderr, "xaf_comp_get_status err %d\n", error);
+		return ACODEC_ERROR_STREAM;
+	} else if (error > XAF_NO_ERR) {
+		/* Get event from dsp */
+		int *config_buf = (long *)comp_info[0];
+		int decode_err = *config_buf;
+		printf("config buf %p, decode_err %d\n", config_buf, decode_err);
+		free(config_buf);
 		return ACODEC_ERROR_STREAM;
 	}
 
