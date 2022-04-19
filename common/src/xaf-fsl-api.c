@@ -339,7 +339,7 @@ static XAF_ERR_CODE xaf_event_relay(xa_app_submit_event_cb_t *cdata, UWORD32 com
             /* ...submit the event to application via callback */
             if (xf_g_ap->app_event_handler_cb)
             {
-                xf_g_ap->app_event_handler_cb((void *)p_comp, event_id, (void *)((UWORD32)(event_buf + sizeof(event_id))), (buf_size - sizeof(event_id)), ((event_id == XF_CFG_COMP_ERR_FATAL) || (event_id == XF_CFG_COMP_ERR_ALL)));
+                xf_g_ap->app_event_handler_cb((void *)p_comp, event_id, (void *)((event_buf + sizeof(event_id))), (buf_size - sizeof(event_id)), ((event_id == XF_CFG_COMP_ERR_FATAL) || (event_id == XF_CFG_COMP_ERR_ALL)));
             }
 
             /* ...resend buffer to DSP, but check again to ensure channel is still active(rare case) */
