@@ -348,6 +348,10 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 		return xf_unia_load_lib(d, pv_value);
 	case UNIA_UNLOAD_LIB:
 		return xf_unia_unload_lib(d, pv_value);
+	case UNIA_RESET_BUF:
+		if (d->WrapFun.Reset)
+			ret = d->WrapFun.Reset(d->pWrpHdl);
+		return ret;
 	case UNIA_SAMPLERATE:
 		parameter.samplerate = *(UWORD32 *)pv_value;
 		break;
