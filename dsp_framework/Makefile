@@ -13,7 +13,7 @@ OBJCOPY     = xt-objcopy
 PKG_LOADLIB = xt-pkg-loadlib
 XTENSA_CORE = hifi4_nxp_v4_3_1_3_dev
 
-CFLAGS  = -O3 -DHAVE_XOS -DXA_DISABLE_EVENT
+CFLAGS  = -O3 -DHAVE_XOS
 CFLAGS += -DXA_FSL_UNIA_CODEC
 TOOL_PATH   := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../../imx-audio-toolchain/Xtensa_Tool
 
