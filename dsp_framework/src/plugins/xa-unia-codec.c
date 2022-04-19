@@ -568,9 +568,10 @@ static UA_ERROR_TYPE xf_uniacodec_exec_process(struct XFUniaCodec *d,
 				&d->out_size);
 
 	d->consumed = offset;
-	/* set ret fatal error for avoiding dead loop in dsp */
-	if (!d->consumed && ret && ret <= ACODEC_INIT_ERR)
-		ret |= XA_FATAL_ERROR;
+
+	/* avoid to report normal return val to dsp */
+	if (!d->input_over && ret && ret > ACODEC_INIT_ERR)
+		ret = ACODEC_SUCCESS;
 
 	LOG3("process: consumed = %d, produced = %d, ret = %d\n",
 	     d->consumed, d->out_size, ret);
