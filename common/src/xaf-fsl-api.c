@@ -1571,6 +1571,12 @@ XAF_ERR_CODE xaf_comp_get_status(pVOID adev_ptr, pVOID comp_ptr, xaf_comp_status
         /* ...wait until result is delivered */
         XF_CHK_API(xf_response_get(p_handle, &rmsg)); 
 
+        if (rmsg.opcode == XF_EVENT) {
+            long *p_buf = (long *) p_info;
+            p_buf[0] = (long) rmsg.buffer;
+            return 1;
+        }
+
         if (rmsg.opcode == XF_FILL_THIS_BUFFER) 
         {
             if (rmsg.buffer == p_comp->start_buf)
