@@ -222,6 +222,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	const char *dec_id;
 	int  idx;
 
+	printf("--- wrapper create ---\n");
 	if (!memOps)
 		return NULL;
 
@@ -908,31 +909,12 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 				*OutputSize >>= 1;
 			}
 		}
-
-		if (*OutputSize ==  0) {
-			if (*OutputBuf && (buf_from_out == false)) {
-				pDSP_handle->sMemOps.Free(*OutputBuf);
-				pDSP_handle->dsp_out_buf = NULL;
-				*OutputBuf = NULL;
-			}
+		if (!out_size)
 			err |= ACODEC_NO_OUTPUT;
-		}
+
 		return err;
 	}
 
-#ifdef DEBUG
-	fprintf(stderr, "HAS_ERROR: err = 0x%x\n", (int)err);
-#endif
-
-	if (err == ACODEC_ERROR_STREAM && (*offset == 0) && InputSize != 0)
-		err = ACODEC_SUCCESS;
-
-	if (err == ACODEC_NOT_ENOUGH_DATA) {
-		if (InputBuf && InputSize > *offset)
-			err = ACODEC_SUCCESS;
-		else
-			err = ACODEC_NOT_ENOUGH_DATA;
-	}
 #ifdef DEBUG
 	fprintf(stderr, "HAS_ERROR: err = 0x%x\n", (int)err);
 #endif
@@ -945,34 +927,8 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 		}
 	}
 
-	switch (pDSP_handle->audio_type) {
-	case AAC:
-	case AAC_PLUS:
-	case WMA:
-		if (err == ACODEC_NOT_ENOUGH_DATA) {
-			if (InputBuf && InputSize > *offset)
-				err = ACODEC_SUCCESS;
-			else
-				err = ACODEC_NOT_ENOUGH_DATA;
-		}
 
-		pDSP_handle->last_err = err;
-		return err;
-	case MP2:
-	case MP3:
-	case BSAC:
-	case DRM:
-	case SBCDEC:
-	case SBCENC:
-	case DAB_PLUS:
-	case OGG:
-	case AC3:
-	case DD_PLUS:
-	case NBAMR:
-	case WBAMR:
-	default:
-		return err;
-	}
+	return err;
 }
 
 char *DSPDecLastErr(UniACodec_Handle pua_handle)
