@@ -84,6 +84,7 @@ typedef enum
     UNIA_FUNC_PRINT,
     UNIA_LOAD_LIB,
     UNIA_UNLOAD_LIB,
+    UNIA_RESET_BUF,
 
 /* dedicate for wma */
     UNIA_WMA_BlOCKALIGN= 0x100,
