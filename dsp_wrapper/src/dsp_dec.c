@@ -296,7 +296,10 @@ int comp_process(UniACodec_Handle pua_handle,
 		int *config_buf = (long *)comp_info[0];
 		int decode_err = *config_buf;
 		free(config_buf);
-		return ACODEC_ERROR_STREAM;
+		if (decode_err > ACODEC_INIT_ERR)
+			return ACODEC_SUCCESS;
+		else
+			return decode_err;
 	}
 
 	switch (*comp_status) {
