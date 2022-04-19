@@ -273,7 +273,6 @@ int main(void)
 		/* ...service core event */
 		xf_core_service(core);
 
-		rpmsg_response(core);
 	}
 
 	xf_core_deinit(core);

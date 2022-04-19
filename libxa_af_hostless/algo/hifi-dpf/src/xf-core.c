@@ -1280,6 +1280,8 @@ void xf_core_service(UWORD32 core)
         {
             /* ...process all commands */
             xf_shmem_process_queues(core);
+            /* send response by rpmsg */
+            rpmsg_response(core);
         }
 
         /* ...check if we have a backlog message placed into interim queue */
