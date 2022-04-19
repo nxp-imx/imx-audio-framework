@@ -38,7 +38,7 @@ CC          = $(TOOLS_DIR)/bin/aarch64-linux-gnu-gcc
 LN          = $(TOOLS_DIR)/bin/aarch64-linux-gnu-gcc
 
 CFLAGS      =	-Wl,--hash-style=gnu -lpthread			\
-		-DHAVE_LINUX -DXA_DISABLE_EVENT -DHIFI_ONLY_XAF \
+		-DHAVE_LINUX -DHIFI_ONLY_XAF \
 		-DFIO_LOCAL_FS -DXA_DISABLE_DEPRECATED_API
 CFLAGS     +=  -DXA_FSL_UNIA_CODEC
 
