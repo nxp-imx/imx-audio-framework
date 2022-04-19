@@ -408,31 +408,16 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle)
 {
 	struct DSP_Handle *pDSP_handle = (struct DSP_Handle *)pua_handle;
 	int ret = ACODEC_SUCCESS;
-	int count, i;
-	int p_info[4];
-	xaf_comp_status status;
+	int param[2] = { 0 };
 
-	/*
-	 * The XF_FLUSH command is used to reset codec buffers and
-	 * its related parameters in dsp firmware. However, the related
-	 * buffers of dsp core lib have not been allocated before dsp open.
-	 * So don't reset codec before dsp open.
-	 */
-	if (pDSP_handle->memory_allocated) {
-		ret = xaf_flush(pDSP_handle->p_comp, 0);
-		if (ret) {
-			fprintf(stderr, "Reset DSP Failed, ret = %d\n", ret);
-			goto Fail;
-		}
+	printf("dec reset\n");
 
-		/* when flush p_comp, clear the response message */
-		ret = comp_flush_msg(pDSP_handle);
-		if (ret) {
-			fprintf(stderr, "empty msg Failed, ret = %d\n", ret);
-			goto Fail;
-		}
+	param[0] = UNIA_RESET_BUF;
+	ret = xaf_comp_set_config(pDSP_handle->p_comp, 1, &param[0]);
+	if (ret) {
+		printf("Reset DSP buf failed\n");
+		goto Fail;
 	}
-
 	ResetInnerBuf(&pDSP_handle->inner_buf,
 		      pDSP_handle->inner_buf.threshold,
 		      pDSP_handle->inner_buf.threshold);
