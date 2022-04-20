@@ -167,7 +167,8 @@ static inline XA_ERRORCODE xa_codec_prepare_runtime(XAAudioCodec *codec)
     frame_size = msg->output_length[0] / codec->sample_size;
 
     /* ...it must be a multiple */
-    XF_CHK_ERR(frame_size * codec->sample_size == msg->output_length[0], XA_API_FATAL_INVALID_CMD_TYPE);
+    /* ...fsl aac fixed output length, then make this can't equal sometimes */
+    //XF_CHK_ERR(frame_size * codec->sample_size == msg->output_length[0], XA_API_FATAL_INVALID_CMD_TYPE);
 
     /* ...retrieve upsampling factor for given sample rate */
     XF_CHK_ERR(factor = xf_timebase_factor(msg->sample_rate), XA_API_FATAL_INVALID_CMD_TYPE);
