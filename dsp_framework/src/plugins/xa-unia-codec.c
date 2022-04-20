@@ -742,6 +742,7 @@ static UA_ERROR_TYPE xa_uniacodec_get_mem_info_size(struct XFUniaCodec *d, UWORD
 	case 1:
 		{
 			UniACodecParameter param;
+			memset(&param, 0, sizeof(UniACodecParameter));
 			if (d->WrapFun.GetPara) {
 				d->WrapFun.GetPara(d->pWrpHdl, UNIA_OUTBUF_ALLOC_SIZE, &param);
 			}
