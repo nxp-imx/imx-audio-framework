@@ -1,0 +1,5 @@
+
+Option usage:
+
+--enable-armv8: for packeting dsp core libs
+blank:          for no dsp core libs in package
