@@ -43,7 +43,7 @@ ifeq ($(TIME_PROFILE), 1)
 	CFLAGS += -DTIME_PROFILE
 endif
 
-all: DSP_FRAMEWORK UNIT_TEST
+all: DSP_FRAMEWORK UNIT_TEST DSP_WRAPPER
 	echo "--- Build all dsp library ---"
 
 DSP_FRAMEWORK: $(FRAMEWORK_DIR)
