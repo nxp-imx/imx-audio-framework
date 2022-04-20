@@ -333,7 +333,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	adev_config = &pDSP_handle->adev_config;
 	err = xaf_adev_config_default_init(adev_config);
 
-	mem_init();
+	mem_init(adev_config);
 	adev_config->pmem_malloc = mem_malloc;
 	adev_config->pmem_free = mem_free;
 #ifndef XA_DISABLE_EVENT
@@ -404,6 +404,7 @@ Err2:
 UA_ERROR_TYPE DSPDecDelete(UniACodec_Handle pua_handle)
 {
 	struct DSP_Handle *pDSP_handle = (struct DSP_Handle *)pua_handle;
+	xaf_adev_t *p_adev = pDSP_handle->p_adev;
 	int err = 0;
 
 	if (!pua_handle)
@@ -411,7 +412,7 @@ UA_ERROR_TYPE DSPDecDelete(UniACodec_Handle pua_handle)
 
 	xaf_comp_delete(pDSP_handle->p_comp);
 	xaf_adev_close(pDSP_handle->p_adev, XAF_ADEV_NORMAL_CLOSE);
-	mem_exit();
+	mem_exit(p_adev->xf_g_ap->g_mem_obj);
 
 	if (pDSP_handle->inner_buf.data) {
 		pDSP_handle->sMemOps.Free(pDSP_handle->inner_buf.data);

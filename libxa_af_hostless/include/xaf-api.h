@@ -24,6 +24,7 @@
 #define __XA_API_H__
 
 #include "xa_type_def.h"
+#include "xaf-mem.h"
 
 /* Constants */
 #define XAF_MAX_INBUFS                      2
@@ -126,8 +127,8 @@ enum xaf_comp_config_param {
 typedef const char *xf_id_t; 
 
 /* Types */
-typedef pVOID xaf_mem_malloc_fxn_t(WORD32 size, WORD32 id);
-typedef VOID  xaf_mem_free_fxn_t(pVOID ptr, WORD32 id);
+typedef pVOID xaf_mem_malloc_fxn_t(mem_obj_t *g_mem_obj, WORD32 size, WORD32 id);
+typedef VOID  xaf_mem_free_fxn_t(mem_obj_t *g_mem_obj, pVOID ptr, WORD32 id);
 typedef WORD32 (*xaf_app_event_handler_fxn_t)(pVOID comp_ptr, UWORD32 config_param_id, pVOID config_buf_ptr, UWORD32 buf_size, UWORD32 comp_error_flag);
 
 #ifndef XA_DISABLE_EVENT
@@ -150,6 +151,7 @@ typedef struct xaf_adev_config_s{
 	UWORD32 proxy_thread_priority;
 	UWORD32 dsp_thread_priority;
 	UWORD32	worker_thread_scratch_size[XAF_MAX_WORKER_THREADS];
+	mem_obj_t  g_mem_obj;
 }xaf_adev_config_t;
 
 typedef struct xaf_comp_config_s{

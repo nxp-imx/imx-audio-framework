@@ -860,7 +860,7 @@ int xf_pool_alloc(xf_proxy_t *proxy, UWORD32 number, UWORD32 length, xf_pool_typ
     if (r < 0)
     {
         TRACE(ERROR, _x("failed to allocate buffer: %d"), r);
-        xf_g_ap->xf_mem_free_fxn(p, id);
+        xf_g_ap->xf_mem_free_fxn(xf_g_ap->g_mem_obj, p, id);
         return r;
     }
     else
@@ -913,7 +913,7 @@ void xf_pool_free(xf_pool_t *pool, WORD32 id)
     xf_proxy_unlock(proxy);
     
     /* ...deallocate pool structure itself */
-    xf_g_ap->xf_mem_free_fxn(pool, id);
+    xf_g_ap->xf_mem_free_fxn(xf_g_ap->g_mem_obj, pool, id);
 
     TRACE(BUFFER, _b("[%p]::pool[%p] destroyed"), proxy, pool);
 }

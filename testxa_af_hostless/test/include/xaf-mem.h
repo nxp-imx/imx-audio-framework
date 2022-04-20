@@ -32,10 +32,10 @@ typedef struct {
 }mem_obj_t;
 
 
-void* mem_malloc(int size, int id);
-void mem_free(void * heap_ptr, int id);
-void* mem_init();
-void mem_exit();
+void* mem_malloc(mem_obj_t *g_mem_obj, int size, int id);
+void mem_free(mem_obj_t *g_mem_obj, void * heap_ptr, int id);
+void* mem_init(pVOID adev_config_ptr);
+void mem_exit(mem_obj_t *g_mem_obj);
 int mem_get_alloc_size(mem_obj_t* mem_handle, int id);
 
 #endif /* __XAF_MEM_H__ */

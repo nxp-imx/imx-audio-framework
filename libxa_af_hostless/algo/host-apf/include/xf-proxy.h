@@ -282,6 +282,8 @@ typedef struct xf_ap_s {
 #endif
 
     WORD32 xaf_memory_used; /* TENA-2155 to track all the non-shmem and non-component mallocs on the App Interface Layer */
+
+    mem_obj_t  *g_mem_obj;
 } xf_ap_t;
 
 typedef struct {

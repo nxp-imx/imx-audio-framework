@@ -396,10 +396,10 @@ int main_task(int argc, char **argv)
     p_input  = fp;
     p_output = ofp;
 
-    mem_handle = mem_init();
-
     xaf_adev_config_t adev_config;
     TST_CHK_API(xaf_adev_config_default_init(&adev_config), "xaf_adev_config_default_init");
+
+    mem_handle = mem_init(&adev_config);
 
     adev_config.pmem_malloc =  mem_malloc;
     adev_config.pmem_free =  mem_free;
@@ -510,7 +510,7 @@ int main_task(int argc, char **argv)
     TST_CHK_API(xaf_adev_close(p_adev, XAF_ADEV_NORMAL_CLOSE), "xaf_adev_close");
     FIO_PRINTF(stdout,"Audio device closed\n\n");
     
-    mem_exit();    
+    mem_exit(mem_handle);
 
 #ifdef XAF_PROFILE
     dsp_comps_cycles = dec_cycles;

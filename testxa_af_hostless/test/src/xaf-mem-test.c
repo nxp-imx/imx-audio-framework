@@ -33,9 +33,7 @@
 
 #include "xaf-fio-test.h"
 
-mem_obj_t g_mem_obj;
-
-void *mem_malloc(int size, int id)
+void *mem_malloc(mem_obj_t *g_mem_obj, int size, int id)
 {
     void *heap_ptr = NULL;
     
@@ -48,24 +46,24 @@ void *mem_malloc(int size, int id)
 
     if (id == XAF_MEM_ID_DEV)
     {
-        g_mem_obj.num_malloc_dev++;
-        g_mem_obj.persi_mem_dev += size;
+        g_mem_obj->num_malloc_dev++;
+        g_mem_obj->persi_mem_dev += size;
     }
     else
     {
-        g_mem_obj.num_malloc_comp++;
-        g_mem_obj.persi_mem_comp += size;
+        g_mem_obj->num_malloc_comp++;
+        g_mem_obj->persi_mem_comp += size;
     }    
 
     return heap_ptr; 
 }
 
-void mem_free(void * heap_ptr, int id)
+void mem_free(mem_obj_t *g_mem_obj, void * heap_ptr, int id)
 {
     if (id == XAF_MEM_ID_DEV)
-        g_mem_obj.num_malloc_dev--;
+        g_mem_obj->num_malloc_dev--;
     else if (id == XAF_MEM_ID_COMP)
-        g_mem_obj.num_malloc_comp--;
+        g_mem_obj->num_malloc_comp--;
 
     free(heap_ptr);
 }
@@ -74,22 +72,25 @@ int mem_get_alloc_size(mem_obj_t* mem_handle, int id)
 {
     int mem_size = 0;
     if(id == XAF_MEM_ID_DEV)
-        mem_size =  g_mem_obj.persi_mem_dev;
+        mem_size =  mem_handle->persi_mem_dev;
     else if(id == XAF_MEM_ID_COMP)
-        mem_size = g_mem_obj.persi_mem_comp;
+        mem_size = mem_handle->persi_mem_comp;
     return mem_size;
 }
 
-void* mem_init()
+void* mem_init(pVOID adev_config_ptr)
 {
+    xaf_adev_config_t *pconfig;
     void* ptr;
-    ptr = &g_mem_obj;
+
+    pconfig = (xaf_adev_config_t *)adev_config_ptr;
+    ptr = &pconfig->g_mem_obj;
     return ptr;
 }
 
-void mem_exit()
+void mem_exit(mem_obj_t *g_mem_obj)
 {
-    if((g_mem_obj.num_malloc_dev != 0)||(g_mem_obj.num_malloc_comp != 0))
+    if((g_mem_obj->num_malloc_dev != 0)||(g_mem_obj->num_malloc_comp != 0))
     {
         FIO_PRINTF(stdout,"\nMEMORY LEAK ERROR!!! All the allocated memory is not freed.\n\n\n");
     }

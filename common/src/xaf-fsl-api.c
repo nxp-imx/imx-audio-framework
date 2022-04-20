@@ -364,7 +364,7 @@ XAF_ERR_CODE xaf_malloc(xf_ap_t *xf_g_ap, void **buf_ptr, int size, int id)
 
     XAF_CHK_PTR(buf_ptr);
 
-    *buf_ptr = xf_g_ap->xf_mem_malloc_fxn(size, id);
+    *buf_ptr = xf_g_ap->xf_mem_malloc_fxn(xf_g_ap->g_mem_obj, size, id);
     XAF_CHK_PTR(*buf_ptr);
     memset(*buf_ptr, 0, size);
 
@@ -381,7 +381,7 @@ XAF_ERR_CODE xaf_malloc(xf_ap_t *xf_g_ap, void **buf_ptr, int size, int id)
 
 void xaf_free(xf_ap_t *xf_g_ap, void *buf, int id)
 {
-    xf_g_ap->xf_mem_free_fxn(buf, id);
+    xf_g_ap->xf_mem_free_fxn(xf_g_ap->g_mem_obj, buf, id);
 }
 
 XAF_ERR_CODE xaf_get_verinfo(pUWORD8 ver_info[3])
@@ -507,12 +507,14 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
 
     xaf_mem_malloc_fxn_t *mem_malloc;
     xaf_mem_free_fxn_t *mem_free;
+    mem_obj_t  *g_mem_obj;
 
     XAF_CHK_PTR(pconfig);
     audio_frmwk_buf_size = pconfig->audio_framework_buffer_size;
     audio_comp_buf_size = pconfig->audio_component_buffer_size;
     mem_malloc = pconfig->pmem_malloc;
     mem_free = pconfig->pmem_free;
+    g_mem_obj = &pconfig->g_mem_obj;
     dsp_thread_priority = pconfig->dsp_thread_priority;
     proxy_thread_priority = pconfig->proxy_thread_priority;
 
@@ -544,7 +546,7 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
 
     //Memory allocation for adev struct pointer
     size = (sizeof(xaf_adev_t) +(XAF_4BYTE_ALIGN-1));
-    pTmp = mem_malloc(size, XAF_MEM_ID_DEV);
+    pTmp = mem_malloc(g_mem_obj, size, XAF_MEM_ID_DEV);
     XAF_CHK_PTR(pTmp);
     memset(pTmp, 0, size);
 
@@ -556,7 +558,7 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
 
     // App Interface Layer memory allocation (BSS)
     size = sizeof(xf_ap_t)+(XAF_8BYTE_ALIGN-1);
-    p_adev->p_apMem = mem_malloc(size, XAF_MEM_ID_DEV);
+    p_adev->p_apMem = mem_malloc(g_mem_obj, size, XAF_MEM_ID_DEV);
     XAF_CHK_PTR(p_adev->p_apMem);
     memset(p_adev->p_apMem, 0, size);
 
@@ -567,6 +569,7 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
 
     xf_g_ap->xf_mem_malloc_fxn = mem_malloc;
     xf_g_ap->xf_mem_free_fxn = mem_free;
+    xf_g_ap->g_mem_obj = g_mem_obj;
 
 #ifndef XA_DISABLE_EVENT
     xf_g_ap->cdata = &p_adev->cdata;
@@ -803,12 +806,14 @@ XAF_ERR_CODE xaf_adev_close(pVOID adev_ptr, xaf_adev_close_flag flag)
     xf_proxy_t *p_proxy;
     xaf_comp_t *p_comp;
     WORD32 i, ncomp;
+    mem_obj_t  *g_mem_obj;
 
     XF_CHK_ERR((adev_ptr != NULL), XAF_INVALIDPTR_ERR);
 
     p_adev = (xaf_adev_t *)adev_ptr;
     ncomp = p_adev->n_comp;
     xf_g_ap = p_adev->xf_g_ap;
+    g_mem_obj = xf_g_ap->g_mem_obj;
 
     XAF_ADEV_STATE_CHK(p_adev, XAF_ADEV_RESET);
     p_adev->adev_state = XAF_ADEV_RESET;
@@ -884,10 +889,10 @@ XAF_ERR_CODE xaf_adev_close(pVOID adev_ptr, xaf_adev_close_flag flag)
           //ferret warning fix; not to use the memory allocated to function pointer xf_mem_free_fxn, after its freed(with free p_apMem).
           xaf_mem_free_fxn_t *pmem_free_fxn = xf_g_ap->xf_mem_free_fxn;
           
-          pmem_free_fxn(p_adev->p_apMem, XAF_MEM_ID_DEV);
+          pmem_free_fxn(g_mem_obj, p_adev->p_apMem, XAF_MEM_ID_DEV);
           p_adev->p_apMem = NULL;
           
-          pmem_free_fxn(p_adev->adev_ptr, XAF_MEM_ID_DEV);
+          pmem_free_fxn(g_mem_obj, p_adev->adev_ptr, XAF_MEM_ID_DEV);
         }
         xf_g_ap = NULL;
     }
@@ -1440,7 +1445,7 @@ XAF_ERR_CODE xaf_comp_delete(pVOID comp_ptr)
 
     xf_close(&p_comp->handle);
 
-    xf_g_ap->xf_mem_free_fxn(p_comp->comp_ptr, XAF_MEM_ID_COMP);
+    xf_g_ap->xf_mem_free_fxn(xf_g_ap->g_mem_obj, p_comp->comp_ptr, XAF_MEM_ID_COMP);
 
 #if TENA_2356
     /* ...release lock. */
