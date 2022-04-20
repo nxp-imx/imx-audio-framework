@@ -97,6 +97,75 @@
 #define PURPLE_STR(format, ...) COLORFUL_STR(COLOR_PURPLE, format, ##__VA_ARGS__)
 #define CYAN_STR(format, ...)   COLORFUL_STR(COLOR_CYAN, format, ##__VA_ARGS__)
 
+static UWORD32 aacd_1channel_layout[] = {
+	/* FC */
+	UA_CHANNEL_FRONT_CENTER,
+};
+
+static UWORD32 aacd_2channel_layout[] = {
+	/* FL,FR */
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_RIGHT,
+};
+
+static UWORD32 aacd_3channel_layout[] = {
+	/* FC,FL,FR */
+	UA_CHANNEL_FRONT_CENTER,
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_RIGHT,
+};
+
+static UWORD32 aacd_4channel_layout[] = {
+	/* FC,FCL,FCR,BC */
+	UA_CHANNEL_FRONT_CENTER,
+	UA_CHANNEL_FRONT_LEFT_CENTER,
+	UA_CHANNEL_FRONT_RIGHT_CENTER,
+	UA_CHANNEL_REAR_CENTER
+};
+
+static UWORD32 aacd_5channel_layout[] = {
+	/* FC,FL,FR,BL,BR */
+	UA_CHANNEL_FRONT_CENTER,
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_RIGHT,
+	UA_CHANNEL_REAR_LEFT,
+	UA_CHANNEL_REAR_RIGHT
+};
+
+static UWORD32 aacd_6channel_layout[] = {
+	/* FC,FL,FR,BL,BR,LFE */
+	UA_CHANNEL_FRONT_CENTER,
+	UA_CHANNEL_FRONT_LEFT,
+	UA_CHANNEL_FRONT_RIGHT,
+	UA_CHANNEL_REAR_LEFT,
+	UA_CHANNEL_REAR_RIGHT,
+	UA_CHANNEL_LFE
+};
+
+static UWORD32 aacd_8channel_layout[] = {
+	/* FC,FCL,FCR,SL,SR,BL,BR,LFE */
+	UA_CHANNEL_FRONT_CENTER,
+	UA_CHANNEL_FRONT_LEFT_CENTER,
+	UA_CHANNEL_FRONT_RIGHT_CENTER,
+	UA_CHANNEL_SIDE_LEFT,
+	UA_CHANNEL_SIDE_RIGHT,
+	UA_CHANNEL_REAR_LEFT,
+	UA_CHANNEL_REAR_RIGHT,
+	UA_CHANNEL_LFE
+};
+
+static UWORD32 *aacd_channel_layouts[] = {
+	NULL,
+	aacd_1channel_layout, // 1
+	aacd_2channel_layout, // 2
+	aacd_3channel_layout,
+	aacd_4channel_layout,
+	aacd_5channel_layout,
+	aacd_6channel_layout,
+	NULL,
+	aacd_8channel_layout,
+};
+
 enum ChipCode {
 	CC_UNKNOW = 0,
 	MX8ULP,

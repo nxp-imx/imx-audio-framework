@@ -936,7 +936,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 			pDSP_handle->outputFormat.interleave = true;
 			pDSP_handle->outputFormat.samplerate = pDSP_handle->samplerate;
 
-#if 0
 			if ((pDSP_handle->channels > 2)  && (pDSP_handle->channels <= 8) &&
 					(!pDSP_handle->outputFormat.chan_pos_set)) {
 				if (aacd_channel_layouts[pDSP_handle->channels])
@@ -944,7 +943,7 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 					       aacd_channel_layouts[pDSP_handle->channels],
 						   sizeof(UWORD32) * pDSP_handle->channels);
 			}
-#endif
+
 			if (pDSP_handle->channels == 2) {
 				pDSP_handle->outputFormat.layout[0] = UA_CHANNEL_FRONT_LEFT;
 				pDSP_handle->outputFormat.layout[1] = UA_CHANNEL_FRONT_RIGHT;
