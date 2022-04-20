@@ -1,0 +1,26 @@
+
+1. set up related build toolchain
+   Before you build the case, you should set up related build toolchain firstly,
+   you can see the DSP User's Guide to know how to install these toolchians.
+   This document is placed in the following location:
+   https://www.nxp.com/design/software/embedded-software/i-mx-software/embedded-linux-for-i-mx-applications-processors:IMXLINUX
+
+2. Build the DSP framework
+
+  1). build all
+      make all
+
+  2). only build DSP framework
+      make DSP_FRAMEWORK
+
+  3). only build DSP wrapper lib
+      make DSP_WRAPPER
+
+  4). only build DSP unit test
+      make UNIT_TEST
+
+  5). clean the folder
+      make clean
+
+3. Get the executed file and lib file
+   All the output files are placed in release folder.
