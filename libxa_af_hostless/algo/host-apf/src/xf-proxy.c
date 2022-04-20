@@ -49,8 +49,12 @@
 #ifdef HIFI_ONLY_XAF
 #define PROXY_THREAD_STACK_SIZE          8192
 const char proxy_thread_name[] = "proxyListen";
+
+#ifndef HAVE_LINUX
 extern xf_ap_t *xf_g_ap;
-extern XAF_ERR_CODE xaf_malloc(void **buf_ptr, int size, int id); 
+#endif
+
+extern XAF_ERR_CODE xaf_malloc(xf_ap_t *xf_g_ap, void **buf_ptr, int size, int id);
 #endif /* HIFI_ONLY_XAF */
 
 /*******************************************************************************
@@ -257,6 +261,8 @@ static inline int xf_proxy_buffer_free(xf_proxy_t *proxy, void *buffer, UWORD32 
 static void * xf_proxy_thread(void *arg)
 {
     xf_proxy_t     *proxy = arg;
+    xaf_adev_t     *p_adev = container_of(proxy, xaf_adev_t, proxy);
+    xf_ap_t        *xf_g_ap = p_adev->xf_g_ap;
     xf_handle_t    *client;
     int             r;
     xf_proxy_msg_t  m;
@@ -314,6 +320,8 @@ static void * xf_proxy_thread(void *arg)
 /* ...open HiFi proxy */
 int xf_proxy_init(xf_proxy_t *proxy, UWORD32 core)
 {
+    xaf_adev_t     *p_adev = container_of(proxy, xaf_adev_t, proxy);
+    xf_ap_t        *xf_g_ap = p_adev->xf_g_ap;
     UWORD32             i;
     int             r;
     
@@ -822,6 +830,8 @@ int xf_set_priorities(xf_proxy_t *proxy, UWORD32 core, UWORD32 n_rt_priorities,
 /* ...allocate buffer pool */
 int xf_pool_alloc(xf_proxy_t *proxy, UWORD32 number, UWORD32 length, xf_pool_type_t type, xf_pool_t **pool, WORD32 id)
 {
+    xaf_adev_t     *p_adev = container_of(proxy, xaf_adev_t, proxy);
+    xf_ap_t        *xf_g_ap = p_adev->xf_g_ap;
     xf_pool_t      *p;
     xf_buffer_t    *b;
     void           *data;
@@ -835,7 +845,7 @@ int xf_pool_alloc(xf_proxy_t *proxy, UWORD32 number, UWORD32 length, xf_pool_typ
 
     /* ...allocate data structure */
 
-    ret = xaf_malloc((void **)&p, (offset_of(xf_pool_t, buffer) + number * sizeof(xf_buffer_t)), id); 
+    ret = xaf_malloc(p_adev->xf_g_ap, (void **)&p, (offset_of(xf_pool_t, buffer) + number * sizeof(xf_buffer_t)), id);
     if(ret != XAF_NO_ERR)
         return ret;
 
@@ -888,6 +898,8 @@ int xf_pool_alloc(xf_proxy_t *proxy, UWORD32 number, UWORD32 length, xf_pool_typ
 void xf_pool_free(xf_pool_t *pool, WORD32 id)
 {
     xf_proxy_t     *proxy = pool->proxy;
+    xaf_adev_t     *p_adev = container_of(proxy, xaf_adev_t, proxy);
+    xf_ap_t        *xf_g_ap = p_adev->xf_g_ap;
 
     /* ...check buffers are all freed - tbd */
 

@@ -111,8 +111,6 @@
 #define XA_AUDIO_FRMWK_BUF_SIZE_MIN (16384)
 #define XA_AUDIO_FRMWK_BUF_SIZE_MAX ((1UL<<31)-1)
 
-xf_ap_t    *xf_g_ap;
-
 #ifndef XA_DISABLE_EVENT
 
 #define XF_EVENT_BUFFER_ALIGNMENT 8
@@ -303,9 +301,11 @@ static xf_app_event_channel_t * xaf_sync_chain_find_node_by_param(xaf_node_chain
 static XAF_ERR_CODE xaf_event_relay(xa_app_submit_event_cb_t *cdata, UWORD32 comp_id, UWORD32 event_id, void *event_buf, UWORD32 buf_size)
 {
     xaf_adev_t *p_adev = container_of(cdata, xaf_adev_t, cdata);
+    xf_ap_t    *xf_g_ap;
     xaf_comp_t *p_comp = NULL;
     UWORD32 i, ncomp;
     ncomp = p_adev->n_comp;
+    xf_g_ap = p_adev->xf_g_ap;
 
     __xf_lock(&p_adev->comp_chain.lock);
     if ((ncomp > 0) && (p_adev->comp_chain.head != NULL))
@@ -359,7 +359,7 @@ static XAF_ERR_CODE xaf_event_relay(xa_app_submit_event_cb_t *cdata, UWORD32 com
 }
 #endif /* XA_DISABLE_EVENT */
 
-XAF_ERR_CODE xaf_malloc(void **buf_ptr, int size, int id)
+XAF_ERR_CODE xaf_malloc(xf_ap_t *xf_g_ap, void **buf_ptr, int size, int id)
 {
 
     XAF_CHK_PTR(buf_ptr);
@@ -379,7 +379,7 @@ XAF_ERR_CODE xaf_malloc(void **buf_ptr, int size, int id)
     return XAF_NO_ERR;
 }
 
-void xaf_free(void *buf, int id)
+void xaf_free(xf_ap_t *xf_g_ap, void *buf, int id)
 {
     xf_g_ap->xf_mem_free_fxn(buf, id);
 }
@@ -496,6 +496,7 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
     xaf_adev_t *p_adev;
     void * pTmp;
     xf_proxy_t *p_proxy; 
+    xf_ap_t    *xf_g_ap = NULL;
 
     XAF_CHK_PTR(pp_adev);
     XF_CHK_ERR((xf_g_ap == NULL), XAF_INVALIDPTR_ERR);
@@ -561,6 +562,8 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
 
 
     xf_g_ap = (xf_ap_t *) (((unsigned long)p_adev->p_apMem + (XAF_8BYTE_ALIGN-1))& ~(XAF_8BYTE_ALIGN-1));
+
+    p_adev->xf_g_ap = xf_g_ap;
 
     xf_g_ap->xf_mem_malloc_fxn = mem_malloc;
     xf_g_ap->xf_mem_free_fxn = mem_free;
@@ -717,7 +720,7 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
 
     // DSP Interface Layer memory allocation (BSS)
     size = sizeof(xf_dsp_t)+(XAF_8BYTE_ALIGN-1);
-    ret = xaf_malloc(&(p_adev->p_dspMem), size, XAF_MEM_ID_DEV);
+    ret = xaf_malloc(p_adev->xf_g_ap, &(p_adev->p_dspMem), size, XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;
 
@@ -725,7 +728,7 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
 
 
     size = audio_frmwk_buf_size + (XAF_32BYTE_ALIGN-1); 
-    ret = xaf_malloc(&(p_adev->p_apSharedMem), size, XAF_MEM_ID_DEV);
+    ret = xaf_malloc(p_adev->xf_g_ap, &(p_adev->p_apSharedMem), size, XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;
     xf_g_dsp->xf_ap_shmem_buffer = (UWORD8 *) (((unsigned long)p_adev->p_apSharedMem + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
@@ -733,7 +736,7 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
 
 
     size = (audio_comp_buf_size*XF_CFG_CORES_NUM_DSP) + (XAF_32BYTE_ALIGN-1); 
-    ret = xaf_malloc(&(p_adev->p_dspLocalBuff), size, XAF_MEM_ID_DEV);
+    ret = xaf_malloc(p_adev->xf_g_ap, &(p_adev->p_dspLocalBuff), size, XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;
     xf_g_dsp->xf_dsp_local_buffer = (UWORD8 *) (((unsigned long)p_adev->p_dspLocalBuff + (XAF_32BYTE_ALIGN-1)) & ~(XAF_32BYTE_ALIGN-1));
@@ -741,7 +744,7 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
     
 
 #if XF_CFG_CORES_NUM_DSP > 1
-    ret = xaf_malloc(&(xf_g_dsp->xf_dsp_shmem_buffer), (audio_comp_buf_size), XAF_MEM_ID_DEV);
+    ret = xaf_malloc(p_adev->xf_g_ap, &(xf_g_dsp->xf_dsp_shmem_buffer), (audio_comp_buf_size), XAF_MEM_ID_DEV);
     if(ret != XAF_NO_ERR)
         return ret;    
     xf_g_dsp->xf_dsp_shmem_buffer_size = audio_comp_buf_size;
@@ -796,6 +799,7 @@ XAF_ERR_CODE xaf_adev_open_deprecated(pVOID *pp_adev, WORD32 audio_frmwk_buf_siz
 XAF_ERR_CODE xaf_adev_close(pVOID adev_ptr, xaf_adev_close_flag flag)
 {
     xaf_adev_t *p_adev;
+    xf_ap_t    *xf_g_ap;
     xf_proxy_t *p_proxy;
     xaf_comp_t *p_comp;
     WORD32 i, ncomp;
@@ -804,6 +808,7 @@ XAF_ERR_CODE xaf_adev_close(pVOID adev_ptr, xaf_adev_close_flag flag)
 
     p_adev = (xaf_adev_t *)adev_ptr;
     ncomp = p_adev->n_comp;
+    xf_g_ap = p_adev->xf_g_ap;
 
     XAF_ADEV_STATE_CHK(p_adev, XAF_ADEV_RESET);
     p_adev->adev_state = XAF_ADEV_RESET;
@@ -939,7 +944,7 @@ static XAF_ERR_CODE xaf_setup_event_channel(xaf_comp_t *src_comp, UWORD32 src_co
     p_adev    = (xaf_adev_t *) src_comp->p_adev;
     
     /* ...need to maintain app side housekeeping structure event channels */
-    xaf_malloc(&pTmp, sizeof(xf_app_event_channel_t), XAF_MEM_ID_DEV);
+    xaf_malloc(p_adev->xf_g_ap, &pTmp, sizeof(xf_app_event_channel_t), XAF_MEM_ID_DEV);
     memset(pTmp, 0, sizeof(xf_app_event_channel_t));
 
     p_channel = (xf_app_event_channel_t *)pTmp;
@@ -1019,7 +1024,7 @@ static XAF_ERR_CODE xaf_destroy_event_channel(xaf_comp_t *src_comp, UWORD32 src_
 
     xaf_sync_chain_delete_node(&p_adev->event_chain, p_channel_curr);
 
-    xaf_free((void *)p_channel_curr, XAF_MEM_ID_DEV);
+    xaf_free(p_adev->xf_g_ap, (void *)p_channel_curr, XAF_MEM_ID_DEV);
 
     return XAF_NO_ERR;
 }
@@ -1046,9 +1051,9 @@ XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t co
 	/* ...init codec lib and codec wrap lib */
 	strcpy(lib_path, CORE_LIB_PATH);
 	strcpy(lib_wrap_path, CORE_LIB_PATH);
-	ret = xaf_malloc(&p_comp->codec_lib, sizeof(struct lib_info), XAF_MEM_ID_COMP);
+	ret = xaf_malloc(p_adev->xf_g_ap, &p_comp->codec_lib, sizeof(struct lib_info), XAF_MEM_ID_COMP);
 	codec_lib = (struct lib_info *)p_comp->codec_lib;
-	ret = xaf_malloc(&p_comp->codec_wrap_lib, sizeof(struct lib_info), XAF_MEM_ID_COMP);
+	ret = xaf_malloc(p_adev->xf_g_ap, &p_comp->codec_wrap_lib, sizeof(struct lib_info), XAF_MEM_ID_COMP);
 	codec_wrap_lib = (struct lib_info *)p_comp->codec_wrap_lib;
 
 	if (!strcmp(comp_id, "audio-decoder/mp3")) {
@@ -1115,7 +1120,7 @@ XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t co
 		codec_lib->lib_type = DSP_CODEC_LIB;
 	} else {
 		/* fsl codec wrap lib include codec */
-		xaf_free(codec_lib, XAF_MEM_ID_COMP);
+		xaf_free(p_adev->xf_g_ap, codec_lib, XAF_MEM_ID_COMP);
 		p_comp->codec_lib = NULL;
 	}
 	codec_wrap_lib->filename = lib_wrap_path;
@@ -1171,7 +1176,7 @@ XAF_ERR_CODE xaf_comp_create(pVOID adev_ptr, pVOID *pp_comp, xaf_comp_config_t *
 
     //Memory allocation for component struct pointer
     size = (sizeof(xaf_comp_t) + (XAF_4BYTE_ALIGN-1));
-    ret = xaf_malloc(&pTmp, size, XAF_MEM_ID_COMP);
+    ret = xaf_malloc(p_adev->xf_g_ap, &pTmp, size, XAF_MEM_ID_COMP);
     if(ret != XAF_NO_ERR)
         return ret;
     p_comp = (xaf_comp_t *) (((unsigned long)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
@@ -1297,7 +1302,7 @@ XAF_ERR_CODE xaf_comp_create_deprecated(pVOID adev_ptr, pVOID *pp_comp, xf_id_t 
 
     //Memory allocation for component struct pointer
     size = (sizeof(xaf_comp_t) + (XAF_4BYTE_ALIGN-1));
-    ret = xaf_malloc(&pTmp, size, XAF_MEM_ID_COMP);
+    ret = xaf_malloc(p_adev->xf_g_ap, &pTmp, size, XAF_MEM_ID_COMP);
     if(ret != XAF_NO_ERR)
         return ret;
     p_comp = (xaf_comp_t *) (((unsigned long)pTmp + (XAF_4BYTE_ALIGN-1))& ~(XAF_4BYTE_ALIGN-1));
@@ -1386,9 +1391,11 @@ XAF_ERR_CODE xaf_comp_delete(pVOID comp_ptr)
 {
     xaf_comp_t *p_comp;
     xaf_adev_t *p_adev;
+    xf_ap_t    *xf_g_ap;
 
     p_comp = (xaf_comp_t *)comp_ptr;
     p_adev = (xaf_adev_t *) p_comp->p_adev;
+    xf_g_ap = p_adev->xf_g_ap;
 
     XAF_CHK_PTR(p_comp);
 
@@ -1396,8 +1403,8 @@ XAF_ERR_CODE xaf_comp_delete(pVOID comp_ptr)
 
     if (p_comp->codec_wrap_lib) xf_unload_lib(p_comp, p_comp->codec_wrap_lib);
     if (p_comp->codec_lib) xf_unload_lib(p_comp, p_comp->codec_lib);
-    if (p_comp->codec_lib) xaf_free(p_comp->codec_lib, XAF_MEM_ID_COMP);
-    if (p_comp->codec_wrap_lib) xaf_free(p_comp->codec_wrap_lib, XAF_MEM_ID_COMP);
+    if (p_comp->codec_lib) xaf_free(p_adev->xf_g_ap, p_comp->codec_lib, XAF_MEM_ID_COMP);
+    if (p_comp->codec_wrap_lib) xaf_free(p_adev->xf_g_ap, p_comp->codec_wrap_lib, XAF_MEM_ID_COMP);
 
     p_comp->comp_state = XAF_COMP_RESET;
 

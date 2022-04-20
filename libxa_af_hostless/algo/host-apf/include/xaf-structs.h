@@ -127,6 +127,8 @@ struct xaf_comp {
 
 typedef struct xaf_adev_s {
 
+    xf_ap_t    *xf_g_ap;
+
     xaf_node_chain_t comp_chain;
     
 #ifndef XA_DISABLE_EVENT
