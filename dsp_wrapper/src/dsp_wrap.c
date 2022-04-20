@@ -451,8 +451,6 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle)
 
 	pDSP_handle->offset_copy = 0;
 
-	pDSP_handle->codecdata_copy = false;
-	pDSP_handle->codecoffset = 0;
 Fail:
 	return ret;
 }
@@ -770,11 +768,16 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 #endif
 	if (pDSP_handle->codecData.buf && (pDSP_handle->codecdata_copy == false)
 			&& (pDSP_handle->codecdata_ignored == false)) {
-			InputBufHandle(&pDSP_handle->inner_buf,
-						pDSP_handle->codecData.buf,
-						pDSP_handle->codecData.size,
-						codecoffset,
-						0);
+		UWORD32 need_copy = pDSP_handle->codecData.size - *codecoffset;
+		UWORD32 actual_copy = (need_copy > INBUF_SIZE) ? INBUF_SIZE : need_copy;
+		int offset = 0;
+		InputBufHandle(&pDSP_handle->inner_buf,
+					pDSP_handle->codecData.buf + *codecoffset,
+					actual_copy,
+					&offset,
+					0);
+		*codecoffset += offset;
+		printf("act copy %d, offset %d, codec offset %d\n", actual_copy, offset, *codecoffset);
 	}
 
 	if ((pDSP_handle->codecdata_copy == true) || pDSP_handle->codecdata_ignored == true) {
