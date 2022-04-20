@@ -220,7 +220,6 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	const char *dec_id;
 	int  idx;
 
-	printf("--- wrapper create ---\n");
 	if (!memOps)
 		return NULL;
 
