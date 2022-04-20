@@ -412,7 +412,7 @@ UA_ERROR_TYPE DSPDecDelete(UniACodec_Handle pua_handle)
 
 	xaf_comp_delete(pDSP_handle->p_comp);
 	xaf_adev_close(pDSP_handle->p_adev, XAF_ADEV_NORMAL_CLOSE);
-	mem_exit(p_adev->xf_g_ap->g_mem_obj);
+	mem_exit(&pDSP_handle->adev_config.g_mem_obj);
 
 	if (pDSP_handle->inner_buf.data) {
 		pDSP_handle->sMemOps.Free(pDSP_handle->inner_buf.data);
