@@ -42,7 +42,8 @@ libfsldspfirmware_DATA = \
 
 libfsldspunittestbindir = $(bindir)/DSP
 libfsldspunittestbin_DATA = \
-	$(TOPDIR)/release/exe/dsp_test
+	$(TOPDIR)/release/exe/dsp_test.out \
+	$(TOPDIR)/release/exe/dsp_rend_test.out
 
 libfsldspreleasenotedir =
 libfsldspreleasenote_DATA = \
