@@ -758,6 +758,8 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 		pDSP_handle->framed = 0;
 	if (pDSP_handle->audio_type == NBAMR)
 		pDSP_handle->framed = 1;
+	if (pDSP_handle->audio_type == WMA)
+		pDSP_handle->framed = 1;
 
 	if (!pDSP_handle->codecData.buf)
 		pDSP_handle->codecdata_ignored = true;
