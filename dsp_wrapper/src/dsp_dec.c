@@ -276,6 +276,7 @@ int comp_process(UniACodec_Handle pua_handle,
 			/* only use input buf0 */
 			error = xaf_comp_process(p_adev, p_decoder, p_decoder->p_input[0], in_size, XAF_INPUT_READY_FLAG);
 		} else {
+			*in_off = 0;
 			pDSP_handle->input_over = 1;
 			error = xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_INPUT_OVER_FLAG);
 		}
