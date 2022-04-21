@@ -340,7 +340,9 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 #endif
 	err = xaf_adev_open((pVOID *)&pDSP_handle->p_adev, adev_config);
 	if (err) {
+#ifdef DEBUG
 		fprintf(stderr, "open dev error: %d\n", err);
+#endif
 		goto Err2;
 	}
 	p_adev = pDSP_handle->p_adev;
