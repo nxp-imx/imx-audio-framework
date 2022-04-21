@@ -243,10 +243,8 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 	if (file_read(path_buf, sbuf, 32) < 0)
 		return -1;
 
-	if (!strncmp(sbuf, "offline", 7)) {
-		if (file_write(path_buf, "start") == 0)
-			rproc_flag = 1;
-	}
+	if (file_write(path_buf, "start") == 0)
+		rproc_flag = 1;
 
 	/* wait /dev/rpmsgx ready or not */
 	for (j = 0; j < 10000; j++) {
@@ -305,22 +303,11 @@ int xf_rproc_close(struct xf_proxy_ipc_data *ipc)
 
 	close(ipc->fd);
 
-	for (i = 0; i < EPT_NUM; i++) {
-		memset(path_buf, 0, 512);
-		sprintf(path_buf, "/dev/rpmsg%d", i);
-		fd[i] = open(path_buf, O_RDWR | O_NONBLOCK);
-		if (fd[i] < 0)
-			break;
-		close(fd[i]);
-	}
-	/* all /dev/rpmsgX are free */
-	if (i == EPT_NUM) {
-		memset(path_buf, 0, 512);
-		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
+	memset(path_buf, 0, 512);
+	sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
 
-		if (file_write(path_buf, "stop") != 0)
-			return -1;
-	}
+	if (file_write(path_buf, "stop") != 0)
+		return -1;
 
 	return 0;
 }
