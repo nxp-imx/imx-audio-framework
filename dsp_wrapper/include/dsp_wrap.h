@@ -225,6 +225,7 @@ struct DSP_Handle {
 	xaf_adev_config_t adev_config;
 	xaf_comp_t *p_comp;
 	xaf_comp_status comp_status;
+	WORD32 saved_comp_status;
 
 	AUDIOFORMAT audio_type;
 	WORD32 codec_type;

@@ -440,10 +440,10 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle)
 	int ret = ACODEC_SUCCESS;
 	int param[2] = { 0 };
 
-	param[0] = UNIA_RESET_BUF;
-	ret = xaf_comp_set_config(pDSP_handle->p_comp, 1, &param[0]);
+	xaf_flush(pDSP_handle->p_comp, 0);
+	ret = comp_flush_msg(pDSP_handle);
 	if (ret) {
-		printf("Reset DSP buf failed\n");
+		printf("flush DSP buf failed\n");
 		goto Fail;
 	}
 	ResetInnerBuf(&pDSP_handle->inner_buf,
