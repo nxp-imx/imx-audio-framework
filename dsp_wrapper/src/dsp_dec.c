@@ -254,6 +254,10 @@ int comp_process(UniACodec_Handle pua_handle,
 	if (!input || !output)
 		return ACODEC_PARA_ERROR;
 
+	if (*comp_status == XAF_EXEC_DONE) {
+		return ACODEC_END_OF_STREAM;
+	}
+
 	if (!pDSP_handle->outptr_busy) {
 		if (*comp_status == XAF_STARTING) {
 			error = xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_START_FLAG);
@@ -316,6 +320,8 @@ int comp_process(UniACodec_Handle pua_handle,
 #ifdef DEBUG
 		fprintf(stdout, "xaf_comp_get_status exec done\n");
 #endif
+		pDSP_handle->outptr_busy = false;
+		pDSP_handle->inptr_busy = false;
 		return ACODEC_END_OF_STREAM;
 	case XAF_INIT_DONE:
 		p_buf = (long *)comp_info[0];
@@ -381,7 +387,9 @@ int comp_flush_msg(UniACodec_Handle pua_handle)
 		case XAF_PROBE_DONE:
 			return ACODEC_ERROR_STREAM;
 		case XAF_EXEC_DONE:
-			return ACODEC_END_OF_STREAM;
+			pDSP_handle->outptr_busy = false;
+			pDSP_handle->inptr_busy = false;
+			break;
 		case XAF_NEED_INPUT:
 			pDSP_handle->inptr_busy = false;
 			break;
