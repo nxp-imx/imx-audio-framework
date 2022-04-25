@@ -641,7 +641,11 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
     XF_CHK_API(xf_proxy_init(p_proxy, 0));
 
     /* ...create auxiliary buffers pool for control commands */
-    XF_CHK_API(xf_pool_alloc(p_proxy, XAF_AUX_POOL_SIZE, XAF_AUX_POOL_MSG_LENGTH, XF_POOL_AUX, &p_proxy->aux, XAF_MEM_ID_DEV));
+    ret = xf_pool_alloc(p_proxy, XAF_AUX_POOL_SIZE, XAF_AUX_POOL_MSG_LENGTH, XF_POOL_AUX, &p_proxy->aux, XAF_MEM_ID_DEV);
+    if (ret != 0) {
+        xf_proxy_close(p_proxy);
+	return ret;
+    }
 
 #if TENA_2356
     /* ...mutex for orderly comp deletion. */
