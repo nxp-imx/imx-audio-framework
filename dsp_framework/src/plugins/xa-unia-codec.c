@@ -177,6 +177,9 @@ static UA_ERROR_TYPE xf_uniacodec_init(struct XFUniaCodec *d,
 	{
 	case XA_CMD_TYPE_INIT_API_PRE_CONFIG_PARAMS:
 	{
+		d->input_over = 0;
+		d->in_size = 0;
+		d->out_size = 0;
 		d->consumed = 0;
 		d->chan_map_table = NULL;
 		/* ...and mark pcm gain component has been created */
@@ -552,6 +555,7 @@ static UA_ERROR_TYPE xf_uniacodec_exec_process(struct XFUniaCodec *d,
 		LOG("WrapFun.Process Pointer is NULL\n");
 		return ACODEC_INIT_ERR;
 	}
+	d->out_size = 0;
 
 	LOG4("in_buf = %x, in_size = %x, offset = %d, out_buf = %x\n",
 	     d->inptr, d->in_size, d->consumed, d->outptr);
@@ -592,6 +596,7 @@ static UA_ERROR_TYPE xf_uniacodec_runtime_init(struct XFUniaCodec *d,
 	d->input_over = 0;
 	d->in_size = 0;
 	d->consumed = 0;
+	d->out_size = 0;
 
 	return ret;
 }
