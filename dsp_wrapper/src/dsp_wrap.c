@@ -930,10 +930,17 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 
 			if ((pDSP_handle->channels > 2)  && (pDSP_handle->channels <= 8) &&
 					(!pDSP_handle->outputFormat.chan_pos_set)) {
-				if (aacd_channel_layouts[pDSP_handle->channels])
-					memcpy(pDSP_handle->outputFormat.layout,
-					       aacd_channel_layouts[pDSP_handle->channels],
-						   sizeof(UWORD32) * pDSP_handle->channels);
+				if (pDSP_handle->codec_type != CODEC_FSL_WMA_DEC) {
+					if (aacd_channel_layouts[pDSP_handle->channels])
+						memcpy(pDSP_handle->outputFormat.layout,
+						       aacd_channel_layouts[pDSP_handle->channels],
+							   sizeof(UWORD32) * pDSP_handle->channels);
+				} else {
+					if (wma10d_channel_layouts[pDSP_handle->channels])
+						memcpy(pDSP_handle->outputFormat.layout,
+						       wma10d_channel_layouts[pDSP_handle->channels],
+							   sizeof(UWORD32) * pDSP_handle->channels);
+				}
 			}
 
 			if (pDSP_handle->channels == 2) {

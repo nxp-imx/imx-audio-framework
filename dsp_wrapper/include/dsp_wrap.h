@@ -166,6 +166,88 @@ static UWORD32 *aacd_channel_layouts[] = {
 	aacd_8channel_layout,
 };
 
+/* wma channel layouts */
+static UWORD32 wma10d_1channel_layout[] = {
+  /* FC */
+    UA_CHANNEL_FRONT_CENTER,
+};
+
+static UWORD32 wma10d_2channel_layout[] = {
+  /* FL,FR */
+  UA_CHANNEL_FRONT_LEFT,
+  UA_CHANNEL_FRONT_RIGHT,
+};
+
+static UWORD32 wma10d_3channel_layout[] = {
+  /* FL,FR,FC */
+  UA_CHANNEL_FRONT_LEFT,
+  UA_CHANNEL_FRONT_RIGHT,
+  UA_CHANNEL_FRONT_CENTER,
+};
+
+static UWORD32 wma10d_4channel_layout[] = {
+  /* FL,FR,BL,BR */
+  UA_CHANNEL_FRONT_LEFT_CENTER,
+  UA_CHANNEL_FRONT_RIGHT_CENTER,
+  UA_CHANNEL_REAR_LEFT,
+  UA_CHANNEL_REAR_RIGHT
+};
+
+static UWORD32 wma10d_5channel_layout[] = {
+/* FL,FR,FC,BL,BR */
+  UA_CHANNEL_FRONT_LEFT,
+  UA_CHANNEL_FRONT_RIGHT,
+  UA_CHANNEL_FRONT_CENTER,
+  UA_CHANNEL_REAR_LEFT,
+  UA_CHANNEL_REAR_RIGHT
+};
+
+static UWORD32 wma10d_6channel_layout[] = {
+/* FL,FR,FC,LFE,BL,BR */
+  UA_CHANNEL_FRONT_LEFT,
+  UA_CHANNEL_FRONT_RIGHT,
+  UA_CHANNEL_FRONT_CENTER,
+  UA_CHANNEL_LFE,
+  UA_CHANNEL_REAR_LEFT,
+  UA_CHANNEL_REAR_RIGHT,
+};
+
+static UWORD32 wma10d_7channel_layout[] = {
+/* FL,FR,FC,LFE,BL,BR,BC */
+  UA_CHANNEL_FRONT_LEFT,
+  UA_CHANNEL_FRONT_RIGHT,
+  UA_CHANNEL_FRONT_CENTER,
+  UA_CHANNEL_LFE,
+  UA_CHANNEL_REAR_LEFT,
+  UA_CHANNEL_REAR_RIGHT,
+  UA_CHANNEL_REAR_CENTER,
+};
+
+static UWORD32 wma10d_8channel_layout[] = {
+/* FL,FR,FC,LFE,BL,BR,SL,SR  */
+  UA_CHANNEL_FRONT_LEFT_CENTER,
+  UA_CHANNEL_FRONT_RIGHT_CENTER,
+  UA_CHANNEL_FRONT_CENTER,
+  UA_CHANNEL_LFE,
+  UA_CHANNEL_REAR_LEFT,
+  UA_CHANNEL_REAR_RIGHT,
+  UA_CHANNEL_SIDE_LEFT,
+  UA_CHANNEL_SIDE_RIGHT,
+};
+
+static UWORD32 * wma10d_channel_layouts[] = {
+    NULL,
+    wma10d_1channel_layout, // 1
+    wma10d_2channel_layout, // 2
+    wma10d_3channel_layout,
+    wma10d_4channel_layout,
+    wma10d_5channel_layout,
+    wma10d_6channel_layout,
+    wma10d_7channel_layout,
+    wma10d_8channel_layout,
+};
+
+
 enum ChipCode {
 	CC_UNKNOW = 0,
 	MX8ULP,
