@@ -496,6 +496,8 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		pDSP_handle->depth_is_set = 1;
 		break;
 	case UNIA_CODEC_DATA:
+		if (!pDSP_handle->codecData.buf)
+			return ACODEC_SUCCESS;
 		pDSP_handle->codecData = parameter->codecData;
 		param[1] = parameter->codecData.size;
 		break;
