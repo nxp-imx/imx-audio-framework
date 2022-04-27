@@ -70,8 +70,12 @@ void xaf_free(void *buf_ptr, int id)
 void *xf_uniacodec_malloc(size_t size)
 {
 	int *buf_ptr;
-	xaf_malloc((void **)&buf_ptr, size, 0);
-	return buf_ptr;
+	int ret;
+	ret = xaf_malloc((void **)&buf_ptr, size, 0);
+	if (ret)
+		return NULL;
+	else
+		return buf_ptr;
 }
 
 void xf_uniacodec_free(void *buf_ptr)
