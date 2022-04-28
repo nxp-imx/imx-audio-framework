@@ -319,6 +319,7 @@ int comp_process(UniACodec_Handle pua_handle,
 #endif
 		pDSP_handle->outptr_busy = false;
 		pDSP_handle->inptr_busy = false;
+		pDSP_handle->saved_comp_status = XAF_OUTPUT_READY;
 		return ACODEC_END_OF_STREAM;
 	case XAF_INIT_DONE:
 #ifdef DEBUG
@@ -397,5 +398,7 @@ int comp_flush_msg(UniACodec_Handle pua_handle)
 			return ACODEC_ERR_UNKNOWN;
 		}
 	}
+
+	pDSP_handle->input_over = 0;
 	return ACODEC_SUCCESS;
 }
