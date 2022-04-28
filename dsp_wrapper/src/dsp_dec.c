@@ -301,6 +301,9 @@ int comp_process(UniACodec_Handle pua_handle,
 		int *config_buf = (long *)comp_info[0];
 		int decode_err = *config_buf;
 		free(config_buf);
+		/* get actual decode err */
+		if (decode_err & XA_FATAL_ERROR)
+			decode_err = decode_err & (~XA_FATAL_ERROR);
 		if (decode_err > ACODEC_INIT_ERR)
 			return ACODEC_SUCCESS;
 		else

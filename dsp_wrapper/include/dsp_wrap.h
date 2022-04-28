@@ -50,6 +50,7 @@
 #include "xaf-mem.h"
 #include "xaf-structs.h"
 #include "osal-msgq.h"
+#include "xa_error_standards.h"
 
 #include "fsl_unia.h"
 #include "dsp_codec_interface.h"
