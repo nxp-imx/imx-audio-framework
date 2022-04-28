@@ -513,12 +513,6 @@ static XA_ERRORCODE xa_codec_flush(XACodecBase *base, xf_message_t *m)
         /* ...reset produced samples counter */
         codec->produced = 0;
 
-	/* ... should only flush input port if msg from apf */
-	if (XF_MSG_SRC_PROXY(m->id)) {
-		xf_response(m);
-	        return XA_NO_ERROR;
-	}
-
         outbuf_available_flag = xf_output_port_ready(&codec->output);
         /* ...propagate flushing command to output port */
         if (xf_output_port_flush(&codec->output, XF_FLUSH))
