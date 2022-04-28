@@ -254,26 +254,8 @@ int comp_process(UniACodec_Handle pua_handle,
 	if (!input || !output)
 		return ACODEC_PARA_ERROR;
 
-	if (*comp_status == XAF_EXEC_DONE) {
-		return ACODEC_END_OF_STREAM;
-	}
-
-	if (!pDSP_handle->outptr_busy) {
-		if (*comp_status == XAF_STARTING) {
-			error = xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_START_FLAG);
-		} else if (*comp_status == XAF_INIT_DONE) {
-			error = xaf_comp_process(NULL, p_decoder, NULL, 0, XAF_EXEC_FLAG);
-		} else if (*comp_status == XAF_OUTPUT_READY || pDSP_handle->saved_comp_status == XAF_OUTPUT_READY) {
-			error = xaf_comp_process(NULL, p_decoder, p_decoder->pout_buf[0], OUTBUF_SIZE, XAF_NEED_OUTPUT_FLAG);
-			pDSP_handle->saved_comp_status = -1;
-		} else {
-			printf("outptr not busy, comp status %d\n", *comp_status);
-		}
-		if (error) {
-			fprintf(stderr, "outbuf error: %d\n", error);
-			return ACODEC_ERROR_STREAM;
-		}
-		pDSP_handle->outptr_busy = true;
+	if (*comp_status == XAF_STARTING) {
+		error = xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_START_FLAG);
 	}
 
 	if (!pDSP_handle->inptr_busy && !pDSP_handle->input_over) {
@@ -292,6 +274,21 @@ int comp_process(UniACodec_Handle pua_handle,
 			return ACODEC_ERROR_STREAM;
 		}
 		pDSP_handle->inptr_busy = true;
+	}
+
+	if (!pDSP_handle->outptr_busy) {
+		if (*comp_status == XAF_INIT_DONE) {
+			error = xaf_comp_process(NULL, p_decoder, NULL, 0, XAF_EXEC_FLAG);
+			pDSP_handle->outptr_busy = true;
+		} else if (*comp_status == XAF_OUTPUT_READY || pDSP_handle->saved_comp_status == XAF_OUTPUT_READY) {
+			error = xaf_comp_process(NULL, p_decoder, p_decoder->pout_buf[0], OUTBUF_SIZE, XAF_NEED_OUTPUT_FLAG);
+			pDSP_handle->saved_comp_status = -1;
+			pDSP_handle->outptr_busy = true;
+		}
+		if (error) {
+			fprintf(stderr, "outbuf error: %d\n", error);
+			return ACODEC_ERROR_STREAM;
+		}
 	}
 
 	/* ...wait until result is delivered */
@@ -324,10 +321,6 @@ int comp_process(UniACodec_Handle pua_handle,
 		pDSP_handle->inptr_busy = false;
 		return ACODEC_END_OF_STREAM;
 	case XAF_INIT_DONE:
-		p_buf = (long *)comp_info[0];
-		size = comp_info[1];
-		*out_size = 0;
-		pDSP_handle->outptr_busy = false;
 #ifdef DEBUG
 		fprintf(stdout, "xaf_comp_get_status comp init done\n");
 #endif
@@ -369,15 +362,16 @@ int comp_flush_msg(UniACodec_Handle pua_handle)
 	xaf_comp_status *comp_status = &pDSP_handle->comp_status;
 	long comp_info[4];
 
-	while (pDSP_handle->inptr_busy) {
+	while (p_decoder->pending_resp) {
 		error = xaf_comp_get_status(p_adev, p_decoder, comp_status, &comp_info[0]);
 		if (error < XAF_NO_ERR) {
-			fprintf(stderr, "xaf_comp_get_status err %d\n", error);
+			fprintf(stderr, "flush, xaf_comp_get_status err %d\n", error);
 			return ACODEC_ERROR_STREAM;
 		} else if (error > XAF_NO_ERR) {
 			/* Get event from dsp */
 			int *config_buf = (long *)comp_info[0];
 			int decode_err = *config_buf;
+			fprintf(stderr, "flush, get event, %d\n", decode_err);
 			free(config_buf);
 			continue;
 		}
@@ -389,6 +383,7 @@ int comp_flush_msg(UniACodec_Handle pua_handle)
 		case XAF_EXEC_DONE:
 			pDSP_handle->outptr_busy = false;
 			pDSP_handle->inptr_busy = false;
+			pDSP_handle->saved_comp_status = XAF_OUTPUT_READY;
 			break;
 		case XAF_NEED_INPUT:
 			pDSP_handle->inptr_busy = false;
