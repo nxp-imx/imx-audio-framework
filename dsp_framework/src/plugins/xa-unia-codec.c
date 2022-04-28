@@ -576,6 +576,8 @@ static UA_ERROR_TYPE xf_uniacodec_exec_process(struct XFUniaCodec *d,
 	/* avoid to report normal return val to dsp */
 	if (!d->input_over && ret && ret > ACODEC_INIT_ERR)
 		ret = ACODEC_SUCCESS;
+	if (ret && (ret > ACODEC_ERROR_STREAM) && (ret <= ACODEC_INIT_ERR))
+		ret |= XA_FATAL_ERROR;
 
 	LOG3("process: consumed = %d, produced = %d, ret = %d\n",
 	     d->consumed, d->out_size, ret);
