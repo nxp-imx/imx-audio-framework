@@ -369,7 +369,7 @@ int xf_dma_buf_open(struct xf_proxy_ipc_data *ipc) {
 
 int xf_dma_buf_close(struct xf_proxy_ipc_data *ipc) {
 	/* ...unmap shared memory region */
-	(void)munmap(&ipc->shmem, ipc->shmem_size);
+	(void)munmap(ipc->shmem, ipc->shmem_size);
 	close(ipc->fd_mem);
 
 	return 0;
