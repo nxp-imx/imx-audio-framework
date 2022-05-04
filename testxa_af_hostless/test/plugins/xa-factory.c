@@ -85,6 +85,9 @@ extern XA_ERRORCODE xa_dummy_aec23(xa_codec_handle_t, WORD32, WORD32, pVOID);
 extern XA_ERRORCODE xa_pcm_split(xa_codec_handle_t, WORD32, WORD32, pVOID);
 extern XA_ERRORCODE xa_mimo_mix(xa_codec_handle_t, WORD32, WORD32, pVOID);
 extern XA_ERRORCODE xa_opus_encoder(xa_codec_handle_t, WORD32, WORD32, pVOID);
+extern XA_ERRORCODE xa_microspeech_fe(xa_codec_handle_t, WORD32, WORD32, pVOID);
+extern XA_ERRORCODE xa_microspeech_inference(xa_codec_handle_t, WORD32, WORD32, pVOID);
+extern XA_ERRORCODE xa_person_detect_inference(xa_codec_handle_t, WORD32, WORD32, pVOID);
 
 /* ...component class factories */
 extern void * xa_audio_codec_factory(UWORD32 core, xa_codec_func_t process, xaf_comp_type comp_type);
@@ -180,6 +183,13 @@ static const xf_component_id_t xf_component_id[] =
 #endif
 #if XA_MIMO_MIX
     { "mimo-proc21/mimo_mix",    xa_mimo_proc_factory,       xa_mimo_mix },
+#endif
+#if XA_TFLM_MICROSPEECH
+    { "post-proc/microspeech_fe",      xa_audio_codec_factory,    xa_microspeech_fe },
+    { "post-proc/microspeech_inference",      xa_audio_codec_factory,    xa_microspeech_inference },
+#endif
+#if XA_TFLM_PERSON_DETECT
+    { "post-proc/person_detect_inference",      xa_audio_codec_factory,    xa_person_detect_inference },
 #endif
 #if XA_OPUS_ENCODER
     { "audio-encoder/opus",       xa_audio_codec_factory,     xa_opus_encoder},

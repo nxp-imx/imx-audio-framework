@@ -127,10 +127,22 @@ ifeq ($(PLATF), imx8mp_lpa)
 endif
 
 ifeq ($(PLATF), imx8ulp)
+	ifeq ($(TFLM), 1)
+	TARGET = hifi4_tflm_imx8ulp.bin
+	else
 	TARGET = hifi4_imx8ulp.bin
+	endif
 endif
 
 PLATF ?= imx8
+
+ifeq ($(TFLM), 1)
+	ifneq ($(PLATF), imx8ulp)
+	$(warning TensorFlow Lite Micro component support has not been added to this platform yet!)
+	else
+include tensorflow_lite_micro.inc
+	endif
+endif
 
 all: $(C_OBJS)
 	$(CPLUS) $(CPLUS_FLAGS) $(C_OBJS) -lxos -lxtutil -o dsp_framework
@@ -151,5 +163,7 @@ clean:
 	rm -f $(ROOT_DIR)/rpmsg-lite/lib/rpmsg_lite/*.o
 	rm -f $(ROOT_DIR)/rpmsg-lite/lib/virtio/*.o
 	rm -f $(ROOT_DIR)/rpmsg-lite/lib/common/*.o
+	rm -f $(C_OBJS)
+	rm -rf $(SRC_DIR)/tflite-micro
 	rm -f ./dsp_framework
 

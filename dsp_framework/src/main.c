@@ -203,6 +203,10 @@ int main(void)
 		xf_core_init(core); /* ->xf_ipc_init() */
 		dsp->is_core_init = 1;
 
+		for (i = 0; i < XAF_MAX_WORKER_THREADS; i++) {
+			xf_g_dsp->xf_core_data[0].worker_thread_scratch_size[i] = 1024;
+		}
+
 		dsp->rpmsg = rpmsg_lite_remote_init((void *)RPMSG_LITE_SRTM_SHMEM_BASE,
 						    RPMSG_LITE_SRTM_LINK_ID,
 						    RL_NO_FLAGS,

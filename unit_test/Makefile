@@ -1,5 +1,5 @@
 #*****************************************************************
-# Copyright 2018 NXP
+# Copyright 2018-2022 NXP
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -79,15 +79,35 @@ OUT_REND     =	dsp_rend_test.out
 C_OBJS_DEC  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-dec-test.o
 OUT_DEC     =	dsp_test.out
 
-all: DEC REND
+ifeq ($(TFLM), 1)
+INCLUDES	+=	-I$(ROOT_DIR)/dsp_framework/tflite-micro/tensorflow/lite/micro/tools/make/gen/xtensa_hifi4_default/genfiles \
+				-I$(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/tflm_common
+
+C_OBJS_TFLM =	$(C_OBJS) $(SRC_DIR)/dsp_tflm_test.o \
+				$(ROOT_DIR)/dsp_framework/tflite-micro/tensorflow/lite/micro/tools/make/gen/xtensa_hifi4_default/genfiles/tensorflow/lite/micro/examples/micro_speech/testdata/yes_1000ms_audio_data.o \
+				$(ROOT_DIR)/dsp_framework/tflite-micro/tensorflow/lite/micro/tools/make/gen/xtensa_hifi4_default/genfiles/tensorflow/lite/micro/examples/micro_speech/testdata/no_1000ms_audio_data.o
+OUT_TFLM    =	dsp_tflm_test.out
+endif
+
+all: DEC REND TFLM
 
 DEC: $(C_OBJS_DEC)
 	$(CC) $(CFLAGS) $(C_OBJS_DEC) -o $(OUT_DEC)
 REND: $(C_OBJS_REND)
 	$(CC) $(CFLAGS) $(C_OBJS_REND) -o $(OUT_REND)
 
+ifeq ($(TFLM), 1)
+TFLM: $(C_OBJS_TFLM)
+	$(CC) $(CFLAGS) $(C_OBJS_TFLM) -o $(OUT_TFLM)
+else
+TFLM:
+endif
+
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+%.o: %.cc
+	$(CC) -std=c++11 $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 
 clean:

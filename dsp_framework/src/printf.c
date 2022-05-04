@@ -305,4 +305,29 @@ int __dsp_sprintf(char *buf, char *fmt, ...)
 
 	return r;
 }
+
+/* Function __write_r is used for Xtensa toolchain printf support */
+int __attribute__((weak)) _write_r(void *ptr, int handle, char *buffer, int size)
+{
+    if (NULL == buffer)
+    {
+        /* return -1 if error. */
+        return -1;
+    }
+
+    /* This function only writes to "standard out" and "standard err" for all other file handles it returns failure. */
+    if ((handle != 1) && (handle != 2))
+    {
+        return -1;
+    }
+
+    /* Send data. */
+    int i = 0;
+    while (i < size)
+    {
+        dsp_putc(buffer[i++]);
+    }
+
+    return size;
+}
 #endif /* DEBUG */

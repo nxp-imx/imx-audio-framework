@@ -16,7 +16,8 @@ fsldspwraplib = \
 fsldspfirmware = \
 	$(TOPDIR)/release/hifi4_imx8mp.bin \
 	$(TOPDIR)/release/hifi4_imx8qmqxp.bin \
-	$(TOPDIR)/release/hifi4_imx8ulp.bin
+	$(TOPDIR)/release/hifi4_imx8ulp.bin \
+	$(TOPDIR)/release/hifi4_tflm_imx8ulp.bin
 
 endif
 endif
@@ -43,7 +44,8 @@ libfsldspfirmware_DATA = \
 libfsldspunittestbindir = $(bindir)/DSP
 libfsldspunittestbin_DATA = \
 	$(TOPDIR)/release/exe/dsp_test.out \
-	$(TOPDIR)/release/exe/dsp_rend_test.out
+	$(TOPDIR)/release/exe/dsp_rend_test.out \
+	$(TOPDIR)/release/exe/dsp_tflm_test.out
 
 libfsldspreleasenotedir =
 libfsldspreleasenote_DATA = \
