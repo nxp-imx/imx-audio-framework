@@ -80,12 +80,12 @@ C_OBJS_DEC  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-dec-test.o
 OUT_DEC     =	dsp_test.out
 
 ifeq ($(TFLM), 1)
-INCLUDES	+=	-I$(ROOT_DIR)/dsp_framework/tflite-micro/tensorflow/lite/micro/tools/make/gen/xtensa_hifi4_default/genfiles \
+INCLUDES	+=	-I$(SRC_DIR)/tflm \
 				-I$(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/tflm_common
 
 C_OBJS_TFLM =	$(C_OBJS) $(SRC_DIR)/dsp_tflm_test.o \
-				$(ROOT_DIR)/dsp_framework/tflite-micro/tensorflow/lite/micro/tools/make/gen/xtensa_hifi4_default/genfiles/tensorflow/lite/micro/examples/micro_speech/testdata/yes_1000ms_audio_data.o \
-				$(ROOT_DIR)/dsp_framework/tflite-micro/tensorflow/lite/micro/tools/make/gen/xtensa_hifi4_default/genfiles/tensorflow/lite/micro/examples/micro_speech/testdata/no_1000ms_audio_data.o
+				$(SRC_DIR)/tflm/yes_1000ms_audio_data.o \
+				$(SRC_DIR)/tflm/no_1000ms_audio_data.o
 OUT_TFLM    =	dsp_tflm_test.out
 endif
 
