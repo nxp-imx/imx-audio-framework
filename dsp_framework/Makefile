@@ -165,5 +165,7 @@ clean:
 	rm -f $(ROOT_DIR)/rpmsg-lite/lib/common/*.o
 	rm -f $(C_OBJS)
 	rm -rf $(SRC_DIR)/tflite-micro
+	rm -f $(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/tflm_common/*.o
+	rm -f $(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/tflm_microspeech/*.o
 	rm -f ./dsp_framework
 
