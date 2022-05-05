@@ -90,7 +90,7 @@ struct XFUniaCodec {
 	void *private_data;
 
 	/* ...chan table buffer */
-	void *chan_map_table;
+	UWORD32 chan_map_table[256];
 };
 
 /*******************************************************************************
@@ -181,7 +181,7 @@ static UA_ERROR_TYPE xf_uniacodec_init(struct XFUniaCodec *d,
 		d->in_size = 0;
 		d->out_size = 0;
 		d->consumed = 0;
-		d->chan_map_table = NULL;
+		memset(d->chan_map_table, 0, 256);
 		/* ...and mark pcm gain component has been created */
 		d->state = XA_DEC_FLAG_PREINIT_DONE;
 
@@ -447,10 +447,6 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 		void *para_buf = xf_ipc_a2b(0, *(UWORD32 *)pv_value);
 		CHAN_TABLE *chan_map_tab;
 
-		if (!d->chan_map_table)
-			ret = xaf_malloc(&d->chan_map_table, 256, 0);
-		if (ret)
-			return ACODEC_PARA_ERROR;
 		memset(d->chan_map_table, 0, 256);
 		memcpy(d->chan_map_table, para_buf, 256);
 
