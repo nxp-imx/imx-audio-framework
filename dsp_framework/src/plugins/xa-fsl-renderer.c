@@ -495,14 +495,14 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 		dma_cfg->p_fe_dma_addr         = (void *)FE_DMA_ADDR;
 		dma_cfg->p_fe_tcd              = d->fe_tcd;
 		dma_cfg->p_fe_tcd_aligned      = d->fe_tcd_align32;
-		dma_cfg->p_fe_dev_addr         = FE_DEV_ADDR;
+		dma_cfg->p_fe_dev_addr         = (void *)FE_DEV_ADDR;
 		dma_cfg->fe_dev_fifo_in_off    = FE_DEV_FIFO_IN_OFF;
 		dma_cfg->fe_dev_fifo_out_off   = FE_DEV_FIFO_OUT_OFF;
 		dma_cfg->p_dev_addr            = (void *)DEV_ADDR;
 		dma_cfg->dev_fifo_off          = DEV_FIFO_OFF;
 		dma_cfg->period_len            = d->frame_size_bytes * d->channels;
 	} else {
-		xaf_malloc(&d->easrc, sizeof(struct fsl_easrc), 0);
+		xaf_malloc((void **)&d->easrc, sizeof(struct fsl_easrc), 0);
 		xaf_malloc(&d->ctx, sizeof(struct fsl_easrc_context), 0);
 		if (!d->ctx || !d->easrc)
 			return -1;
@@ -545,7 +545,7 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 		dma->type                      = SDMA;
 		dma->dma_cfg                   = dma_cfg;
 
-		dma_cfg->p_fe_dev_addr         = FE_DEV_ADDR;
+		dma_cfg->p_fe_dev_addr         = (void *)FE_DEV_ADDR;
 		dma_cfg->fe_dev_fifo_in_off    = FE_DEV_FIFO_IN_OFF;
 		dma_cfg->fe_dev_fifo_out_off   = FE_DEV_FIFO_OUT_OFF;
 		dma_cfg->p_dev_addr            = (void *)DEV_ADDR;
@@ -564,7 +564,7 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 
 	dma_config(dma);
 
-	xos_register_interrupt_handler(d->irq_2_dsp, xa_hw_renderer_isr, d);
+	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_renderer_isr, d);
 	xos_interrupt_enable(d->irq_2_dsp);
 
 	WM8960_Init();
@@ -725,7 +725,7 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
 	d->dev_resume(d->dev_addr, d->dev_cache);
 	d->fe_dev_resume(d->fe_dev_addr, d->fe_dev_cache);
 	dma_resume(&d->dma);
-	xos_register_interrupt_handler(d->irq_2_dsp, xa_hw_renderer_isr, d);
+	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_renderer_isr, d);
 	xos_interrupt_enable(d->irq_2_dsp);
 	return XA_NO_ERROR;
 
