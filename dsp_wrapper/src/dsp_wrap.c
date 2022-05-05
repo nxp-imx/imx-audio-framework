@@ -606,7 +606,10 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		for(i = 1; i < 10; i++) {
 			channel_tab = parameter->chan_map_tab.channel_table[i];
 			if (channel_tab) {
-				channel_map->channel_table[i] = i;
+				/* ... dsp can't recognize addr from top layer, then set
+				 * offset to channel_table */
+				memset(&channel_map->channel_table[i], 0, sizeof(UWORD32*));
+				memcpy(&channel_map->channel_table[i], &i, sizeof(UWORD32*));
 				memcpy(p_buf, channel_tab, sizeof(int) * i);
 				p_buf += i;
 			} else
