@@ -81,11 +81,11 @@ OUT_DEC     =	dsp_test.out
 
 ifeq ($(TFLM), 1)
 INCLUDES	+=	-I$(SRC_DIR)/tflm \
-				-I$(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/tflm_common
+			-I$(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/tflm_common
 
 C_OBJS_TFLM =	$(C_OBJS) $(SRC_DIR)/dsp_tflm_test.o \
-				$(SRC_DIR)/tflm/yes_1000ms_audio_data.o \
-				$(SRC_DIR)/tflm/no_1000ms_audio_data.o
+		$(SRC_DIR)/tflm/yes_1000ms_audio_data.o \
+		$(SRC_DIR)/tflm/no_1000ms_audio_data.o
 OUT_TFLM    =	dsp_tflm_test.out
 endif
 
@@ -115,5 +115,6 @@ clean:
 	rm -f $(ROOT_DIR)/libxa_af_hostless/algo/host-apf/src/*.o
 	rm -f $(ROOT_DIR)/testxa_af_hostless/test/src/*.o
 	rm -f $(COM_DIR)/src/*.o
+	rm -f $(SRC_DIR)/tflm/*.o
 	rm -f ./*.out
 

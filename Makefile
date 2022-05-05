@@ -85,4 +85,6 @@ clean:
 	rm -rf ./$(RELEASE_DIR)/*.so
 	rm -rf ./$(RELEASE_DIR)/exe
 	rm -rf ./$(RELEASE_DIR)/wrapper
-	rm -rf ./$(RELEASE_DIR)/*.bin
+	rm -rf ./$(RELEASE_DIR)/hifi4_imx8mp.bin
+	rm -rf ./$(RELEASE_DIR)/hifi4_imx8qmqxp.bin
+	rm -rf ./$(RELEASE_DIR)/hifi4_imx8ulp.bin
