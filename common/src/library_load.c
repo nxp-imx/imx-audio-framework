@@ -585,6 +585,8 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 static long unload_dpu_with_library(struct xf_proxy *proxy,
 				    struct lib_info *lib_info)
 {
+	if (!lib_info->code_section_pool || !lib_info->data_section_pool)
+		return XAF_INVALIDPTR_ERR;
 	xf_pool_free(lib_info->code_section_pool, XAF_MEM_ID_COMP);
 	xf_pool_free(lib_info->data_section_pool, XAF_MEM_ID_COMP);
 
