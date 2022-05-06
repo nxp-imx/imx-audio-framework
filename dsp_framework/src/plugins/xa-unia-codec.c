@@ -177,10 +177,7 @@ static UA_ERROR_TYPE xf_uniacodec_init(struct XFUniaCodec *d,
 	{
 	case XA_CMD_TYPE_INIT_API_PRE_CONFIG_PARAMS:
 	{
-		d->input_over = 0;
-		d->in_size = 0;
-		d->out_size = 0;
-		d->consumed = 0;
+		memset(d, 0, sizeof(*d));
 		memset(d->chan_map_table, 0, 256);
 		/* ...and mark pcm gain component has been created */
 		d->state = XA_DEC_FLAG_PREINIT_DONE;
