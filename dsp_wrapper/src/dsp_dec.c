@@ -320,6 +320,7 @@ int comp_process(UniACodec_Handle pua_handle,
 #ifdef DEBUG
 		fprintf(stdout, "xaf_comp_get_status exec done\n");
 #endif
+		pDSP_handle->input_over = 0;
 		pDSP_handle->outptr_busy = false;
 		pDSP_handle->inptr_busy = false;
 		pDSP_handle->saved_comp_status = XAF_OUTPUT_READY;
