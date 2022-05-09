@@ -329,6 +329,20 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 		}
 	}
 
+	/* ... check whether codec library is exist */
+	{
+		char lib_wrap_path[200];
+		FILE *fpInfile = NULL;
+		strcpy(lib_wrap_path, CORE_LIB_PATH);
+		strcat(lib_wrap_path, codecinfo_factory[idx].codecwrap_name);
+		fpInfile = fopen(lib_wrap_path, "r");
+		if (!fpInfile) {
+			printf("DSP not install codec lib\n");
+			goto Err2;
+		}
+		fclose(fpInfile);
+	}
+
 	adev_config = &pDSP_handle->adev_config;
 	err = xaf_adev_config_default_init(adev_config);
 
