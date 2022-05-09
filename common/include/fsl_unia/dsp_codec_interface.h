@@ -9,6 +9,12 @@
 
 #include "fsl_unia.h"
 
+#ifdef TGT_OS_ANDROID
+#define CORE_LIB_PATH   "/vendor/lib/"
+#else
+#define CORE_LIB_PATH   "/usr/lib/imx-mm/audio-codec/dsp/"
+#endif
+
 /* codec comp define range: 0x1 ~ 0x1F */
 typedef enum {
 	CODEC_MP3_DEC = 1,

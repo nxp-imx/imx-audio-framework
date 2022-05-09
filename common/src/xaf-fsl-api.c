@@ -1039,12 +1039,6 @@ static XAF_ERR_CODE xaf_destroy_event_channel(xaf_comp_t *src_comp, UWORD32 src_
 }
 #endif /* XA_DISABLE_EVENT */
 
-#ifdef TGT_OS_ANDROID
-#define CORE_LIB_PATH   "/vendor/lib/"
-#else
-#define CORE_LIB_PATH   "/usr/lib/imx-mm/audio-codec/dsp/"
-#endif
-
 XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t comp_id)
 {
 	xf_handle_t *p_handle;
