@@ -286,8 +286,8 @@ static UA_ERROR_TYPE xf_unia_load_lib(struct XFUniaCodec *d, void *pv_value)
 		ret = xf_uniacodec_init_process(d);
 		if (ret)
 			return XA_API_FATAL_INVALID_CMD;
+		d->codec_id = GET_CODEC_TYPE(cmd->lib_type);
 		if (d->codecinterface && d->WrapFun.SetPara) {
-			d->codec_id = GET_CODEC_TYPE(cmd->lib_type);
 			parameter.codec_id = d->codec_id;
 			ret = d->WrapFun.SetPara(d->pWrpHdl, UNIA_CODEC_ID, &parameter);
 			parameter.codec_entry_addr = (UWORD32)d->codecinterface;
