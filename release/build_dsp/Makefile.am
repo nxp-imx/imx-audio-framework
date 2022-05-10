@@ -73,8 +73,7 @@ install-data-hook:
 	done;                                                                          \
 	for f in $(DESTDIR)$(bindir)/DSP/*; do                                       \
 	if [ -f $$f ]; then                                                            \
-		mv $$f $$f.out;                                                            \
-		chmod +x $$f.out;                                                          \
+		chmod +x $$f;                                                          \
 	fi;                                                                            \
 	done
 
