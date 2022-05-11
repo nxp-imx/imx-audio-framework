@@ -298,8 +298,8 @@ int comp_process(UniACodec_Handle pua_handle,
 		return ACODEC_ERROR_STREAM;
 	} else if (error > XAF_NO_ERR) {
 		/* Get event from dsp */
-		long *config_buf = (long *)comp_info[0];
-		long decode_err = *config_buf;
+		int *config_buf = (int *)comp_info[0];
+		int decode_err = *config_buf;
 		free(config_buf);
 		/* get actual decode err */
 		if (decode_err & XA_FATAL_ERROR)
@@ -374,8 +374,8 @@ int comp_flush_msg(UniACodec_Handle pua_handle)
 			return ACODEC_ERROR_STREAM;
 		} else if (error > XAF_NO_ERR) {
 			/* Get event from dsp */
-			long *config_buf = (long *)comp_info[0];
-			long decode_err = *config_buf;
+			int *config_buf = (int *)comp_info[0];
+			int decode_err = *config_buf;
 			fprintf(stderr, "flush, get event, %d\n", decode_err);
 			free(config_buf);
 			continue;
