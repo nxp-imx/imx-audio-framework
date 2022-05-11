@@ -22,6 +22,7 @@
  *
  *****************************************************************/
 #include <string.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include "xf-types.h"
 #include "dsp_wrap.h"
