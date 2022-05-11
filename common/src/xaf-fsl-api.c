@@ -1141,6 +1141,7 @@ XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t co
 	}
 
 	TRACE(REG, _b("load library done\n"));
+	return XAF_NO_ERR;
 }
 
 XAF_ERR_CODE xaf_comp_create(pVOID adev_ptr, pVOID *pp_comp, xaf_comp_config_t *pcomp_config)
