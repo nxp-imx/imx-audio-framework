@@ -40,24 +40,29 @@ static inline void __xf_msgq_destroy(xf_msgq_t q)
 
 static inline int __xf_msgq_send(xf_msgq_t q, const void *data, size_t sz)
 {
+	return 0;
 }
 
 #define MAXIMUM_TIMEOUT 10000
 
 static inline int __xf_msgq_recv_blocking(xf_msgq_t q, void *data, size_t sz)
 {
+	return 0;
 }
 
 static inline int __xf_msgq_recv(xf_msgq_t q, void *data, size_t sz)
 {
+	return 0;
 }
 
 static inline int __xf_msgq_empty(xf_msgq_t q)
 {
+	return 0;
 }
 
 static inline int __xf_msgq_full(xf_msgq_t q)
 {
+	return 0;
 }
 
 #endif
