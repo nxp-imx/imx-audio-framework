@@ -70,10 +70,10 @@ extern clk_t renderer_cycles;
  ******************************************************************************/
 
 /* ...total length of HW FIFO in bytes */
-#define HW_FIFO_LENGTH                  8192*2
+#define HW_FIFO_LENGTH                  8192
 
 /* maximum allowed framesize in bytes per channel. This is the default framesize */
-#define MAX_FRAME_SIZE_IN_BYTES_DEFAULT    ( 4096 )      
+#define MAX_FRAME_SIZE_IN_BYTES_DEFAULT    ( HW_FIFO_LENGTH / 4 )
 
 /* minimum allowed framesize in bytes per channel */
 #define MIN_FRAME_SIZE_IN_BYTES    ( 128 )
@@ -1083,7 +1083,7 @@ static XA_ERRORCODE xa_renderer_get_mem_info_size(XARenderer *d, WORD32 i_idx, p
     {
     case 0:
         /* ...input buffer specification; accept exact audio frame */
-        i_value = 4096;
+        i_value = d->frame_size_bytes * d->channels;
         break;
 
     case 1:
