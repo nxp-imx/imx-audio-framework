@@ -543,13 +543,19 @@ void sdma_clearup(struct SDMA* sdma)
 	struct sdma_buffer_descriptor *bd;
 	int num;
 
-	if (sdma->ccb)
+	if (sdma->ccb) {
 		xaf_free(sdma->ccb, 0);
-	if (sdma->bd0)
+		sdma->ccb = NULL;
+	}
+	if (sdma->bd0) {
 		xaf_free(sdma->bd0, 0);
+		sdma->bd0 = NULL;
+	}
 
 	for (num = 0; num < 32; num++) {
-		if (sdma->chan_info[num].bd)
+		if (sdma->chan_info[num].bd) {
 			xaf_free(sdma->chan_info[num].bd, 0);
+			sdma->chan_info[num].bd = NULL;
+		}
 	}
 }
