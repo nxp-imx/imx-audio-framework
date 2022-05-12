@@ -529,6 +529,17 @@ static UA_ERROR_TYPE xf_uniacodec_getparam(struct XFUniaCodec *d,
 	case XA_CODEC_CONFIG_PARAM_PRODUCED:
 		*(UWORD32 *)pv_value = d->out_size;
 		break;
+	case UNIA_CONSUMED_LENGTH:
+		if (!d->WrapFun.GetPara)
+			break;
+		ret = d->WrapFun.GetPara(d->pWrpHdl, UNIA_CONSUMED_LENGTH, &param);
+		if (ret)
+			return ACODEC_PARA_ERROR;
+		if (!param.consumed_length)
+			param.consumed_length = 0;
+		*(UWORD32 *)pv_value = param.consumed_length;
+		break;
+
 	default:
 		*(UWORD32 *)pv_value = 0;
 		break;
