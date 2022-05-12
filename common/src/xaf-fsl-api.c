@@ -2064,6 +2064,7 @@ XAF_ERR_CODE xaf_flush(pVOID comp_ptr, WORD32 port)
     p_comp = (xaf_comp_t *)comp_ptr;
 
     XAF_CHK_PTR(p_comp);
+    XAF_CHK_PTR(p_comp->init_done);
     XAF_CHK_RANGE(port, 0, (p_comp->inp_ports + p_comp->out_ports - 1));
 
     XAF_COMP_STATE_CHK(p_comp);
