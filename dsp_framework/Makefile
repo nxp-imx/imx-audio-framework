@@ -11,7 +11,7 @@ CC          = $(CCACHE) xt-xcc
 CPLUS       = $(CCACHE) xt-xc++
 OBJCOPY     = xt-objcopy
 PKG_LOADLIB = xt-pkg-loadlib
-XTENSA_CORE = hifi4_nxp_v4_3_1_3_dev
+XTENSA_CORE = hifi4_nxp_v4_3_1_prod
 
 CFLAGS  = -O3 -DHAVE_XOS
 CFLAGS += -DXA_FSL_UNIA_CODEC
