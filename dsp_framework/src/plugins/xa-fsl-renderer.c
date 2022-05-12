@@ -186,9 +186,6 @@ typedef struct XARenderer
 
 	void                  *irqstr_addr;
 
-	void                  *sdma;
-	struct fsl_easrc      *easrc;
-	void                  *ctx;
 	/* struct nxp_edma_hw_tcd  tcd[MAX_PERIOD_COUNT];*/
 	void                  *tcd;
 	void                  *tcd_align32;
@@ -231,6 +228,9 @@ typedef struct XARenderer
 	u32                   fe_edma_cache[40];
 	dma_t                 dma;
 	dma_config_t          dma_cfg;
+	struct SDMA           sdma;
+	struct fsl_easrc      easrc;
+	struct fsl_easrc_context   ctx;
 
 }   XARenderer;
 
@@ -249,6 +249,7 @@ typedef struct XARenderer
  ******************************************************************************/
 
 UWORD8 *g_fifo_renderer;
+static inline int xa_hw_renderer_deinit(struct XARenderer *d);
 
 /* ...start HW-renderer operation */
 static inline int xa_hw_renderer_start(struct XARenderer *d)
@@ -327,7 +328,6 @@ static void xa_hw_renderer_isr(XARenderer *d)
 static inline void xa_fw_renderer_close(XARenderer *d)
 {
     fclose(d->fw);
-    xa_hw_renderer_close(d);
     //__xf_disable_interrupt(d->irq_2_dsp);
     //__xf_unset_threaded_irq_handler(d->irq_2_dsp);
 }
@@ -502,13 +502,9 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 		dma_cfg->dev_fifo_off          = DEV_FIFO_OFF;
 		dma_cfg->period_len            = d->frame_size_bytes * d->channels;
 	} else {
-		xaf_malloc((void **)&d->easrc, sizeof(struct fsl_easrc), 0);
-		xaf_malloc(&d->ctx, sizeof(struct fsl_easrc_context), 0);
-		if (!d->ctx || !d->easrc)
-			return -1;
-		memset(d->easrc, 0, sizeof(struct fsl_easrc));
-		memset(d->ctx, 0, sizeof(struct fsl_easrc_context));
-		d->easrc->paddr = (unsigned char *)FE_DEV_ADDR;
+		memset(&d->easrc, 0, sizeof(struct fsl_easrc));
+		memset(&d->ctx, 0, sizeof(struct fsl_easrc_context));
+		d->easrc.paddr = (unsigned char *)FE_DEV_ADDR;
 
 		d->dev_addr    =  (void *)DEV_ADDR;
 		d->dev_Int     =  DEV_INT;
@@ -517,7 +513,7 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 		d->fe_dma_Int  =   FE_DMA_INT;
 		/* not enable easrc Int and enable sai Int */
 		d->fe_dev_Int  =   FE_DEV_INT;
-		d->fe_dev_addr =   d->easrc;
+		d->fe_dev_addr =   &d->easrc;
 		d->fe_edma_addr =  FE_DMA_ADDR;
 		d->fe_dev_fifo_in_off =  FE_DEV_FIFO_IN_OFF;
 		d->fe_dev_fifo_out_off = FE_DEV_FIFO_OUT_OFF;
@@ -540,7 +536,8 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 
 		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_1;
 
-		xaf_malloc(&dma->p_dev, sizeof(struct SDMA), 0);
+		dma->p_dev = &d->sdma;
+		memset(dma->p_dev, 0, sizeof(struct SDMA));
 		dma->p_dev_addr                = (void *)DMA_ADDR;
 		dma->type                      = SDMA;
 		dma->dma_cfg                   = dma_cfg;
@@ -558,7 +555,7 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
 
 	d->fe_dev_init(d->fe_dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
-	d->fe_dev_hw_params(d->easrc, d->channels, d->rate, 2, d->ctx);
+	d->fe_dev_hw_params(&d->easrc, d->channels, d->rate, 2, &d->ctx);
 
 	d->dev_init(d->dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
 
@@ -571,6 +568,28 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 
 	LOG("hw_init finished\n");
 	return 0;
+}
+
+static inline int xa_hw_renderer_deinit(struct XARenderer *d)
+{
+	dma_t *dma     = &d->dma;
+
+	dma_clearup(&d->dma);
+
+	if (d->tcd) {
+		xaf_free(d->tcd, 0);
+		d->tcd = NULL;
+	}
+
+	if (d->fe_tcd) {
+		xaf_free(d->fe_tcd, 0);
+		d->fe_tcd = NULL;
+	}
+
+	if (dma->p_dma_buf) {
+		xaf_free(dma->p_dma_buf, 0);
+		dma->p_dma_buf = NULL;
+	}
 }
 
 static XA_ERRORCODE xa_fw_renderer_init (XARenderer *d)
@@ -643,6 +662,12 @@ static XA_ERRORCODE xa_renderer_init(XARenderer *d, WORD32 i_idx, pVOID pv_value
     }
 }
 
+static XA_ERRORCODE xa_renderer_deinit(XARenderer *d, WORD32 i_idx, pVOID pv_value)
+{
+    xa_hw_renderer_deinit(d);
+    LOG("xa_renderer_deinit\n");
+}
+
 /* ...HW-renderer control function */
 static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
 {
@@ -696,8 +721,7 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
         /* ...renderer must be in running state */
         XF_CHK_ERR(d->state & XA_RENDERER_FLAG_RUNNING, XA_RENDERER_EXEC_NONFATAL_STATE);
         /* ...pause renderer operation */
-        //xa_hw_renderer_pause(d);
-	xa_hw_renderer_close(d);
+        xa_hw_renderer_close(d);
         /* ...mark renderer is paused */
         d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED;
         return XA_NO_ERROR;
@@ -1195,6 +1219,7 @@ static XA_ERRORCODE (* const xa_renderer_api[])(XARenderer *, WORD32, pVOID) =
 {
     [XA_API_CMD_GET_API_SIZE]           = xa_renderer_get_api_size,
     [XA_API_CMD_INIT]                   = xa_renderer_init,
+    [XA_API_CMD_DEINIT]                 = xa_renderer_deinit,
     [XA_API_CMD_SET_CONFIG_PARAM]       = xa_renderer_set_config_param,
     [XA_API_CMD_GET_CONFIG_PARAM]       = xa_renderer_get_config_param,
     [XA_API_CMD_EXECUTE]                = xa_renderer_execute,
