@@ -89,17 +89,17 @@ extern clk_t renderer_cycles;
         }\
         /* ...write to output file and increment read pointer */\
         fwrite((char *)d->pfifo_r, 1, payload, d->fw); d->pfifo_r += payload;\
-        if((UWORD32)d->pfifo_r >= (UWORD32)&g_fifo_renderer[2*payload])\
+        if((UWORD32)d->pfifo_r >= (UWORD32)&d->g_fifo_renderer[2*payload])\
         {\
-            d->pfifo_r = (void*)g_fifo_renderer;\
+            d->pfifo_r = (void*)d->g_fifo_renderer;\
         }\
     }
 
 #define UPDATE_WPTR(offset, payload) {\
         d->pfifo_w += offset;\
-        if((UWORD32)d->pfifo_w >= (UWORD32)&g_fifo_renderer[2*payload])\
+        if((UWORD32)d->pfifo_w >= (UWORD32)&d->g_fifo_renderer[2*payload])\
         {\
-            d->pfifo_w = (void*)g_fifo_renderer;\
+            d->pfifo_w = (void*)d->g_fifo_renderer;\
         }\
     }
 
@@ -167,6 +167,8 @@ typedef struct XARenderer
 
     /* ... FIFO write pointer */
     void    *pfifo_w;
+
+    UWORD8 *g_fifo_renderer;
 
     /* ...input over flag */
     UWORD32             input_over;
@@ -248,7 +250,6 @@ typedef struct XARenderer
  * global variables
  ******************************************************************************/
 
-UWORD8 *g_fifo_renderer;
 static inline int xa_hw_renderer_deinit(struct XARenderer *d);
 
 /* ...start HW-renderer operation */
@@ -300,7 +301,7 @@ static void xa_hw_renderer_isr(XARenderer *d)
 		d->fifo_avail = d->fifo_avail + (d->frame_size_bytes * d->channels);
 		LOG2("fifo_avail %x, fifo_ptr_r %x\n", d->fifo_avail, d->pfifo_r);
 		/* ...notify user on input-buffer (idx = 0) consumption */
-		if((d->fifo_avail) > d->frame_size_bytes * d->channels * 2)
+		if((d->fifo_avail) >= d->frame_size_bytes * d->channels * 2)
 		{
 			LOG("isr under run\n");
 			/*under run case*/
@@ -442,9 +443,8 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 	/* alloc internal buffer for DMA/SAI/ESAI*/
 	dmabuf_malloc(dma, d->frame_size_bytes * d->channels * 2);
 
-	g_fifo_renderer = dmabuf_get(dma);
 	/* ...initialize FIFO params, zero fill FIFO and init pointers to start of FIFO */
-	d->pfifo_w = d->pfifo_r = (void *)g_fifo_renderer;
+	d->pfifo_w = d->pfifo_r = d->g_fifo_renderer = (void *)dmabuf_get(dma);
 
 	xaf_malloc(&d->tcd, MAX_PERIOD_COUNT * sizeof(struct nxp_edma_hw_tcd) + 32, 0);
 
@@ -710,10 +710,7 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
         /* ...mark renderer is running */
         d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_PAUSED;
 
-	g_fifo_renderer = dmabuf_get(&d->dma);
-	d->pfifo_w = d->pfifo_r = (void *)g_fifo_renderer;
-	d->fifo_avail = 0;
-	xa_hw_renderer_start(d);
+        xa_hw_renderer_start(d);
 
         return XA_NO_ERROR;
 
