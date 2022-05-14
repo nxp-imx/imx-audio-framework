@@ -512,6 +512,9 @@ static int xf_proxy_suspend(UWORD32 core, xf_message_t *m)
 	/* send message back*/
 	platform_notify(RP_MBOX_SUSPEND_ACK);
 
+	/* dead loop wait DSP reset.*/
+	while(1);
+
 	return 0;
 }
 
