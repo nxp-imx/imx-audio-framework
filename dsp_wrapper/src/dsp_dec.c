@@ -277,6 +277,8 @@ int comp_process(UniACodec_Handle pua_handle,
 		pDSP_handle->inptr_busy = true;
 	}
 
+send_output:
+
 	if (!pDSP_handle->outptr_busy) {
 		if (*comp_status == XAF_INIT_DONE) {
 			error = xaf_comp_process(NULL, p_decoder, NULL, 0, XAF_EXEC_FLAG);
@@ -331,6 +333,7 @@ int comp_process(UniACodec_Handle pua_handle,
 		fprintf(stdout, "xaf_comp_get_status comp init done\n");
 #endif
 		/* init done not start to decode then no output */
+		goto send_output;
 		return ACODEC_NO_OUTPUT;
 	case XAF_NEED_INPUT:
 		p_buf = (long *)comp_info[0];
