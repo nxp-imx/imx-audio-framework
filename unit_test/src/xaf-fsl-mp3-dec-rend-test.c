@@ -304,6 +304,118 @@ int AOption_setparam(void *p_decoder, void *p_AOption)
 	return 0;
 }
 
+int get_decoding_format(void *p_input, void *p_adev, xf_id_t dec_id, xaf_comp_type comp_type,
+		int (*dec_setup)(void *p_comp), struct AudioOption AOption,
+		xaf_format_t *dec_format)
+{
+	void *p_output;
+	FILE *ofp;
+	void *p_decoder = NULL;
+	void *dec_inbuf[2];
+	int buf_length = XAF_INBUF_SIZE;
+	int read_length;
+
+	int i;
+	int error = 0;
+	long comp_info[4];
+	int input_over = 0;
+	xaf_comp_status comp_status;
+
+	ofp = fio_fopen("/dev/null", "wb");
+	p_output = ofp;
+	/* ...create decoder component */
+	TST_CHK_API_COMP_CREATE(p_adev, &p_decoder, dec_id, 2, 1, &dec_inbuf[0], comp_type, "xaf_comp_create");
+#ifdef XA_FSL_UNIA_CODEC
+	TST_CHK_API(xaf_load_library(p_adev, p_decoder, dec_id), "xaf_load_library");
+#endif
+	TST_CHK_API(dec_setup(p_decoder), "dec_setup");
+
+	TST_CHK_API(AOption_setparam(p_decoder, &AOption), "AOption setparam");
+
+	/* ...start decoder component */
+	TST_CHK_API(xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_START_FLAG), "xaf_comp_process");
+
+	/* ...feed input to decoder component */
+	for (i=0; i<2; i++)
+	{
+		TST_CHK_API(read_input(dec_inbuf[i], buf_length, &read_length, p_input, comp_type), "read_input");
+
+		if (read_length)
+			TST_CHK_API(xaf_comp_process(p_adev, p_decoder, dec_inbuf[i], read_length, XAF_INPUT_READY_FLAG), "xaf_comp_process");
+		else {
+			TST_CHK_API(xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_INPUT_OVER_FLAG), "xaf_comp_process");
+		break;
+		}
+	}
+
+	/* ...initialization loop */
+	while (1)
+	{
+		TST_CHK_API(xaf_comp_get_status(p_adev, p_decoder, &comp_status, &comp_info[0]), "xaf_comp_get_status");
+
+		if (comp_status == XAF_INIT_DONE || comp_status == XAF_EXEC_DONE) break;
+
+		if (comp_status == XAF_NEED_INPUT)
+		{
+			void *p_buf = (long *) comp_info[0];
+			long size    = (long)comp_info[1];
+
+			TST_CHK_API(read_input(p_buf, size, &read_length, p_input, comp_type), "read_input");
+
+			if (read_length)
+				TST_CHK_API(xaf_comp_process(p_adev, p_decoder, p_buf, read_length, XAF_INPUT_READY_FLAG), "xaf_comp_process");
+			else {
+				TST_CHK_API(xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_INPUT_OVER_FLAG), "xaf_comp_process");
+				break;
+			}
+		}
+	}
+
+	if (comp_status != XAF_INIT_DONE)
+	{
+		FIO_PRINTF(stderr, "Failed to init");
+		if (ofp) fio_fclose(ofp);
+		exit(-1);
+	}
+
+	TST_CHK_API(xaf_comp_process(NULL, p_decoder, NULL, 0, XAF_EXEC_FLAG), "xaf_comp_process");
+
+	while (comp_status != XAF_OUTPUT_READY) {
+		error = xaf_comp_get_status(NULL, p_decoder, &comp_status, &comp_info[0]);
+
+		if (comp_status == XAF_EXEC_DONE) break;
+
+		if (comp_status == XAF_NEED_INPUT && !input_over) {
+			read_length = 0;
+			void *p_buf = (void *)comp_info[0];
+			long size = (int)comp_info[1];
+			TST_CHK_API(read_input(p_buf, size, &read_length, p_input, comp_type), "read_input");
+			if (read_length)
+				TST_CHK_API(xaf_comp_process(NULL, p_decoder, (void *)comp_info[0], read_length, XAF_INPUT_READY_FLAG), "xaf_comp_process");
+			else {
+				TST_CHK_API(xaf_comp_process(NULL, p_decoder, NULL, 0, XAF_INPUT_OVER_FLAG), "xaf_comp_process");
+				input_over = 1;
+			}
+		}
+	}
+	TST_CHK_API(get_comp_config(p_decoder, dec_format), "get_comp_config");
+
+	TST_CHK_API(xaf_comp_delete(p_decoder), "xaf_comp_delete");
+
+	if (dec_format->channels == 0 || dec_format->channels > 2 || dec_format->pcm_width != 16 || dec_format->sample_rate == 0) {
+		printf("decoding format not support in render!\n");
+		if (ofp) fio_fclose(ofp);
+		TST_CHK_API(xaf_adev_close(p_adev, XAF_ADEV_NORMAL_CLOSE), "xaf_adev_close");
+		return -1;
+	}
+
+	if (ofp) fio_fclose(ofp);
+
+	printf("get samplerate %d, channel %d, width %d\n", dec_format->sample_rate, dec_format->channels, dec_format->pcm_width);
+
+	return 0;
+}
+
 int main_task(int argc, char **argv)
 {
 
@@ -486,6 +598,13 @@ int main_task(int argc, char **argv)
 
     FIO_PRINTF(stdout, "Audio Device Ready\n");
 
+    int error = get_decoding_format(p_input, p_adev, dec_id, comp_type,
+			dec_setup, AOption, &dec_format);
+    if (error != 0)
+	    exit(-1);
+
+    fseek(fp, 0L, SEEK_SET);
+
     /* ...create decoder component */
     comp_type = XAF_DECODER;
 
@@ -544,8 +663,6 @@ int main_task(int argc, char **argv)
         exit(-1);
     }
 
-
-    TST_CHK_API(get_comp_config(p_decoder, &dec_format), "get_comp_config");
     renderer_format.sample_rate = dec_format.sample_rate;
     renderer_format.channels = dec_format.channels;
     renderer_format.pcm_width = dec_format.pcm_width;
