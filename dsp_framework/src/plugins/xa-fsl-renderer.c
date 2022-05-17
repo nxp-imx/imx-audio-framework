@@ -802,7 +802,7 @@ static XA_ERRORCODE xa_renderer_set_config_param(XARenderer *d, WORD32 i_idx, pV
         i_value = (UWORD32) *(WORD32 *)pv_value;
         
         /* ...allow 16 , 44.1 or 48KHz only  */
-        XF_CHK_ERR(i_value == 16000 || i_value == 44100 || i_value == 48000, XA_RENDERER_CONFIG_NONFATAL_RANGE);
+        //XF_CHK_ERR(i_value == 16000 || i_value == 44100 || i_value == 48000, XA_RENDERER_CONFIG_NONFATAL_RANGE);
         /* ...apply setting */
         d->rate = (UWORD32)i_value;
         return XA_NO_ERROR;
