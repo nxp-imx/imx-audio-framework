@@ -33,6 +33,11 @@
 #include "xaf-utils-test.h"
 #include "xaf-fio-test.h"
 
+#define INPUT_PCM_WIDTH             (16)
+#define INPUT_SAMPLE_RATE           (16000)
+#define INPUT_CHANNEL_NUM           (1)
+#define INPUT_FRAME_SIZE            (16 * 2 * 20) // 20 ms
+
 extern const unsigned int g_yes_1000ms_audio_data_size;
 extern const int16_t g_yes_1000ms_audio_data[];
 extern const unsigned int g_no_1000ms_audio_data_size;
@@ -40,7 +45,7 @@ extern const int16_t g_no_1000ms_audio_data[];
 
 unsigned int num_bytes_read, num_bytes_write;
 
-static int16_t input_buffer[16000 * 2];
+static int16_t input_buffer[INPUT_SAMPLE_RATE * 2];
 
 struct InputStream {
     bool isFile;
@@ -59,7 +64,7 @@ static int read_stream(struct InputStream* p_input, uint8_t* p_buffer, int size)
 
     if (p_input->isFile)
     {
-        fread(p_buffer, sizeof(uint8_t), size, p_input->handle);
+        size = fread(p_buffer, sizeof(uint8_t), size, p_input->handle);
         p_input->position = ftell(p_input->handle);
     }
     else
@@ -75,17 +80,18 @@ static int frontend_process(void *arg)
 {
     void *p_adev, *p_frontend;
     xaf_comp_status comp_status;
-    long long comp_info[4];
-    int input_over, read_length;
+    long comp_info[4];
     void * (*arg_arr)[10];
     xaf_comp_type comp_type;
     int error;
     struct InputStream* p_input;
+    void* p_inbuf;
 
     arg_arr = arg;
     p_adev = (*arg_arr)[0];
     p_frontend = (*arg_arr)[1];
     p_input = (*arg_arr)[2];
+    p_inbuf = (*arg_arr)[3];
 
     TST_CHK_API(xaf_comp_process(p_adev, p_frontend, NULL, 0, XAF_EXEC_FLAG), "xaf_comp_process");
 
@@ -100,7 +106,13 @@ static int frontend_process(void *arg)
             void *p_buf = (void *) comp_info[0]; 
             long size    = comp_info[1];
 
-            if ((size = read_stream(p_input, p_buf, 320)) > 0)
+            if (!p_buf)
+            {
+                p_buf = p_inbuf;
+                size = INPUT_FRAME_SIZE;
+            }
+
+            if ((size = read_stream(p_input, p_buf, INPUT_FRAME_SIZE)) > 0)
                 TST_CHK_API(xaf_comp_process(p_adev, p_frontend, p_buf, size, XAF_INPUT_READY_FLAG), "xaf_comp_process");
             else
                 TST_CHK_API(xaf_comp_process(p_adev, p_frontend, NULL, 0, XAF_INPUT_OVER_FLAG), "xaf_comp_process");
@@ -115,8 +127,7 @@ static int inference_process(void *arg)
     void *p_adev, *p_inference;
     void *p_input, *p_output;
     xaf_comp_status comp_status;
-    long long comp_info[4];
-    int input_over, read_length;
+    long comp_info[4];
     void * (*arg_arr)[10];
     xaf_comp_type comp_type;
     int error;
@@ -157,15 +168,13 @@ static int run_microspeech()
     void *p_frontend = NULL;    
     xaf_comp_config_t comp_config;
     xaf_comp_status comp_status;
-    long long comp_info[4];
+    long comp_info[4];
     void *comp_inbuf[XAF_MAX_INBUFS];
-    int buf_length = XAF_INBUF_SIZE;
-    int read_length;
     int i;    
     xaf_comp_type comp_type;
 
     pUWORD8 ver_info[3] = {0,0,0};    //{ver,lib_rev,api_rev}
- 
+
     /* ...get xaf version info*/
     TST_CHK_API(xaf_get_verinfo(ver_info), "xaf_get_verinfo");
 
@@ -178,7 +187,7 @@ static int run_microspeech()
     for (i = 0; i < 16000; i++)
     {
         input_buffer[i] = g_yes_1000ms_audio_data[i];
-        input_buffer[i + 16000] = g_no_1000ms_audio_data[i];
+        input_buffer[i + INPUT_SAMPLE_RATE] = g_no_1000ms_audio_data[i];
     }
 
     struct InputStream input = {
@@ -196,7 +205,7 @@ static int run_microspeech()
     adev_config.audio_framework_buffer_size =  256 << 8;
     adev_config.audio_component_buffer_size =  1024 << 7;
     TST_CHK_API(xaf_adev_open(&p_adev, &adev_config),  "xaf_adev_open");
-    
+
     FIO_PRINTF(stdout, "Audio Device Ready\n");
 
     /* ...create frontend component */
@@ -213,13 +222,13 @@ static int run_microspeech()
         int32_t param[][2] = {
             {
                 XA_MICROSPEECH_FE_CONFIG_PARAM_CHANNELS,
-                1,
+                INPUT_CHANNEL_NUM,
             }, {
                 XA_MICROSPEECH_FE_CONFIG_PARAM_SAMPLE_RATE,
-                16000,
+                INPUT_SAMPLE_RATE,
             }, {
                 XA_MICROSPEECH_FE_CONFIG_PARAM_PCM_WIDTH,
-                16,
+                INPUT_PCM_WIDTH,
             },
         };
 
@@ -239,13 +248,13 @@ static int run_microspeech()
         int32_t param[][2] = {
             {
                 XA_MICROSPEECH_INFERENCE_CONFIG_PARAM_CHANNELS,
-                1,
+                INPUT_CHANNEL_NUM,
             }, {
                 XA_MICROSPEECH_INFERENCE_CONFIG_PARAM_SAMPLE_RATE,
-                16000,
+                INPUT_SAMPLE_RATE,
             }, {
                 XA_MICROSPEECH_INFERENCE_CONFIG_PARAM_PCM_WIDTH,
-                16,
+                INPUT_PCM_WIDTH,
             },
         };
 
@@ -255,35 +264,15 @@ static int run_microspeech()
     /* ...start decoder component */            
     TST_CHK_API(xaf_comp_process(p_adev, p_frontend, NULL, 0, XAF_START_FLAG), "xaf_comp_process");
 
-    memset(comp_inbuf[0], 0, 320);
-    TST_CHK_API(xaf_comp_process(p_adev, p_frontend, comp_inbuf[0], 320, XAF_INPUT_READY_FLAG), "xaf_comp_process");
-
-    /* ...initialization loop */    
-    while (1)
-    {
-        TST_CHK_API(xaf_comp_get_status(p_adev, p_frontend, &comp_status, &comp_info[0]), "xaf_comp_get_status");
-        
-        if (comp_status == XAF_INIT_DONE || comp_status == XAF_EXEC_DONE) break;
-
-        if (comp_status == XAF_NEED_INPUT)
-        {
-            void *p_buf = (void *) comp_info[0];
-            long size   = comp_info[1];
-
-            if ((size = read_stream(&input, p_buf, 320)) > 0)
-                TST_CHK_API(xaf_comp_process(p_adev, p_frontend, p_buf, size, XAF_INPUT_READY_FLAG), "xaf_comp_process");
-            else
-                TST_CHK_API(xaf_comp_process(p_adev, p_frontend, NULL, 0, XAF_INPUT_OVER_FLAG), "xaf_comp_process");
-        }
-    }
-
-    FIO_PRINTF(stdout, "Frontend component initialized\n");
+    TST_CHK_API(xaf_comp_get_status(p_adev, p_frontend, &comp_status, &comp_info[0]), "xaf_comp_get_status");
 
     if (comp_status != XAF_INIT_DONE)
     {
         FIO_PRINTF(stderr, "Failed to init");
         exit(-1);
     }
+
+    FIO_PRINTF(stdout, "Frontend component initialized\n");
 
     TST_CHK_API(xaf_connect(p_frontend, 1, p_inference, 0, 4), "xaf_connect");
 
@@ -313,12 +302,13 @@ static int run_microspeech()
         p_adev,
         p_frontend,
         &input,
+        comp_inbuf[0],
     };
     __xf_thread_create(&frontend_thread, (xf_entry_t*)frontend_process, frontend_thread_args, "Frontend Thread", NULL, STACK_SIZE, XAF_APP_THREADS_PRIORITY);
 
     __xf_thread_join(&frontend_thread, NULL);
     __xf_thread_join(&inference_thread, NULL);
-    
+
     __xf_thread_destroy(&frontend_thread);
     __xf_thread_destroy(&inference_thread);
 

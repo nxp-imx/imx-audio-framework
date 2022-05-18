@@ -1,3 +1,14 @@
+/*
+ * Copyright 2022 NXP
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+/*
+ * Audio data generated from http://download.tensorflow.org/data/speech_commands_v0.01.tar.gz
+ * licensed under Creative Commons BY 4.0 license.
+ */
+
 #include <cstdint>
 
 #include "no_1000ms_audio_data.h"

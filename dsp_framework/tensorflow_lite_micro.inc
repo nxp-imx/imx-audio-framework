@@ -5,6 +5,10 @@ XTENSA_TOOLS_VERSION = "RI-2020.4-linux"
 
 export XTENSA_BASE XTENSA_CORE XTENSA_TOOLS_VERSION
 
+ifeq ($(PROPRIETARY), 1)
+	KERNELS = "xtensa"
+endif
+
 CXX       = $(CCACHE) xt-clang++
 CXX_FLAGS = -std=c++11 -stdlib=libc++ -DTF_LITE_STATIC_MEMORY -DTF_LITE_DISABLE_X86_NEON \
             -fno-rtti -fno-exceptions -fno-threadsafe-statics -fno-unwind-tables
@@ -75,7 +79,7 @@ $(TFLM_LIB): $(SRC_DIR)/tflite-micro
 	@python3 --version || (echo "Error: Building TFLM requires Python 3.x!" && exit 1)
 	@python3 -c "import PIL" || (echo "Error: Building TFLM requires Python Imaging Library! " \
         "Please, use the system package manager to install the missing library (e.g. 'apt install python3-pil' on Ubuntu)." && exit 1)
-	cd $(SRC_DIR)/tflite-micro && make -f tensorflow/lite/micro/tools/make/Makefile TARGET=xtensa TARGET_ARCH=hifi4 XTENSA_USE_LIBC=true microlite
+	cd $(SRC_DIR)/tflite-micro && make -f tensorflow/lite/micro/tools/make/Makefile TARGET=xtensa TARGET_ARCH=hifi4 OPTIMIZED_KERNEL_DIR=$(KERNELS) XTENSA_USE_LIBC=true microlite
 
 $(SRC_DIR)/tflite-micro:
 	git clone https://github.com/tensorflow/$(SRC_DIR)/tflite-micro.git $(SRC_DIR)/tflite-micro
