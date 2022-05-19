@@ -161,7 +161,8 @@ static inline int __xf_thread_join(xf_thread_t *thread, int32_t * p_exitcode)
 {
     int    r;
 
-    r = pthread_join(*thread, (void **)&p_exitcode);
+    if (*thread != 0UL)
+        r = pthread_join(*thread, (void **)&p_exitcode);
 
     return r;
 }
@@ -171,7 +172,8 @@ static inline int __xf_thread_destroy(xf_thread_t *thread)
 {
     int    r;
     
-    r = pthread_kill(*thread, SIGUSR1);
+    if (*thread != 0UL)
+        r = pthread_kill(*thread, SIGUSR1);
 
     /* ...return final status */
     return r;
