@@ -104,10 +104,7 @@ LIB_ARM12_ANDROID	:$(OBJS)
 			$(LD) -o $(LIB_ARGS) $(LIBRARY).so --shared -Wl,-soname,$(SONAME) -fPIC $(OBJS) $(STDLIBDIR) $(OPT_ASM_LIB) -lgcc -lm -llog
 
 LIB_ARMV8_ELINUX	:$(OBJS)
-			$(LD) -o $(LIB_ARGS) $(LIBRARY).so --shared -Wl,-soname,$(SONAME) -fPIC $(OBJS) $(STDLIBDIR) $(OPT_ASM_LIB) -lgcc -lm
-
-LIB_ARM12_ELINUX	:$(OBJS)
-			$(LD) -o $(LIB_ARGS) $(LIBRARY).so --shared -Wl,-soname,$(SONAME) -fPIC $(OBJS) $(STDLIBDIR) $(OPT_ASM_LIB) -lgcc -lm
+			$(CC) -o $(LIB_ARGS) $(LIBRARY).so --shared -Wl,-soname,$(SONAME) -fPIC $(OBJS) $(STDLIBDIR) $(OPT_ASM_LIB) -lgcc -lm
 
 $(OBJ_DIR)/%.o:		$(CSRCS_DIR)/%.c
 			$(CC) $(CARM) -c  -o $@ $<

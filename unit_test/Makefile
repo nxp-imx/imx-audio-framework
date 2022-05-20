@@ -33,11 +33,7 @@ INC_DIR     = ./include
 COM_DIR     = ../common
 ROOT_DIR    = ../
 
-TOOLS_DIR   = /usr/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu
-CC          = $(TOOLS_DIR)/bin/aarch64-linux-gnu-gcc
-LN          = $(TOOLS_DIR)/bin/aarch64-linux-gnu-gcc
-
-CFLAGS      =	-Wl,--hash-style=gnu -lpthread			\
+CFLAGS      +=	-Wl,--hash-style=gnu -lpthread			\
 		-DHAVE_LINUX -DHIFI_ONLY_XAF \
 		-DFIO_LOCAL_FS -DXA_DISABLE_DEPRECATED_API
 CFLAGS     +=  -DXA_FSL_UNIA_CODEC
