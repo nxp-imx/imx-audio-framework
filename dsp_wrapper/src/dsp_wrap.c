@@ -610,7 +610,7 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 				/* ... dsp can't recognize addr from top layer, then set
 				 * offset to channel_table */
 				memset(&channel_map->channel_table[i], 0, sizeof(UWORD32*));
-				memcpy(&channel_map->channel_table[i], &i, sizeof(UWORD32*));
+				memcpy(&channel_map->channel_table[i], &i, sizeof(UWORD32));
 				memcpy(p_buf, channel_tab, sizeof(int) * i);
 				p_buf += i;
 			} else

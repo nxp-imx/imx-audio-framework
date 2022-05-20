@@ -511,7 +511,7 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 	srambuf = malloc(filesize);
 	fseek(fpInfile, 0, SEEK_SET);
 
-	fread(srambuf, 1, filesize, fpInfile);
+	ret_val = fread(srambuf, 1, filesize, fpInfile);
 	fclose(fpInfile);
 
 	ret_val = xtlib_split_pi_library_size(

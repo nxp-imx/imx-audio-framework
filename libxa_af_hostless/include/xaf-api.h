@@ -190,6 +190,7 @@ XAF_ERR_CODE xaf_resume(pVOID p_comp, WORD32 port);
 
 XAF_ERR_CODE xaf_probe_start(pVOID p_comp);
 XAF_ERR_CODE xaf_probe_stop(pVOID p_comp);
+XAF_ERR_CODE xaf_flush(pVOID comp_ptr, WORD32 port);
 
 #ifndef XA_DISABLE_EVENT
 XAF_ERR_CODE xaf_create_event_channel(pVOID p_src, UWORD32 src_config_param, pVOID p_dest, UWORD32 dst_config_param, UWORD32 nbuf, UWORD32 buf_size);

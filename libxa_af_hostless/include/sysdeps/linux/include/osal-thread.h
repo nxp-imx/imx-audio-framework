@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <semaphore.h>
+#include <unistd.h>
 /*******************************************************************************
  * Tracing primitive
  ******************************************************************************/
@@ -148,7 +149,7 @@ static inline int __xf_thread_create(xf_thread_t *thread, xf_entry_t *f,
 
 static inline void __xf_thread_yield(void)
 {
-    pthread_yield();
+    sched_yield();
 }
 
 static inline int __xf_thread_cancel(xf_thread_t *thread)

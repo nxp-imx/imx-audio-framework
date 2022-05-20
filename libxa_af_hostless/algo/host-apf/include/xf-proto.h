@@ -83,6 +83,7 @@ extern void     xf_buffer_put(xf_buffer_t *buffer);
 /* ...proxy operations */
 extern int      xf_proxy_init(xf_proxy_t *proxy, UWORD32 core);
 extern void     xf_proxy_close(xf_proxy_t *proxy);
+extern int      xf_flush(xf_handle_t *comp, WORD32 port);
 
 #ifndef DISABLE_EVENT
 /* ...event channel operations */

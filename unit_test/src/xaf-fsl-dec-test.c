@@ -30,6 +30,7 @@
 #include "xaf-fio-test.h"
 
 #include "dsp_codec_interface.h"
+#include "library_load.h"
 
 #define AUDIO_FRMWK_BUF_SIZE   (256 << 8)
 #define AUDIO_COMP_BUF_SIZE    (1024 << 7)
