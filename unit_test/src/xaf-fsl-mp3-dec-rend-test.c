@@ -31,6 +31,7 @@
 #include "xaf-fio-test.h"
 #include "fsl_unia.h"
 #include "dsp_codec_interface.h"
+#include "library_load.h"
 
 #define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s -infile:filename.mp3 \n\n", argv[0]);
 #define AUDIO_FRMWK_BUF_SIZE   (256 << 8)

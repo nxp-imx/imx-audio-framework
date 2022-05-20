@@ -44,11 +44,10 @@
 #include <pthread.h>
 #include <linux/types.h>
 
-#include "xf.h"
+#include "library_load.h"
 #include "xf-types.h"
 #include "xaf-api.h"
 #include "xaf-mem.h"
-#include "xaf-structs.h"
 #include "osal-msgq.h"
 #include "xa_error_standards.h"
 
@@ -343,6 +342,8 @@ int comp_process(UniACodec_Handle pua_handle,
 		 UWORD32 *in_off,
 		 UWORD8 *output,
 		 UWORD32 *out_size);
+
+int comp_flush_msg(UniACodec_Handle pua_handle);
 
 const char *DSPDecVersionInfo();
 UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type);

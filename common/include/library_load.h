@@ -104,5 +104,6 @@ struct lib_info {
 
 long xf_load_lib(xaf_comp_t *handle, struct lib_info *lib_info);
 long xf_unload_lib(xaf_comp_t *handle, struct lib_info *lib_info);
+XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t comp_id);
 
 #endif
