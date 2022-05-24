@@ -14,7 +14,8 @@ PKG_LOADLIB = xt-pkg-loadlib
 XTENSA_CORE = hifi4_nxp_v4_3_1_prod
 
 CFLAGS  = -O3 -DHAVE_XOS
-CFLAGS += -DXA_FSL_UNIA_CODEC
+CFLAGS += -DXA_FSL_UNIA_CODEC -DXA_PCM_GAIN
+
 TOOL_PATH   := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../../imx-audio-toolchain/Xtensa_Tool
 
 ifeq ($(DEBUG), 1)
@@ -63,7 +64,9 @@ INCLUDES   +=	-I$(INC_DIR)/include							\
 		-I$(ROOT_DIR)/libxa_af_hostless/include					\
 		-I$(ROOT_DIR)/libxa_af_hostless/include/audio				\
 		-I$(ROOT_DIR)/libxa_af_hostless/include/sysdeps/xos/include		\
-		-I$(ROOT_DIR)/testxa_af_hostless/test/include
+		-I$(ROOT_DIR)/testxa_af_hostless/test/include 				\
+		-I$(ROOT_DIR)/testxa_af_hostless/test/include/audio 			\
+		-I$(ROOT_DIR)/testxa_af_hostless/test/plugins
 INCLUDES   +=   -I$(ROOT_DIR)/common/include/fsl_unia
 INCLUDES   +=   -I$(INC_DIR)/include/plugins
 INCLUDES   +=   -I$(INC_DIR)/include/libloader
@@ -94,6 +97,7 @@ C_OBJS  =	$(SRC_DIR)/src/board.o						\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-io.o		\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-base.o	\
 		$(ROOT_DIR)/testxa_af_hostless/test/plugins/xa-factory.o	\
+		$(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/pcm_gain/xa-pcm-gain.o \
 		$(ROOT_DIR)/rpmsg-lite/lib/rpmsg_lite/rpmsg_lite.o		\
 		$(ROOT_DIR)/rpmsg-lite/lib/rpmsg_lite/rpmsg_ns.o		\
 		$(ROOT_DIR)/rpmsg-lite/lib/virtio/virtqueue.o			\
