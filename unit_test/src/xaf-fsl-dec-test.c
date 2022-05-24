@@ -29,6 +29,7 @@
 #include "xaf-utils-test.h"
 #include "xaf-fio-test.h"
 
+#include "xa-pcm-gain-api.h"
 #include "dsp_codec_interface.h"
 #include "library_load.h"
 
@@ -175,6 +176,97 @@ struct AudioOption {
 	char *InFileName;
 	char *OutFileName;
 };
+
+//component parameters
+#define PCM_GAIN_SAMPLE_WIDTH   16
+// supports 8,16,24,32-bit PCM
+
+#define PCM_GAIN_NUM_CH         1
+// supports upto 16 channels
+
+#define PCM_GAIN_IDX_FOR_GAIN   1
+//gain index range is 0 to 6 -> {0db, -6db, -12db, -18db, 6db, 12db, 18db}
+
+#define PCM_GAIN_SAMPLE_RATE    44100
+
+//following parameter is provided to simulate desired MHz load in PCM-GAIN for experiments
+#define PCM_GAIN_BURN_CYCLES    0
+
+static int pcm_gain_setup(void *p_comp, void* p_AOption)
+{
+	int param[12];
+	int pcm_width;
+	int num_ch = PCM_GAIN_NUM_CH;                 // supports upto 16 channels
+	int sample_rate = PCM_GAIN_SAMPLE_RATE;
+	int gain_idx = PCM_GAIN_IDX_FOR_GAIN;         //gain index range is 0 to 6 -> {0db, -6db, -12db, -18db, 6db, 12db, 18db}
+	int frame_size = XAF_INBUF_SIZE;
+	pcm_width = PCM_GAIN_SAMPLE_WIDTH;        // supports 8,16,24,32-bit PCM
+	struct AudioOption *AOption = p_AOption;
+
+	if (AOption->SampleRate)
+		sample_rate = AOption->SampleRate;
+	if (AOption->Channel)
+		num_ch = AOption->Channel;
+	if (AOption->Width)
+		pcm_width = AOption->Width;
+
+	param[0] = XA_PCM_GAIN_CONFIG_PARAM_CHANNELS;
+	param[1] = num_ch;
+	param[2] = XA_PCM_GAIN_CONFIG_PARAM_SAMPLE_RATE;
+	param[3] = sample_rate;
+	param[4] = XA_PCM_GAIN_CONFIG_PARAM_PCM_WIDTH;
+	param[5] = pcm_width;
+	param[6] = XA_PCM_GAIN_CONFIG_PARAM_FRAME_SIZE;
+	param[7] = frame_size;
+	param[8] = XA_PCM_GAIN_CONFIG_PARAM_GAIN_FACTOR;
+	param[9] = gain_idx;
+	param[10]= XA_PCM_GAIN_BURN_ADDITIONAL_CYCLES;
+	param[11]= PCM_GAIN_BURN_CYCLES;
+
+	return(xaf_comp_set_config(p_comp, 6, &param[0]));
+}
+
+int AOption_setparam(void *p_decoder, void *p_AOption)
+{
+	struct AudioOption *AOption = p_AOption;
+	int param[2];
+
+	if (AOption->CodecFormat != CODEC_PCM_GAIN) {
+		if (AOption->SampleRate > 0) {
+			param[0] = UNIA_SAMPLERATE;
+			param[1] = AOption->SampleRate;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->Channel > 0) {
+			param[0] = UNIA_CHANNEL;
+			param[1] = AOption->Channel;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->Width > 0) {
+			param[0] = UNIA_DEPTH;
+			param[1] = AOption->Width;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->Bitrate > 0) {
+			param[0] = UNIA_BITRATE;
+			param[1] = AOption->Bitrate;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->streamtype > 0) {
+			param[0] = UNIA_STREAM_TYPE;
+			param[1] = AOption->streamtype;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->channel_mode > 0) {
+			param[0] = UNIA_SBC_ENC_CHMODE;
+			param[1] = AOption->channel_mode;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+	} else {
+		pcm_gain_setup(p_decoder, AOption);
+	}
+	return 0;
+}
 
 int GetParameter(int argc_t, char *argv_t[], struct AudioOption *pAOption)
 {
@@ -411,12 +503,18 @@ int main_task(int argc, char **argv)
     FIO_PRINTF(stdout, "Audio Device Ready\n");
 
     /* ...create decoder component */
-    comp_type = XAF_DECODER;
+    if (AOption.CodecFormat != CODEC_PCM_GAIN)
+	comp_type = XAF_DECODER;
+    else
+	comp_type = XAF_POST_PROC;
+
     TST_CHK_API_COMP_CREATE(p_adev, &p_decoder, dec_id, 2, 1, &dec_inbuf[0], comp_type, "xaf_comp_create");
 #ifdef XA_FSL_UNIA_CODEC
     TST_CHK_API(xaf_load_library(p_adev, p_decoder, dec_id), "xaf_load_library");
 #endif
     TST_CHK_API(dec_setup(p_decoder), "dec_setup");
+
+    TST_CHK_API(AOption_setparam(p_decoder, &AOption), "AOption setparam");
 
     /* ...start decoder component */            
     TST_CHK_API(xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_START_FLAG), "xaf_comp_process");
@@ -465,7 +563,8 @@ int main_task(int argc, char **argv)
         exit(-1);
     }
 
-    TST_CHK_API(get_comp_config(p_decoder, &dec_format), "get_comp_config");
+    if (AOption.CodecFormat != CODEC_PCM_GAIN)
+        TST_CHK_API(get_comp_config(p_decoder, &dec_format), "get_comp_config");
     
 #ifdef XAF_PROFILE
     clk_start();
