@@ -193,7 +193,7 @@ static const CODECINFO codecinfo_factory[] = {
 	{ CODEC_FSL_NBAMR_DEC,      "audio-decoder/fsl-nbamr",      NULL,                     "lib_nbamrd_wrap_dsp.so",         0 },
 	{ CODEC_FSL_WBAMR_DEC,      "audio-decoder/fsl-wbamr",      NULL,                     "lib_wbamrd_wrap_dsp.so",         0 },
 	{ CODEC_FSL_WMA_DEC,        "audio-decoder/fsl-wma",        NULL,                     "lib_wma10d_wrap_dsp.so",         0 },
-	{ CODEC_PCM_DEC,            "audio-decoder/pcm",            NULL,                     NULL,                             0 },
+	{ CODEC_PCM_GAIN,           "post-proc/pcm_gain",           NULL,                     NULL,                             0 },
 };
 
 #define CODECINFO_LEN (sizeof(codecinfo_factory) / sizeof(codecinfo_factory[0]))

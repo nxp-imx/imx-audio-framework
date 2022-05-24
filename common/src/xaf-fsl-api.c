@@ -1113,8 +1113,9 @@ XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t co
 	} else if (!strcmp(comp_id, "audio-decoder/opus")) {
 		dec_type = CODEC_OPUS_DEC;
 		strcat(lib_wrap_path, "lib_dsp_codec_opus_dec_wrap.so");
-	} else if (!strcmp(comp_id, "audio-decoder/pcm")) {
-		dec_type = CODEC_PCM_DEC;
+	} else if (!strcmp(comp_id, "post-proc/pcm_gain")) {
+		dec_type = CODEC_PCM_GAIN;
+		return XAF_NO_ERR;
 	}
 
 	if (dec_type <= CODEC_SBC_ENC) {
