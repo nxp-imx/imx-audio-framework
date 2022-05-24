@@ -26,12 +26,14 @@
 #include <string.h>
 #include <errno.h>
 
+#include "xa-pcm-gain-api.h"
 #include "audio/xa-renderer-api.h"
 #include "xaf-utils-test.h"
 #include "xaf-fio-test.h"
 #include "fsl_unia.h"
 #include "dsp_codec_interface.h"
 #include "library_load.h"
+#include "get_pcm_info.h"
 
 #define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s -infile:filename.mp3 \n\n", argv[0]);
 #define AUDIO_FRMWK_BUF_SIZE   (256 << 8)
@@ -147,20 +149,17 @@ static int renderer_setup(void *p_renderer,xaf_format_t renderer_format)
     return(xaf_comp_set_config(p_renderer, 3, &param[0]));
 }
 
-
 static int get_comp_config(void *p_comp, xaf_format_t *comp_format)
 {
     int param[6];
     int ret;
 
-
     TST_CHK_PTR(p_comp, "get_comp_config");
     TST_CHK_PTR(comp_format, "get_comp_config");
 
-    param[0] = UNIA_CHANNEL;
-    param[2] = UNIA_DEPTH;
-    param[4] = UNIA_SAMPLERATE;
-
+    param[0] = XA_CODEC_CONFIG_PARAM_CHANNELS;
+    param[2] = XA_CODEC_CONFIG_PARAM_PCM_WIDTH;
+    param[4] = XA_CODEC_CONFIG_PARAM_SAMPLE_RATE;
     ret = xaf_comp_get_config(p_comp, 3, &param[0]);
     if(ret < 0)
         return ret;
@@ -215,6 +214,55 @@ struct AudioOption {
 	char *InFileName;
 	char *OutFileName;
 };
+
+//component parameters
+#define PCM_GAIN_SAMPLE_WIDTH   16
+// supports 8,16,24,32-bit PCM
+
+#define PCM_GAIN_NUM_CH         1
+// supports upto 16 channels
+
+#define PCM_GAIN_IDX_FOR_GAIN   1
+//gain index range is 0 to 6 -> {0db, -6db, -12db, -18db, 6db, 12db, 18db}
+
+#define PCM_GAIN_SAMPLE_RATE    44100
+
+//following parameter is provided to simulate desired MHz load in PCM-GAIN for experiments
+#define PCM_GAIN_BURN_CYCLES    0
+
+static int pcm_gain_setup(void *p_comp, void* p_AOption)
+{
+	int param[12];
+	int pcm_width;
+	int num_ch = PCM_GAIN_NUM_CH;                 // supports upto 16 channels
+	int sample_rate = PCM_GAIN_SAMPLE_RATE;
+	int gain_idx = PCM_GAIN_IDX_FOR_GAIN;         //gain index range is 0 to 6 -> {0db, -6db, -12db, -18db, 6db, 12db, 18db}
+	int frame_size = XAF_INBUF_SIZE;
+	pcm_width = PCM_GAIN_SAMPLE_WIDTH;        // supports 8,16,24,32-bit PCM
+	struct AudioOption *AOption = p_AOption;
+
+	if (AOption->SampleRate)
+		sample_rate = AOption->SampleRate;
+	if (AOption->Channel)
+		num_ch = AOption->Channel;
+	if (AOption->Width)
+		pcm_width = AOption->Width;
+
+	param[0] = XA_PCM_GAIN_CONFIG_PARAM_CHANNELS;
+	param[1] = num_ch;
+	param[2] = XA_PCM_GAIN_CONFIG_PARAM_SAMPLE_RATE;
+	param[3] = sample_rate;
+	param[4] = XA_PCM_GAIN_CONFIG_PARAM_PCM_WIDTH;
+	param[5] = pcm_width;
+	param[6] = XA_PCM_GAIN_CONFIG_PARAM_FRAME_SIZE;
+	param[7] = frame_size;
+	param[8] = XA_PCM_GAIN_CONFIG_PARAM_GAIN_FACTOR;
+	param[9] = gain_idx;
+	param[10]= XA_PCM_GAIN_BURN_ADDITIONAL_CYCLES;
+	param[11]= PCM_GAIN_BURN_CYCLES;
+
+	return(xaf_comp_set_config(p_comp, 6, &param[0]));
+}
 
 int GetParameter(int argc_t, char *argv_t[], struct AudioOption *pAOption)
 {
@@ -272,41 +320,45 @@ int AOption_setparam(void *p_decoder, void *p_AOption)
 	struct AudioOption *AOption = p_AOption;
 	int param[2];
 
-	if (AOption->SampleRate > 0) {
-		param[0] = UNIA_SAMPLERATE;
-		param[1] = AOption->SampleRate;
-		xaf_comp_set_config(p_decoder, 1, &param[0]);
-	}
-	if (AOption->Channel > 0) {
-		param[0] = UNIA_CHANNEL;
-		param[1] = AOption->Channel;
-		xaf_comp_set_config(p_decoder, 1, &param[0]);
-	}
-	if (AOption->Width > 0) {
-		param[0] = UNIA_DEPTH;
-		param[1] = AOption->Width;
-		xaf_comp_set_config(p_decoder, 1, &param[0]);
-	}
-	if (AOption->Bitrate > 0) {
-		param[0] = UNIA_BITRATE;
-		param[1] = AOption->Bitrate;
-		xaf_comp_set_config(p_decoder, 1, &param[0]);
-	}
-	if (AOption->streamtype > 0) {
-		param[0] = UNIA_STREAM_TYPE;
-		param[1] = AOption->streamtype;
-		xaf_comp_set_config(p_decoder, 1, &param[0]);
-	}
-	if (AOption->channel_mode > 0) {
-		param[0] = UNIA_SBC_ENC_CHMODE;
-		param[1] = AOption->channel_mode;
-		xaf_comp_set_config(p_decoder, 1, &param[0]);
+	if (AOption->CodecFormat != CODEC_PCM_GAIN) {
+		if (AOption->SampleRate > 0) {
+			param[0] = UNIA_SAMPLERATE;
+			param[1] = AOption->SampleRate;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->Channel > 0) {
+			param[0] = UNIA_CHANNEL;
+			param[1] = AOption->Channel;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->Width > 0) {
+			param[0] = UNIA_DEPTH;
+			param[1] = AOption->Width;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->Bitrate > 0) {
+			param[0] = UNIA_BITRATE;
+			param[1] = AOption->Bitrate;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->streamtype > 0) {
+			param[0] = UNIA_STREAM_TYPE;
+			param[1] = AOption->streamtype;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+		if (AOption->channel_mode > 0) {
+			param[0] = UNIA_SBC_ENC_CHMODE;
+			param[1] = AOption->channel_mode;
+			xaf_comp_set_config(p_decoder, 1, &param[0]);
+		}
+	} else {
+		pcm_gain_setup(p_decoder, AOption);
 	}
 	return 0;
 }
 
 int get_decoding_format(void *p_input, void *p_adev, xf_id_t dec_id, xaf_comp_type comp_type,
-		int (*dec_setup)(void *p_comp), struct AudioOption AOption,
+		int (*dec_setup)(void *p_comp), struct AudioOption *AOption,
 		xaf_format_t *dec_format)
 {
 	void *p_output;
@@ -322,6 +374,21 @@ int get_decoding_format(void *p_input, void *p_adev, xf_id_t dec_id, xaf_comp_ty
 	int input_over = 0;
 	xaf_comp_status comp_status;
 
+	if (AOption->CodecFormat == CODEC_PCM_GAIN) {
+		if (get_codec_pcm(p_input, dec_format) != 0)
+			return -1;
+		dec_format->pcm_width = 16;
+		if (dec_format->channels == 0 || dec_format->channels > 2 || dec_format->sample_rate == 0) {
+			printf("unsupport channel or samplerate!\n");
+			return -1;
+		}
+		AOption->Channel = dec_format->channels;
+		AOption->SampleRate = dec_format->sample_rate;
+		AOption->Width = dec_format->pcm_width;
+		printf("get samplerate %d, channel %d, width %d\n", dec_format->sample_rate, dec_format->channels, dec_format->pcm_width);
+		return 0;
+	}
+
 	ofp = fio_fopen("/dev/null", "wb");
 	p_output = ofp;
 	/* ...create decoder component */
@@ -331,7 +398,7 @@ int get_decoding_format(void *p_input, void *p_adev, xf_id_t dec_id, xaf_comp_ty
 #endif
 	TST_CHK_API(dec_setup(p_decoder), "dec_setup");
 
-	TST_CHK_API(AOption_setparam(p_decoder, &AOption), "AOption setparam");
+	TST_CHK_API(AOption_setparam(p_decoder, AOption), "AOption setparam");
 
 	/* ...start decoder component */
 	TST_CHK_API(xaf_comp_process(p_adev, p_decoder, NULL, 0, XAF_START_FLAG), "xaf_comp_process");
@@ -406,7 +473,6 @@ int get_decoding_format(void *p_input, void *p_adev, xf_id_t dec_id, xaf_comp_ty
 	if (dec_format->channels == 0 || dec_format->channels > 2 || dec_format->pcm_width != 16 || dec_format->sample_rate == 0) {
 		printf("decoding format not support in render!\n");
 		if (ofp) fio_fclose(ofp);
-		TST_CHK_API(xaf_adev_close(p_adev, XAF_ADEV_NORMAL_CLOSE), "xaf_adev_close");
 		return -1;
 	}
 
@@ -600,14 +666,20 @@ int main_task(int argc, char **argv)
     FIO_PRINTF(stdout, "Audio Device Ready\n");
 
     int error = get_decoding_format(p_input, p_adev, dec_id, comp_type,
-			dec_setup, AOption, &dec_format);
-    if (error != 0)
-	    exit(-1);
+			dec_setup, &AOption, &dec_format);
+    if (error != 0) {
+        TST_CHK_API(xaf_adev_close(p_adev, XAF_ADEV_NORMAL_CLOSE), "xaf_adev_close");
+        exit(-1);
+    }
 
-    fseek(fp, 0L, SEEK_SET);
+    if (AOption.CodecFormat != CODEC_PCM_GAIN)
+        fseek(fp, 0L, SEEK_SET);
 
     /* ...create decoder component */
-    comp_type = XAF_DECODER;
+    if (AOption.CodecFormat != CODEC_PCM_GAIN)
+       comp_type = XAF_DECODER;
+    else
+       comp_type = XAF_POST_PROC;
 
     TST_CHK_API_COMP_CREATE(p_adev, &p_decoder, dec_id, 2, 0, &dec_inbuf[0], comp_type, "xaf_comp_create");
 #ifdef XA_FSL_UNIA_CODEC
