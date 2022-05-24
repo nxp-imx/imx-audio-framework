@@ -649,6 +649,8 @@ long xf_unload_lib(xaf_comp_t *p_comp, struct lib_info *lib_info)
 
 	memset((void *)&icm_info, 0, sizeof(struct icm_xtlib_pil_info));
 	icm_info.lib_type = lib_info->lib_type;
+	/*... lib type can't equal 0 */
+	XF_CHK_ERR(icm_info.lib_type, XAF_INVALIDVAL_ERR);
 
 	XF_CHK_ERR(buf = xf_buffer_get(proxy->aux), XAF_MEMORY_ERR);
 	/* ...copy lib info */
