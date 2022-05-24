@@ -386,8 +386,8 @@ int main_task(int argc, char **argv)
         dec_id    = "audio-decoder/opus";
         dec_setup = dummy_setup;
         break;
-    case CODEC_PCM_DEC:
-        dec_id    = "audio-decoder/pcm";
+    case CODEC_PCM_GAIN:
+        dec_id    = "post-proc/pcm_gain";
         dec_setup = dummy_setup;
         break;
     default:
