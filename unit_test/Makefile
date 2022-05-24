@@ -55,6 +55,7 @@ INCLUDES  =	-I$(INC_DIR)								\
 		-I$(ROOT_DIR)/libxa_af_hostless/algo/xa_af_hostless/include		\
 		-I$(ROOT_DIR)/libxa_af_hostless/algo/host-apf/include/sys/linux-msgq	\
 		-I$(ROOT_DIR)/testxa_af_hostless/test/include				\
+		-I$(ROOT_DIR)/testxa_af_hostless/test/include/audio 			\
 		-I$(COM_DIR)/include                                                    \
 		-I$(COM_DIR)/include/fsl_unia
 
@@ -67,7 +68,8 @@ C_OBJS  =	$(COM_DIR)/src/xaf-fsl-api.o					\
 		$(ROOT_DIR)/libxa_af_hostless/algo/host-apf/src/xf-trace.o	\
 		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-utils-test.o	\
 		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-fio-test.o		\
-		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-mem-test.o
+		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-mem-test.o 		\
+		$(SRC_DIR)/get_pcm_info.o
 
 C_OBJS_REND  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-mp3-dec-rend-test.o
 OUT_REND     =	dsp_rend_test.out
