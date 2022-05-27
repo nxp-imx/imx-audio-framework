@@ -497,7 +497,9 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 		if (parameter->channels == 0 || parameter->channels > 8)
 			return ACODEC_PARA_ERROR;
 		/* ... cadence aac codec not support multi channels */
-		if (pDSP_handle->codec_type == CODEC_AAC_DEC && parameter->channels > 2)
+		/* ... fsl aac/aacplus codec pool perf with multi channels */
+		if ((pDSP_handle->audio_type == AAC || pDSP_handle->audio_type == AAC_PLUS)
+				&& parameter->channels > 2)
 			return ACODEC_PROFILE_NOT_SUPPORT;
 		param[1] = parameter->channels;
 		break;
