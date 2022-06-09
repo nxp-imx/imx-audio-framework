@@ -302,23 +302,19 @@ static int run_microspeech()
     FIO_PRINTF(stdout, "Inference component initialized\n");
 
     xf_thread_t inference_thread;
-    {
-        void* thread_args[] = {
-            p_adev,
-            p_inference,
-        };
-        __xf_thread_create(&inference_thread, (xf_entry_t*)inference_process, thread_args, "Inference Thread", NULL, STACK_SIZE, XAF_APP_THREADS_PRIORITY);
-    }
+    void* inference_thread_args[] = {
+        p_adev,
+        p_inference,
+    };
+    __xf_thread_create(&inference_thread, (xf_entry_t*)inference_process, inference_thread_args, "Inference Thread", NULL, STACK_SIZE, XAF_APP_THREADS_PRIORITY);
 
     xf_thread_t frontend_thread;
-    {
-        void* thread_args[] = {
-            p_adev,
-            p_frontend,
-            &input,
-        };
-        __xf_thread_create(&frontend_thread, (xf_entry_t*)frontend_process, thread_args, "Frontend Thread", NULL, STACK_SIZE, XAF_APP_THREADS_PRIORITY);
-    }
+    void* frontend_thread_args[] = {
+        p_adev,
+        p_frontend,
+        &input,
+    };
+    __xf_thread_create(&frontend_thread, (xf_entry_t*)frontend_process, frontend_thread_args, "Frontend Thread", NULL, STACK_SIZE, XAF_APP_THREADS_PRIORITY);
 
     __xf_thread_join(&frontend_thread, NULL);
     __xf_thread_join(&inference_thread, NULL);
