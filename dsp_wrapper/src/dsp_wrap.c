@@ -988,8 +988,6 @@ UA_ERROR_TYPE DSPDecFrameDecode(UniACodec_Handle pua_handle,
 		}
 		if (!out_size)
 			err |= ACODEC_NO_OUTPUT;
-
-		return err;
 	}
 
 #ifdef DEBUG
