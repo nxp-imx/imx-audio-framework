@@ -25,6 +25,8 @@
  *
  * Debugging interface for Xtensa Audio DSP codec server
  *******************************************************************************/
+#ifndef XF_DEBUG_H
+#define XF_DEBUG_H
 
 #if XF_DEBUG
 #include <stdlib.h>
@@ -253,3 +255,5 @@ while (0)
     }                                           \
     (int)__ret;                                 \
 })
+
+#endif // XF_DEBUG_H
