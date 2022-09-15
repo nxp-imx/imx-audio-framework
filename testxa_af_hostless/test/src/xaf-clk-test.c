@@ -41,6 +41,10 @@
 #include "task.h"
 #endif
 
+#if defined(HAVE_LINUX)
+#include <sys/time.h>
+#endif
+
 /* XOS_OPT_STATS is enabled in RG.5+ tool chains. To get the clock cycles from thread stats. */
 #if !XOS_OPT_STATS
 // Comment to use thread stats based measurement
@@ -118,7 +122,12 @@ clk_t clk_read_start(clk_seln_t seln)
     }
 
     return ret_val;
-#else   /* #if defined(HAVE_XOS) */
+#elif defined HAVE_LINUX   /* #if defined(HAVE_XOS) */
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    ret_val = start.tv_sec * 1000000 + start.tv_usec;
+    return ret_val;
+#else /* #elif defined HAVE_LINUX */
     if (seln == CLK_SELN_THREAD) // Time elapsed in this thread
     {
         TaskHandle_t task;
@@ -186,7 +195,12 @@ clk_t clk_read_stop(clk_seln_t seln)
 #endif /* CLK_TEST_DISABLE_SCHEDULING */
   
     return ret_val;
-#else   /* #if defined(HAVE_XOS) */
+#elif defined HAVE_LINUX   /* #if defined(HAVE_XOS) */
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    ret_val = end.tv_sec * 1000000 + end.tv_usec;
+    return ret_val;
+#else /* #elif defined HAVE_LINUX */
     if (seln == CLK_SELN_THREAD) // Time elapsed in this thread
     {
         TaskHandle_t task;
@@ -233,7 +247,13 @@ clk_t compute_total_frmwrk_cycles()
 
 	return tot_cycles;
 
-#else   /* #if defined(HAVE_XOS) */
+#elif defined HAVE_LINUX   /* #if defined(HAVE_XOS) */
+    struct timeval total;
+    gettimeofday(&total, NULL);
+    tot_cycles = total.tv_sec * 1000000 + total.tv_usec - frmwk_cycles;
+    frmwk_cycles = tot_cycles;
+    return tot_cycles;
+#else /* #elif defined HAVE_LINUX */
     int i;
     uint32_t ulTotalRunTime;
     long long cycles;

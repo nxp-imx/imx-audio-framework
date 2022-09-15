@@ -69,6 +69,7 @@ C_OBJS  =	$(COM_DIR)/src/xaf-fsl-api.o					\
 		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-utils-test.o	\
 		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-fio-test.o		\
 		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-mem-test.o 		\
+		$(ROOT_DIR)/testxa_af_hostless/test/src/xaf-clk-test.o 		\
 		$(SRC_DIR)/get_pcm_info.o
 
 C_OBJS_REND  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-mp3-dec-rend-test.o
