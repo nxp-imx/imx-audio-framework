@@ -79,7 +79,9 @@
 #endif
 
 #ifdef XAF_PROFILE
+#ifndef HAVE_LINUX
 #include <xtensa/sim.h>
+#endif
 #include "xaf-clk-test.h"
 #endif
 
@@ -251,7 +253,7 @@ int all_threads_exited(void **comp_threads, int num_threads);
 void set_wbna(int *argc, char **argv);
 int print_verinfo(pUWORD8 ver_info[],pUWORD8 app_name);
 int read_input(void *p_buf, int buf_length, int *read_length, void *p_input, xaf_comp_type comp_type);
-double compute_comp_mcps(unsigned int num_bytes, int comp_cycles, xaf_format_t comp_format, double *strm_duration);
+double compute_comp_mcps(unsigned int num_bytes, long long comp_cycles, xaf_format_t comp_format, double *strm_duration);
 int print_mem_mcps_info(mem_obj_t* mem_handle, int num_comp);
 void *comp_process_entry(void *arg);
 void *comp_process_entry_recorder(void *arg);

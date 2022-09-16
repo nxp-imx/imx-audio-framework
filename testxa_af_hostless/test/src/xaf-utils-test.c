@@ -358,6 +358,10 @@ static long _comp_process_entry(void *arg)
     int error;
 #ifdef XAF_PROFILE
     clk_t fread_start, fread_stop, fwrite_start, fwrite_stop;
+#ifdef HAVE_LINUX
+    clk_t dec_start, dec_stop = 0;
+    frmwk_cycles = dec_start = clk_read_start(CLK_SELN_THREAD);
+#endif
 #endif
     TST_CHK_PTR(arg, "comp_process_entry");
 
@@ -453,6 +457,11 @@ static long _comp_process_entry(void *arg)
 #ifdef XAF_PROFILE
             fwrite_stop = clk_read_stop(CLK_SELN_THREAD);
             fwrite_cycles += clk_diff(fwrite_stop, fwrite_start);
+#ifdef HAVE_LINUX
+            dec_stop = fwrite_stop;
+            dec_cycles += (dec_stop - dec_start);
+            dec_start = dec_stop;
+#endif
 #endif
 
             TST_CHK_API(xaf_comp_process(NULL, p_comp, (void *)comp_info[0], comp_info[1], XAF_NEED_OUTPUT_FLAG), "xaf_comp_process");
@@ -539,7 +548,7 @@ void *event_handler_entry(void *arg)
 }
 #endif
 
-double compute_comp_mcps(unsigned int num_bytes, int comp_cycles, xaf_format_t comp_format, double *strm_duration)
+double compute_comp_mcps(unsigned int num_bytes, long long comp_cycles, xaf_format_t comp_format, double *strm_duration)
 {
     double mcps;
     unsigned int num_samples;
@@ -630,7 +639,11 @@ int print_mem_mcps_info(mem_obj_t* mem_handle, int num_comp)
 #ifdef XAF_PROFILE
     if(strm_duration)
     {
+#ifdef HAVE_LINUX
+        // actually, dsp_comps_cycles is frmwk_cycles in linux.
+#else
         frmwk_cycles =  frmwk_cycles - (dsp_comps_cycles) - (fread_cycles + fwrite_cycles);
+#endif
         read_write_mcps = ((double)(fread_cycles + fwrite_cycles)/(strm_duration*1000000.0));
         mcps = ((double)tot_cycles/(strm_duration*1000000.0));
         FIO_PRINTF(stdout,"Total MCPS                                   :  %f\n",mcps);
