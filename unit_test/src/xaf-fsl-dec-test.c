@@ -138,12 +138,9 @@ static int get_comp_config(void *p_comp, xaf_format_t *comp_format)
     TST_CHK_PTR(p_comp, "get_comp_config");
     TST_CHK_PTR(comp_format, "get_comp_config");
 
-#if 0 /* by S.J */
-    param[0] = XA_MP3DEC_CONFIG_PARAM_NUM_CHANNELS;
-    param[2] = XA_MP3DEC_CONFIG_PARAM_PCM_WDSZ;
-    param[4] = XA_MP3DEC_CONFIG_PARAM_SAMP_FREQ;
-#endif
-    
+    param[0] = XA_CODEC_CONFIG_PARAM_CHANNELS;
+    param[2] = XA_CODEC_CONFIG_PARAM_PCM_WIDTH;
+    param[4] = XA_CODEC_CONFIG_PARAM_SAMPLE_RATE;
     ret = xaf_comp_get_config(p_comp, 3, &param[0]);
     if(ret < 0)
         return ret;
@@ -584,6 +581,9 @@ int main_task(int argc, char **argv)
 
     __xf_thread_join(&dec_thread, NULL); 
     
+    if (AOption.CodecFormat != CODEC_PCM_GAIN)
+        TST_CHK_API(get_comp_config(p_decoder, &dec_format), "get_comp_config");
+
 #ifdef XAF_PROFILE
     compute_total_frmwrk_cycles();
     clk_stop();
