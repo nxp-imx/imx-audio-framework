@@ -88,6 +88,12 @@ enum {
  */
 #define I2C_BITRATE           (375000)
 
+#define MICFIL_BASE		0x30CA0000
+#define MICFIL_VAD_INT_NUM	44
+#define MICFIL_VADE_INT_NUM	45
+#define MICFIL_INT_NUM		109
+#define MICFIL_INTE_NUM		110
+
 #define IRQSTR_MP_ADDR		0x30A80000
 #define SAI_MP_ADDR		0x30c30000
 #define EASRC_MP_ADDR		0x30c90000
@@ -98,6 +104,9 @@ enum {
 #define SDMA2_INT_NUM		103
 #define SDMA3_INT_NUM		34
 #define EASRC_MP_INT_NUM	122
+
+#define SDMA2_MICFIL_EVENTID	24
+#define SDMA3_MICFIL_EVENTID	24
 
 #else /* PLATF_8M */
 #ifdef PLATF_8ULP
