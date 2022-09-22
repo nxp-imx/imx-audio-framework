@@ -117,6 +117,7 @@ C_OBJS  +=	$(SRC_DIR)/src/plugins/xa-unia-codec.o				\
 		$(SRC_DIR)/src/driver/sai.o 					\
 		$(SRC_DIR)/src/driver/sdma.o 					\
 		$(SRC_DIR)/src/driver/wm8960.o 					\
+		$(SRC_DIR)/src/driver/micfil.o 					\
 		$(SRC_DIR)/src/driver/wrap_dma.o
 
 
