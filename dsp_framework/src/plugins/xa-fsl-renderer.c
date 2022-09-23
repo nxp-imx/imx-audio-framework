@@ -57,7 +57,9 @@
 #include "xf-debug.h"
 #include <string.h>
 
+#include "mydefs.h"
 #include "hardware.h"
+#include "dsp_irq_handler.h"
 #include "debug.h"
 
 #ifdef XAF_PROFILE
@@ -88,7 +90,7 @@ extern clk_t renderer_cycles;
             d->bytes_produced = payload;\
         }\
         /* ...write to output file and increment read pointer */\
-        fwrite((char *)d->pfifo_r, 1, payload, d->fw); d->pfifo_r += payload;\
+        d->pfifo_r += payload;\
         if((UWORD32)d->pfifo_r >= (UWORD32)&d->g_fifo_renderer[2*payload])\
         {\
             d->pfifo_r = (void*)d->g_fifo_renderer;\
@@ -228,9 +230,10 @@ typedef struct XARenderer
 	u32                   fe_dev_cache[120];
 	u32                   edma_cache[40];
 	u32                   fe_edma_cache[40];
-	dma_t                 dma;
-	dma_config_t          dma_cfg;
-	struct SDMA           sdma;
+
+	void                  *dma;
+	dmac_t                *dmac[2];
+
 	struct fsl_easrc      easrc;
 	struct fsl_easrc_context   ctx;
 
@@ -258,7 +261,8 @@ static inline int xa_hw_renderer_start(struct XARenderer *d)
 	LOG(("HW-renderer started\n"));
 
 	irqstr_start(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
-	dma_start(&d->dma);
+	dma_chan_start(d->dmac[0]);
+	dma_chan_start(d->dmac[1]);
 	d->fe_dev_start(d->fe_dev_addr, 1);
 	d->dev_start(d->dev_addr, 1);
 	return 0;
@@ -270,56 +274,42 @@ static inline void xa_hw_renderer_close(struct XARenderer *d)
 	LOG(("HW-renderer closed\n"));
 	if (!d->irqstr_addr)
 		return;
-	irqstr_stop(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
-	dma_stop(&d->dma);
+	dma_chan_stop(d->dmac[0]);
+	dma_chan_stop(d->dmac[1]);
 	d->dev_stop(d->dev_addr, 1);
 	d->fe_dev_stop(d->fe_dev_addr, 1);
 }
 
 /* ...emulation of renderer interrupt service routine */
-static void xa_hw_renderer_isr(XARenderer *d)
+static void xa_hw_renderer_callback(void *arg)
 {
+	XARenderer *d = (XARenderer *)arg;
 	s32     avail;
 	u32     status;
 	u32     num;
 
-	/* period elapse */
-	status = read32(d->irqstr_addr + IRQSTEER_CHnSTATUS(IRQ_TO_MASK_OFFSET(d->fe_dev_Int+32)));
-
-	LOG1("xa_hw_renderer_isr status %x\n", status);
-
-	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->dev_Int+32)))
-		d->dev_isr(d->dev_addr);
-
-	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dev_Int+32)))
-		d->fe_dev_isr(d->fe_dev_addr);
-
-	if (status &  (1 << IRQ_TO_MASK_SHIFT(d->fe_dma_Int+32))) {
-		dma_irq_handler(&d->dma);
-
-		READ_FIFO(d->frame_size_bytes * d->channels);
-		d->fifo_avail = d->fifo_avail + (d->frame_size_bytes * d->channels);
-		LOG2("fifo_avail %x, fifo_ptr_r %x\n", d->fifo_avail, d->pfifo_r);
-		/* ...notify user on input-buffer (idx = 0) consumption */
-		if((d->fifo_avail) >= d->frame_size_bytes * d->channels * 2)
-		{
-			LOG("isr under run\n");
-			/*under run case*/
-			d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
-			d->fifo_avail = d->frame_size_bytes * d->channels * 2;
-			xa_hw_renderer_close(d);
-		} else if(((int)d-> fifo_avail) <= 0) {
-			/* over run */
-			LOG("isr over run\n");
+	READ_FIFO(d->frame_size_bytes * d->channels);
+	d->fifo_avail = d->fifo_avail + (d->frame_size_bytes * d->channels);
+	LOG2("fifo_avail %x, fifo_ptr_r %x\n", d->fifo_avail, d->pfifo_r);
+	/* ...notify user on input-buffer (idx = 0) consumption */
+	if((d->fifo_avail) >= d->frame_size_bytes * d->channels * 2)
+	{
+		LOG("isr under run\n");
+		/*under run case*/
+		d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
+		d->fifo_avail = d->frame_size_bytes * d->channels * 2;
+		xa_hw_renderer_close(d);
+	} else if(((int)d-> fifo_avail) <= 0) {
+		/* over run */
+		LOG("isr over run\n");
 #if 0
-			d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
-			d->fifo_avail=HW_FIFO_LENGTH;
-			xa_hw_renderer_close(d);
+		d->state ^= XA_RENDERER_FLAG_RUNNING | XA_RENDERER_FLAG_IDLE;
+		d->fifo_avail=HW_FIFO_LENGTH;
+		xa_hw_renderer_close(d);
 #endif
-		}
-
-		d->cdata->cb(d->cdata, 0);
 	}
+
+	d->cdata->cb(d->cdata, 0);
 }
 
 /*******************************************************************************
@@ -428,12 +418,19 @@ static XA_ERRORCODE xa_renderer_get_api_size(XARenderer *d, WORD32 i_idx, pVOID 
 /* ...initialize hardware renderer */
 static inline int xa_hw_renderer_init(struct XARenderer *d)
 {
+	struct dsp_main_struct *dsp;
 	int             r;
 	int             board_type;
-	dma_t           *dma     = &d->dma;
-	dma_config_t    *dma_cfg = &d->dma_cfg;
+	dmac_cfg_t      audio_cfg;
+	int dev_type;
 
 	board_type = BOARD_TYPE;
+
+	dsp = get_main_struct();
+	dma_probe(dsp);
+
+	d->dma = dsp->dma_device;
+	dma_init(d->dma);
 
 	/*initially FIFO will be empty so fifo_avail is 2x framesize bytes for ping and pong */
 	d->fifo_avail = d->frame_size_bytes * d->channels * 2;
@@ -441,31 +438,23 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 	XF_CHK_ERR(d->fifo_avail <= HW_FIFO_LENGTH, XA_RENDERER_CONFIG_NONFATAL_RANGE);
 
 	/* alloc internal buffer for DMA/SAI/ESAI*/
-	dmabuf_malloc(dma, d->frame_size_bytes * d->channels * 2);
+	xaf_malloc((void **)&d->g_fifo_renderer, d->frame_size_bytes * d->channels * 2, 0);
 
 	/* ...initialize FIFO params, zero fill FIFO and init pointers to start of FIFO */
-	d->pfifo_w = d->pfifo_r = d->g_fifo_renderer = (void *)dmabuf_get(dma);
-
-	xaf_malloc(&d->tcd, MAX_PERIOD_COUNT * sizeof(struct nxp_edma_hw_tcd) + 32, 0);
-
-	d->tcd_align32 = (void *)(((u32)d->tcd + 31) & ~31);
-
-	xaf_malloc(&d->fe_tcd, MAX_PERIOD_COUNT * sizeof(struct nxp_edma_hw_tcd) + 32, 0);
-
-	d->fe_tcd_align32 = (void *)(((u32)d->fe_tcd + 31) & ~31);
+	d->pfifo_w = d->pfifo_r = d->g_fifo_renderer;
 
 	/*It is better to send address through the set_param */
-	if ((board_type == DSP_IMX8QXP_TYPE) || (board_type ==DSP_IMX8QM_TYPE)) {
-		d->dev_addr    =  (void *)DEV_ADDR;
-		d->dev_Int     =  DEV_INT;
-		d->dev_fifo_off=  DEV_FIFO_OFF;
+	if (board_type == DSP_IMX8QXP_TYPE) {
+		d->dev_addr     = (void *)ESAI_ADDR;
+		d->dev_Int      = ESAI_INT;
+		d->dev_fifo_off = REG_ESAI_ETDR;
 
-		d->fe_dma_Int  =   FE_DMA_INT;
-		d->fe_dev_Int  =   FE_DEV_INT;
-		d->fe_dev_addr = (void *)FE_DEV_ADDR;
-		d->fe_edma_addr = (void *)FE_DMA_ADDR;
-		d->fe_dev_fifo_in_off = FE_DEV_FIFO_IN_OFF;
-		d->fe_dev_fifo_out_off = FE_DEV_FIFO_OUT_OFF;
+		d->fe_dma_Int   = EDMA_ASRC_INT_NUM;
+		d->fe_dev_Int   = ASRC_INT;
+		d->fe_dev_addr  = (void *)ASRC_ADDR;
+		d->fe_edma_addr = (void *)EDMA_ADDR_ASRC_RXA;
+		d->fe_dev_fifo_in_off  = REG_ASRDIA;
+		d->fe_dev_fifo_out_off = REG_ASRDOA;
 
 		d->irqstr_addr =  (void *)IRQ_STR_ADDR;
 
@@ -486,37 +475,55 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 
 		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_6;
 
-		dma->dev_int                   = DMA_INT;
-		dma->p_dev_addr                = (void *)DMA_ADDR;
-		dma->p_tcd                     = d->tcd;
-		dma->p_tcd_aligned             = d->tcd_align32;
-		dma->dma_cfg                   = dma_cfg;
+		/* dma channel configuration */
+		audio_cfg.period_len = d->frame_size_bytes * d->channels;
+		audio_cfg.period_count = 2;
+		audio_cfg.direction = DMA_MEM_TO_DEV;
+		audio_cfg.src_addr = d->g_fifo_renderer;
+		audio_cfg.dest_addr = (void *)(ASRC_ADDR + REG_ASRDIA);
+		audio_cfg.callback = xa_hw_renderer_callback;
+		audio_cfg.comp = (void *)d;
+		audio_cfg.peripheral_config = NULL;
+		audio_cfg.peripheral_size = 0;
 
-		dma_cfg->p_fe_dma_addr         = (void *)FE_DMA_ADDR;
-		dma_cfg->p_fe_tcd              = d->fe_tcd;
-		dma_cfg->p_fe_tcd_aligned      = d->fe_tcd_align32;
-		dma_cfg->p_fe_dev_addr         = (void *)FE_DEV_ADDR;
-		dma_cfg->fe_dev_fifo_in_off    = FE_DEV_FIFO_IN_OFF;
-		dma_cfg->fe_dev_fifo_out_off   = FE_DEV_FIFO_OUT_OFF;
-		dma_cfg->p_dev_addr            = (void *)DEV_ADDR;
-		dma_cfg->dev_fifo_off          = DEV_FIFO_OFF;
-		dma_cfg->period_len            = d->frame_size_bytes * d->channels;
+		dev_type = EDMA_ASRC_RX;
+		d->dmac[0] = request_dma_chan(d->dma, dev_type);
+		if (!d->dmac[0])
+			return XA_FATAL_ERROR;
+		dma_chan_config(d->dmac[0], &audio_cfg);
+
+		audio_cfg.period_len = d->frame_size_bytes * d->channels;
+		audio_cfg.period_count = 2;
+		audio_cfg.direction = DMA_DEV_TO_DEV;
+		audio_cfg.src_addr = (void *)(ASRC_ADDR + REG_ASRDOA);
+		audio_cfg.dest_addr = (void *)(ESAI_ADDR + REG_ESAI_ETDR);
+		audio_cfg.callback = NULL;
+		audio_cfg.comp = (void *)d;
+		audio_cfg.peripheral_config = NULL;
+		audio_cfg.peripheral_size = 0;
+
+		dev_type = EDMA_ESAI_TX;
+		d->dmac[1] = request_dma_chan(d->dma, dev_type);
+		if (!d->dmac[1])
+			return XA_FATAL_ERROR;
+		dma_chan_config(d->dmac[1], &audio_cfg);
 	} else {
+		sdmac_cfg_t sdmac_cfg;
 		memset(&d->easrc, 0, sizeof(struct fsl_easrc));
 		memset(&d->ctx, 0, sizeof(struct fsl_easrc_context));
-		d->easrc.paddr = (unsigned char *)FE_DEV_ADDR;
+		d->easrc.paddr = (unsigned char *)EASRC_ADDR;
 
-		d->dev_addr    =  (void *)DEV_ADDR;
-		d->dev_Int     =  DEV_INT;
-		d->dev_fifo_off=  DEV_FIFO_OFF;
+		d->dev_addr     = (void *)SAI_ADDR;
+		d->dev_Int      = SAI_INT;
+		d->dev_fifo_off = FSL_SAI_TDR0;
 
-		d->fe_dma_Int  =   FE_DMA_INT;
+		d->fe_dma_Int   = SDMA_INT;
 		/* not enable easrc Int and enable sai Int */
-		d->fe_dev_Int  =   FE_DEV_INT;
-		d->fe_dev_addr =   &d->easrc;
-		d->fe_edma_addr =  FE_DMA_ADDR;
-		d->fe_dev_fifo_in_off =  FE_DEV_FIFO_IN_OFF;
-		d->fe_dev_fifo_out_off = FE_DEV_FIFO_OUT_OFF;
+		d->fe_dev_Int   = SAI_INT;
+		d->fe_dev_addr  = &d->easrc;
+		d->fe_edma_addr = NULL;
+		d->fe_dev_fifo_in_off  = REG_EASRC_WRFIFO(0);
+		d->fe_dev_fifo_out_off = REG_EASRC_RDFIFO(0);
 
 		d->irqstr_addr =  (void *)IRQ_STR_ADDR;
 
@@ -536,21 +543,44 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 
 		d->irq_2_dsp = INT_NUM_IRQSTR_DSP_1;
 
-		dma->p_dev = &d->sdma;
-		memset(dma->p_dev, 0, sizeof(struct SDMA));
-		dma->p_dev_addr                = (void *)DMA_ADDR;
-		dma->type                      = SDMA;
-		dma->dma_cfg                   = dma_cfg;
+		/* dma channels configuration */
+		audio_cfg.period_len = d->frame_size_bytes * d->channels;
+		audio_cfg.period_count = 2;
+		audio_cfg.direction = DMA_MEM_TO_DEV;
+		audio_cfg.src_addr = d->g_fifo_renderer;
+		audio_cfg.dest_addr = (void *)(EASRC_ADDR + REG_EASRC_WRFIFO(0));
+		audio_cfg.callback = xa_hw_renderer_callback;
+		audio_cfg.comp = (void *)d;
+		/* event 16: ASRC Context 0 receive DMA request */
+		sdmac_cfg.events[0] = 16;
+		sdmac_cfg.events[1] = -1;
+		sdmac_cfg.watermark = 0xc;
 
-		dma_cfg->p_fe_dev_addr         = (void *)FE_DEV_ADDR;
-		dma_cfg->fe_dev_fifo_in_off    = FE_DEV_FIFO_IN_OFF;
-		dma_cfg->fe_dev_fifo_out_off   = FE_DEV_FIFO_OUT_OFF;
-		dma_cfg->p_dev_addr            = (void *)DEV_ADDR;
-		dma_cfg->dev_fifo_off          = DEV_FIFO_OFF;
-		dma_cfg->period_len            = d->frame_size_bytes * d->channels;
+		audio_cfg.peripheral_config = &sdmac_cfg;
+		audio_cfg.peripheral_size = sizeof(sdmac_cfg_t);
+
+		d->dmac[0] = request_dma_chan(d->dma, 0);
+		dma_chan_config(d->dmac[0], &audio_cfg);
+
+		audio_cfg.period_len = d->frame_size_bytes * d->channels;
+		audio_cfg.period_count = 2;
+		audio_cfg.direction = DMA_DEV_TO_DEV;
+		audio_cfg.src_addr = (void *)(EASRC_ADDR + REG_EASRC_RDFIFO(0));
+		audio_cfg.dest_addr = (void *)(SAI_ADDR + FSL_SAI_TDR0);
+		audio_cfg.callback = xa_hw_renderer_callback;
+		audio_cfg.comp = (void *)d;
+		/* event 5:  SAI-3 transmit DMA request
+		 * event 17: ASRC Context 0 transmit DMA request */
+		sdmac_cfg.events[0] = 17;
+		sdmac_cfg.events[1] = 5;
+		sdmac_cfg.watermark = 0x80061806;
+
+		audio_cfg.peripheral_config = &sdmac_cfg;
+		audio_cfg.peripheral_size = sizeof(sdmac_cfg_t);
+
+		d->dmac[1] = request_dma_chan(d->dma, 0);
+		dma_chan_config(d->dmac[1], &audio_cfg);
 	}
-
-	dma_init(dma);
 
 	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
 
@@ -559,9 +589,7 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 
 	d->dev_init(d->dev_addr, 1, d->channels,  d->rate, d->pcm_width, 24576000);
 
-	dma_config(dma);
-
-	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_renderer_isr, d);
+	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_comp_isr, 0);
 	xos_interrupt_enable(d->irq_2_dsp);
 
 	WM8960_Init();
@@ -572,9 +600,9 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 
 static inline int xa_hw_renderer_deinit(struct XARenderer *d)
 {
-	dma_t *dma     = &d->dma;
-
-	dma_clearup(&d->dma);
+	release_dma_chan(d->dmac[0]);
+	release_dma_chan(d->dmac[1]);
+	dma_release(d->dma);
 
 	if (d->tcd) {
 		xaf_free(d->tcd, 0);
@@ -586,9 +614,10 @@ static inline int xa_hw_renderer_deinit(struct XARenderer *d)
 		d->fe_tcd = NULL;
 	}
 
-	if (dma->p_dma_buf) {
-		xaf_free(dma->p_dma_buf, 0);
-		dma->p_dma_buf = NULL;
+	if (d->g_fifo_renderer) {
+		xaf_free(d->g_fifo_renderer, 0);
+		d->g_fifo_renderer = NULL;
+		d->pfifo_w = d->pfifo_r = NULL;
 	}
 }
 
@@ -736,7 +765,7 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
 
 	d->dev_suspend(d->dev_addr, d->dev_cache);
 	d->fe_dev_suspend(d->fe_dev_addr, d->fe_dev_cache);
-	dma_suspend(&d->dma);
+	dma_suspend(d->dma);
 	return XA_NO_ERROR;
 
     case XA_RENDERER_STATE_SUSPEND_RESUME:
@@ -745,8 +774,8 @@ static inline XA_ERRORCODE xa_hw_renderer_control(XARenderer *d, UWORD32 state)
 	irqstr_init(d->irqstr_addr, d->fe_dev_Int, d->fe_dma_Int);
 	d->dev_resume(d->dev_addr, d->dev_cache);
 	d->fe_dev_resume(d->fe_dev_addr, d->fe_dev_cache);
-	dma_resume(&d->dma);
-	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_renderer_isr, d);
+	dma_resume(d->dma);
+	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_comp_isr, 0);
 	xos_interrupt_enable(d->irq_2_dsp);
 	return XA_NO_ERROR;
 
