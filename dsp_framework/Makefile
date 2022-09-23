@@ -118,7 +118,7 @@ C_OBJS  +=	$(SRC_DIR)/src/plugins/xa-unia-codec.o				\
 		$(SRC_DIR)/src/driver/sdma.o 					\
 		$(SRC_DIR)/src/driver/wm8960.o 					\
 		$(SRC_DIR)/src/driver/micfil.o 					\
-		$(SRC_DIR)/src/driver/wrap_dma.o
+		$(SRC_DIR)/src/driver/fsl_dma.o
 
 
 TARGET = hifi4_imx8qmqxp.bin

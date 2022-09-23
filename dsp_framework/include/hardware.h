@@ -12,7 +12,7 @@
 #include "asrc.h"
 #include "easrc.h"
 #include "irqstr.h"
-#include "wrap_dma.h"
+#include "fsl_dma.h"
 #include "wm8960.h"
 #include "micfil.h"
 
