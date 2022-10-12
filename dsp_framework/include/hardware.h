@@ -14,5 +14,6 @@
 #include "irqstr.h"
 #include "wrap_dma.h"
 #include "wm8960.h"
+#include "micfil.h"
 
 #endif
