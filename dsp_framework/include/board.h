@@ -211,4 +211,113 @@ enum {
 #define INT_NUM_IRQSTR_DSP_6   25
 #define INT_NUM_IRQSTR_DSP_7   26
 
+#ifdef PLATF_8M
+
+#define DEV_ADDR			SAI_MP_ADDR
+#define DEV_INT				SAI_MP_INT_NUM
+#define DEV_FIFO_OFF			FSL_SAI_TDR0
+
+#define FE_DMA_INT			SDMA3_INT_NUM
+#define FE_DMA_ADDR			NULL
+#define FE_DEV_INT			SAI_MP_INT_NUM
+#define FE_DEV_ADDR			EASRC_MP_ADDR
+#define FE_DEV_FIFO_IN_OFF		REG_EASRC_WRFIFO(0)
+#define FE_DEV_FIFO_OUT_OFF		REG_EASRC_RDFIFO(0)
+
+#define IRQ_STR_ADDR			IRQSTR_MP_ADDR
+
+#define SAI_ADDR			SAI_MP_ADDR
+#define SAI_INT				SAI_MP_INT_NUM
+
+#define ESAI_ADDR			-1
+#define ESAI_INT			-1
+
+#define DMA_ADDR			SDMA3_ADDR
+#define DMA_INT				SDMA3_INT_NUM
+
+#define EASRC_ADDR			EASRC_MP_ADDR
+#define EASRC_INT			EASRC_MP_INT_NUM
+
+#define ASRC_ADDR			-1
+#define ASRC_INT			-1
+
+#define MICFIL_ADDR			MICFIL_BASE
+#define MICFIL_INT			MICFIL_INT_NUM
+
+#else /* PLATF_8M */
+#ifdef PLATF_8ULP
+
+#define DEV_ADDR			-1
+#define DEV_INT				-1
+#define DEV_FIFO_OFF			-1
+
+#define DMA_INT				-1
+#define DMA_ADDR			-1
+
+#define FE_DMA_INT			-1
+#define FE_DMA_ADDR			-1
+#define FE_DEV_INT			-1
+#define FE_DEV_ADDR			-1
+#define FE_DEV_FIFO_IN_OFF		-1
+#define FE_DEV_FIFO_OUT_OFF		-1
+
+#define IRQ_STR_ADDR			-1
+
+#define SAI_ADDR			-1
+#define SAI_INT				-1
+
+#define ESAI_ADDR			-1
+#define ESAI_INT			-1
+
+#define DMA_ADDR			-1
+#define DMA_INT				-1
+
+#define EASRC_ADDR			-1
+#define EASRC_INT			-1
+
+#define ASRC_ADDR			-1
+#define ASRC_INT			-1
+
+#define MICFIL_ADDR			-1
+#define MICFIL_INT			-1
+
+#else /* !PLATF_8ULP && ! PLATF_8M  (8QXP || 8QM)*/
+
+#define DEV_ADDR			ESAI_ADDR
+#define DEV_INT				ESAI_INT_NUM
+#define DEV_FIFO_OFF			REG_ESAI_ETDR
+
+#define FE_DMA_INT			EDMA_ASRC_INT_NUM
+#define FE_DMA_ADDR			EDMA_ADDR_ASRC_RXA
+#define FE_DEV_INT			ASRC_INT_NUM
+#define FE_DEV_ADDR			ASRC_ADDR
+#define FE_DEV_FIFO_IN_OFF		REG_ASRDIA
+#define FE_DEV_FIFO_OUT_OFF		REG_ASRDOA
+
+#if PLATF_8QXP
+#define IRQ_STR_ADDR			IRQSTR_QXP_ADDR
+#else
+#define IRQ_STR_ADDR			IRQSTR_QM_ADDR
+#endif
+
+#define SAI_ADDR			ESAI_ADDR
+#define SAI_INT				ESAI_INT_NUM
+
+#define ESAI_INT			ESAI_INT_NUM
+
+#define DMA_ADDR			EDMA_ADDR_ESAI_TX
+#define DMA_INT				EDMA_ESAI_INT_NUM
+
+#define EASRC_ADDR			-1
+#define EASRC_INT			-1
+
+#define ASRC_INT			372
+
+#define MICFIL_ADDR			-1
+#define MICFIL_INT			-1
+
+#endif
+#endif /* END OF PLATF_8M */
+
+
 #endif /* _BOARD_H_ */
