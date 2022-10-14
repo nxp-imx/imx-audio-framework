@@ -62,6 +62,13 @@ extern clk_t capturer_cycles;
 #endif
 #include "xaf-fio-test.h"
 
+#include "mydefs.h"
+#include "hardware.h"
+#include "fsl_dma.h"
+#include "dsp_irq_handler.h"
+
+#include "debug.h"
+
 /*******************************************************************************
  * Codec parameters
  ******************************************************************************/
@@ -69,8 +76,8 @@ extern clk_t capturer_cycles;
 /* ...total length of HW FIFO in bytes */
 #define HW_FIFO_LENGTH                  (8192)
 
-/* maximum allowed framesize in bytes per channel. Default framesize: 8ms frame at 48 kHz with 2 bytes per sample */
-#define MAX_FRAME_SIZE_IN_BYTES_DEFAULT    (48 * 8 * 2)
+/* maximum allowed framesize in bytes per channel. Default framesize: 8ms frame at 48 kHz with 4 bytes per sample */
+#define MAX_FRAME_SIZE_IN_BYTES_DEFAULT    (48 * 8 * 4)
 
 /* minimum allowed framesize in bytes per channel */
 #define MIN_FRAME_SIZE_IN_BYTES    ( 128 )
@@ -127,7 +134,7 @@ typedef struct XACapturer
 
     UWORD32            over_flow_flag;
 
-    FILE * fw;
+    void * fw;
 
     UWORD32        interrupt_cnt;
 
@@ -140,6 +147,16 @@ typedef struct XACapturer
     /* ...framesize in samples per channel */
     UWORD32     frame_size;
 
+    u32                   irq_2_dsp;
+    void                  *irqstr_addr;
+
+    void                  *dma_buffer;
+    u32                   dma_Int;
+    void                  *dma;
+    dmac_t                *dmac[2];
+
+    u32                   dev_Int;
+    void                  *micfil;
 }   XACapturer;
 
 #define MAX_UWORD32 ((UWORD64)0xFFFFFFFF)
@@ -160,25 +177,28 @@ static xf_timer_t cap_timer;
 const char capturer_in_file[] = "capturer_in.pcm";
 void xa_capturer_callback(xa_capturer_cb_t *cdata, WORD32 i_idx);
 
-static void xa_fw_handler(void *arg)
+#define UPDATE_FW_READ(fw) { \
+	    fw += d->frame_size_bytes * d->channels; \
+	    if (fw >= (d->dma_buffer + d->frame_size_bytes * d->channels *2)) \
+		    fw = d->dma_buffer; \
+}
+
+static void xa_hw_capturer_callback(void *arg)
 {
-    XACapturer *d = arg;
+	XACapturer *d = arg;
+	u32     status;
 
-    d->fifo_avail = d->fifo_avail + (d->frame_size_bytes*d->channels);
+	d->fifo_avail = d->fifo_avail + (d->frame_size_bytes*d->channels);
 
-    if((d->fifo_avail) > (2 * d->frame_size_bytes * d->channels))
-    {/*over run case*/
-       d->fifo_avail = 0;
-    }
-    else if(((int)d-> fifo_avail) < 0)
-    {/* under run */
-       d->fifo_avail=0;
-    }
-    else
-    {
-       d->cdata->cb(d->cdata, 0);
-
-    }
+	if((d->fifo_avail) > (2 * d->frame_size_bytes * d->channels)) {
+		/*over run case*/
+		d->fifo_avail = 0;
+	} else if(((int)d-> fifo_avail) < 0) {
+		/* under run */
+		d->fifo_avail = 0;
+	} else {
+		d->cdata->cb(d->cdata, 0);
+	}
 }
 
 
@@ -186,13 +206,63 @@ static void xa_fw_handler(void *arg)
  * Codec access functions
  ******************************************************************************/
 
-static inline void xa_fw_capturer_close(XACapturer *d)
+/* ...start HW-renderer operation */
+static XA_ERRORCODE xa_hw_capturer_start(XACapturer *d)
 {
-    fclose(d->fw);
-    __xf_timer_stop(&cap_timer);
-    __xf_timer_destroy(&cap_timer);
+	LOG(("HW-renderer started\n"));
+
+	micfil_start(d->micfil);
+	dma_chan_start(d->dmac[0]);
+	irqstr_start(d->irqstr_addr, d->dev_Int, d->dma_Int);
+
+	return XA_NO_ERROR;
 }
 
+/* ...stop hardware renderer */
+static inline void xa_hw_capturer_stop(XACapturer *d)
+{
+	LOG(("HW-renderer closed\n"));
+
+	dma_chan_stop(d->dmac[0]);
+	micfil_stop(d->micfil);
+}
+
+static inline void xa_hw_capturer_suspend(XACapturer *d)
+{
+	LOG(("HW-renderer suspend\n"));
+
+	dma_suspend(d->dma);
+	micfil_suspend(d->micfil);
+}
+
+static inline void xa_hw_capturer_resume(XACapturer *d)
+{
+	LOG(("HW-renderer resume\n"));
+
+	micfil_resume(d->micfil);
+	dma_resume(d->dma);
+
+	irqstr_init(d->irqstr_addr, d->dev_Int, d->dma_Int);
+	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_comp_isr, 0);
+	xos_interrupt_enable(d->irq_2_dsp);
+}
+
+static inline void xa_hw_capturer_deinit(XACapturer *d)
+{
+	int i;
+
+	release_dma_chan(d->dmac[0]);
+	dma_release(d->dma);
+
+	if (d->dma_buffer)
+		xaf_free(d->dma_buffer, 0);
+	d->fw = NULL;
+}
+
+static XA_ERRORCODE xa_fw_capturer_close (XACapturer *d)
+{
+	return XA_NO_ERROR;
+}
 /* ...submit data (in samples) into internal capturer ring-buffer */
 
 /*******************************************************************************
@@ -211,24 +281,88 @@ static XA_ERRORCODE xa_capturer_get_api_size(XACapturer *d, WORD32 i_idx, pVOID 
     return XA_NO_ERROR;
 }
 
+/* init micfil and sdma */
+static XA_ERRORCODE xa_hw_capturer_init(XACapturer *d)
+{
+	struct dsp_main_struct *dsp;
+	dma_t                  *dma;
+	dmac_t                 *dmac;
+	void                   *micfil;
+	dmac_cfg_t             audio_cfg;
+	int                    i;
+
+	dsp = get_main_struct();
+	dma_probe(dsp);
+	micfil_probe(dsp);
+
+	xaf_malloc(&d->dma_buffer, d->frame_size_bytes * d->channels * 2, 0);
+	if (d->dma_buffer == NULL)
+		return XA_FATAL_ERROR;
+	memset(d->dma_buffer, 0, d->frame_size_bytes * d->channels * 2);
+	d->fw = d->dma_buffer;
+
+	/* config micfil */
+	d->micfil = micfil = dsp->micfil;
+	if (micfil == NULL)
+		return XA_FATAL_ERROR;
+	micfil_init(micfil);
+
+	d->dma = dma = dsp->dma_device;
+	dma_init(dma);
+
+	/* config dma channel */
+	sdmac_cfg_t sdmac_cfg;
+	audio_cfg.period_len = d->frame_size_bytes * d->channels;
+	audio_cfg.period_count = 2;
+	audio_cfg.direction = DMA_DEV_TO_MEM;
+	audio_cfg.src_addr = (void *)micfil_get_datach0_addr(micfil);
+	audio_cfg.dest_addr = d->fw;
+	audio_cfg.callback = xa_hw_capturer_callback;
+	audio_cfg.comp = (void *)d;
+	sdmac_cfg.events[0] = micfil_get_dma_event_id(micfil);
+	sdmac_cfg.events[1] = -1;
+	/* for multi dev: 28-31bit: the channels per fifo
+	 * 24-27bit: sw done cfg
+	 * 23bit: sw done sel
+	 * 16-19bit: the fifo offset
+	 * 12-15bit: the fifo number
+	*/
+	sdmac_cfg.watermark = 0x00802030;
+
+	audio_cfg.peripheral_config = &sdmac_cfg;
+	audio_cfg.peripheral_size = sizeof(sdmac_cfg_t);
+
+	d->dmac[0] = request_dma_chan(d->dma, 0);
+	dma_chan_config(d->dmac[0], &audio_cfg);
+
+	/* config irqstr */
+	d->irqstr_addr =  (void *)IRQ_STR_ADDR;
+	d->dev_Int = micfil_get_irqnum(micfil);
+	get_dma_para(dma, d->dmac[0], GET_IRQ, &d->dma_Int);
+	irqstr_init(d->irqstr_addr, d->dev_Int, d->dma_Int);
+
+	/* dma Int mapping to INT_NUM_IRQSTR_DSP_1 by irqstr */
+	d->irq_2_dsp = INT_NUM_IRQSTR_DSP_1;
+	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_comp_isr, 0);
+	xos_interrupt_enable(d->irq_2_dsp);
+
+	LOG("hw_init finished\n");
+
+	return XA_NO_ERROR;
+}
+
 static XA_ERRORCODE xa_fw_capturer_init (XACapturer *d)
 {
    d->produced = 0;
    d->fw = NULL;
    d->tot_bytes_produced = 0;
-   /*opening the output file*/
-   d->fw = fopen(capturer_in_file,"rb");
-   if ( d->fw == NULL )
-   {
-     /*file open failed*/
-     return XA_FATAL_ERROR;
-   }
 
    /*initialy FIFO will be empty so fifo_avail = HW_FIFO_LENGTH_SAMPLES*/
    d->fifo_avail = 0;
 
-   /*initialises the timer */
-   __xf_timer_init(&cap_timer, xa_fw_handler, d, 1);
+   /*initialises hardware */
+   if (xa_hw_capturer_init(d) != XA_NO_ERROR)
+     return XA_FATAL_ERROR;
 
    return XA_NO_ERROR;
 }
@@ -247,9 +381,9 @@ static XA_ERRORCODE xa_capturer_init(XACapturer *d, WORD32 i_idx, pVOID pv_value
         /* ...pre-configuration initialization; reset internal data */
         memset(d, 0, sizeof(*d));
 
-        /* ...set default capturer parameters - 16-bit little-endian stereo @ 48KHz */        
+        /* ...set default capturer parameters - 32-bit little-endian stereo @ 48KHz */        
         d->channels = 2;
-        d->pcm_width = 16;
+        d->pcm_width = 32;
         d->rate = 48000;
         d->sample_size = ( d->pcm_width >> 3 ); /* convert bits to bytes */ 
         d->frame_size_bytes = MAX_FRAME_SIZE_IN_BYTES_DEFAULT; 
@@ -302,6 +436,12 @@ static XA_ERRORCODE xa_capturer_init(XACapturer *d, WORD32 i_idx, pVOID pv_value
     }
 }
 
+static XA_ERRORCODE xa_capturer_deinit(XACapturer *d, WORD32 i_idx, pVOID pv_value)
+{
+    xa_hw_capturer_deinit(d);
+    LOG("xa_capturer_deinit\n");
+}
+
 /* ...HW-capturer control function */
 static inline XA_ERRORCODE xa_hw_capturer_control(XACapturer *d, UWORD32 state)
 {
@@ -311,8 +451,7 @@ static inline XA_ERRORCODE xa_hw_capturer_control(XACapturer *d, UWORD32 state)
         /* ...capturer must be in idle state */
         XF_CHK_ERR(d->state & XA_CAPTURER_FLAG_IDLE, XA_CAPTURER_EXEC_NONFATAL_STATE);
 
-        __xf_timer_start(&cap_timer,
-                         __xf_timer_ratio_to_period((d->frame_size_bytes / d->sample_size ), d->rate));  
+        xa_hw_capturer_start(d);
 
         /* ...mark capturer is runnning */
         d->state ^= XA_CAPTURER_FLAG_IDLE | XA_CAPTURER_FLAG_RUNNING;
@@ -324,7 +463,7 @@ static inline XA_ERRORCODE xa_hw_capturer_control(XACapturer *d, UWORD32 state)
         XF_CHK_ERR(d->state & XA_CAPTURER_FLAG_PAUSED, XA_CAPTURER_EXEC_NONFATAL_STATE);
 
         /* ...resume capturer operation */
-        //xa_hw_capturer_resume(d);
+        xa_hw_capturer_start(d);
 
         /* ...mark capturer is running */
         d->state ^= XA_CAPTURER_FLAG_RUNNING | XA_CAPTURER_FLAG_PAUSED;
@@ -336,7 +475,7 @@ static inline XA_ERRORCODE xa_hw_capturer_control(XACapturer *d, UWORD32 state)
         XF_CHK_ERR(d->state & XA_CAPTURER_FLAG_RUNNING, XA_CAPTURER_EXEC_NONFATAL_STATE);
 
         /* ...pause capturer operation */
-
+        xa_hw_capturer_stop(d);
 
         /* ...mark capturer is paused */
         d->state ^= XA_CAPTURER_FLAG_RUNNING | XA_CAPTURER_FLAG_PAUSED;
@@ -351,6 +490,20 @@ static inline XA_ERRORCODE xa_hw_capturer_control(XACapturer *d, UWORD32 state)
         /* ...reset capturer flags */
         d->state &= ~(XA_CAPTURER_FLAG_RUNNING | XA_CAPTURER_FLAG_PAUSED);
 
+        return XA_NO_ERROR;
+
+    case XA_CAPTURER_STATE_SUSPEND:
+
+        LOG("fsl capturer suspend\n\n");
+        XF_CHK_ERR(d->state & XA_CAPTURER_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+        xa_hw_capturer_suspend(d);
+        return XA_NO_ERROR;
+
+    case XA_CAPTURER_STATE_SUSPEND_RESUME:
+
+        LOG("fsl capturer resume\n\n");
+        XF_CHK_ERR(d->state & XA_CAPTURER_FLAG_POSTINIT_DONE, XA_API_FATAL_INVALID_CMD_TYPE);
+        xa_hw_capturer_resume(d);
         return XA_NO_ERROR;
 
     default:
@@ -380,8 +533,8 @@ static XA_ERRORCODE xa_capturer_set_config_param(XACapturer *d, WORD32 i_idx, pV
         /* ...get requested PCM width */
         i_value = (UWORD32) *(WORD32 *)pv_value;
 
-        /* ...check value is permitted (16 bits only) */
-        XF_CHK_ERR(i_value == 16, XA_CAPTURER_CONFIG_NONFATAL_RANGE);
+        /* ...check value is permitted (32 bits only) */
+        XF_CHK_ERR(i_value == 32, XA_CAPTURER_CONFIG_NONFATAL_RANGE);
 
         /* ...apply setting */
         d->pcm_width = i_value;
@@ -580,12 +733,15 @@ static XA_ERRORCODE xa_capturer_do_exec(XACapturer *d)
         if(d->output)
         {
             /* ... read bytes when output buffer is available. */
-            bytes_read = fread(d->output,1,(d->frame_size_bytes * d->channels ), d->fw );
+            //bytes_read = fread(d->output,1,(d->frame_size_bytes * d->channels ), d->fw );
+	    memcpy(d->output, d->fw, d->frame_size_bytes * d->channels);
+	    bytes_read = d->frame_size_bytes * d->channels;
+	    UPDATE_FW_READ(d->fw);
         }
         else
         {
             /* ... skip bytes when output buffer is unavailable. TENA-2528 */
-            fseek(d->fw, (d->frame_size_bytes * d->channels), SEEK_CUR);
+            //fseek(d->fw, (d->frame_size_bytes * d->channels), SEEK_CUR);
 
             TRACE(OUTPUT, _b("output buffer is NULL, dropped %u bytes"), (d->frame_size_bytes * d->channels));
 
@@ -647,7 +803,8 @@ static XA_ERRORCODE xa_capturer_execute(XACapturer *d, WORD32 i_idx, pVOID pv_va
             && (d->output) /* TENA-2528 */
         )
         {
-            __xf_timer_stop(&cap_timer);
+            //__xf_timer_stop(&cap_timer);
+            xa_hw_capturer_stop(d);
 
             *(WORD32 *)pv_value = 1;
         }
@@ -841,6 +998,7 @@ static XA_ERRORCODE (* const xa_capturer_api[])(XACapturer *, WORD32, pVOID) =
 {
     [XA_API_CMD_GET_API_SIZE]           = xa_capturer_get_api_size,
     [XA_API_CMD_INIT]                   = xa_capturer_init,
+    [XA_API_CMD_DEINIT]                 = xa_capturer_deinit,
     [XA_API_CMD_SET_CONFIG_PARAM]       = xa_capturer_set_config_param,
     [XA_API_CMD_GET_CONFIG_PARAM]       = xa_capturer_get_config_param,
     [XA_API_CMD_EXECUTE]                = xa_capturer_execute,

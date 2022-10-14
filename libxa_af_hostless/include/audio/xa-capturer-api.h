@@ -64,7 +64,9 @@ enum xa_capturer_state {
     XA_CAPTURER_STATE_START = 0,
     XA_CAPTURER_STATE_IDLE  = 1,
     XA_CAPTURER_STATE_RUN   = 2,
-    XA_CAPTURER_STATE_PAUSE = 3
+    XA_CAPTURER_STATE_PAUSE = 3,
+    XA_CAPTURER_STATE_SUSPEND = 4,
+    XA_CAPTURER_STATE_SUSPEND_RESUME = 5
 };
 
 /* ...component identifier (informative) */
