@@ -78,6 +78,9 @@ OUT_REND     =	dsp_rend_test.out
 C_OBJS_DEC  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-dec-test.o
 OUT_DEC     =	dsp_test.out
 
+C_OBJS_CAPTURER  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-capturer-pcm-gain-test.o
+OUT_CAPTURER     =	dsp_capturer_test.out
+
 ifeq ($(TFLM), 1)
 INCLUDES	+=	-I$(SRC_DIR)/tflm \
 			-I$(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/tflm_common
@@ -88,12 +91,14 @@ C_OBJS_TFLM =	$(C_OBJS) $(SRC_DIR)/dsp_tflm_test.o \
 OUT_TFLM    =	dsp_tflm_test.out
 endif
 
-all: DEC REND TFLM
+all: DEC REND CAPTURER TFLM
 
 DEC: $(C_OBJS_DEC)
 	$(CC) $(CFLAGS) $(C_OBJS_DEC) -o $(OUT_DEC)
 REND: $(C_OBJS_REND)
 	$(CC) $(CFLAGS) $(C_OBJS_REND) -o $(OUT_REND)
+CAPTURER: $(C_OBJS_CAPTURER)
+	$(CC) $(CFLAGS) $(C_OBJS_CAPTURER) -o $(OUT_CAPTURER)
 
 ifeq ($(TFLM), 1)
 TFLM: $(C_OBJS_TFLM)

@@ -30,8 +30,7 @@
 #include "xaf-utils-test.h"
 #include "xaf-fio-test.h"
 
-#define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s  -outfile:out_filename.pcm -samples:<samples-per-channel to be captured(zero for endless capturing)>\n", argv[0]);\
-    FIO_PRINTF(stdout, "\nNote: Capturer-plugin expects input file named 'capturer_in.pcm' to be present in the execution directory.\n\n");
+#define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s  -outfile:out_filename.pcm -samples:<samples-per-channel to be captured(zero for endless capturing)>\n", argv[0]);
 
 #define AUDIO_FRMWK_BUF_SIZE   (256 << 8)
 #define AUDIO_COMP_BUF_SIZE    (1024 << 8)
@@ -39,7 +38,7 @@
 #define NUM_COMP_IN_GRAPH       2
 
 //component parameters
-#define PCM_GAIN_SAMPLE_WIDTH   16
+#define PCM_GAIN_SAMPLE_WIDTH   32
 // supports only 16-bit PCM
 
 #define PCM_GAIN_NUM_CH         2
@@ -49,7 +48,8 @@
 //gain index range is 0 to 6 -> {0db, -6db, -12db, -18db, 6db, 12db, 18db}
 
 #define PCM_GAIN_SAMPLE_RATE    48000
-#define CAPTURER_PCM_WIDTH       (16)
+// micfil only support generate 32bit data */
+#define CAPTURER_PCM_WIDTH       (32)
 #define CAPTURER_SAMPLE_RATE     (48000)
 #define CAPTURER_NUM_CH          (2)
 
@@ -339,9 +339,10 @@ int main_task(int argc, char **argv)
 
 
     p_output = ofp;
-    mem_handle = mem_init();
     xaf_adev_config_t adev_config;
     TST_CHK_API(xaf_adev_config_default_init(&adev_config), "xaf_adev_config_default_init");
+
+    mem_handle = mem_init(&adev_config);
 
     adev_config.pmem_malloc =  mem_malloc;
     adev_config.pmem_free =  mem_free;
@@ -404,14 +405,14 @@ int main_task(int argc, char **argv)
     pcm_gain_thread_args[5] = (void *)comp_id;
     pcm_gain_thread_args[6] = (void *)&i;
     ret = __xf_thread_create(&pcm_gain_thread, comp_process_entry, &pcm_gain_thread_args[0], "Pcm gain Thread", pcm_gain_stack, STACK_SIZE, XAF_APP_THREADS_PRIORITY);
-    if(ret != XOS_OK)
+    if(ret != 0)
     {
         FIO_PRINTF(stdout,"Failed to create PCM gain thread  : %d\n", ret);
         exit(-1);
     }
     ret = __xf_thread_join(&pcm_gain_thread, NULL);
 
-    if(ret != XOS_OK)
+    if(ret != 0)
     {
         FIO_PRINTF(stdout,"Decoder thread exit Failed : %d \n", ret);
         exit(-1);
@@ -446,14 +447,16 @@ int main_task(int argc, char **argv)
     TST_CHK_API(xaf_comp_delete(p_capturer), "xaf_comp_delete");
     TST_CHK_API(xaf_adev_close(p_adev, XAF_ADEV_NORMAL_CLOSE), "xaf_adev_close");
     FIO_PRINTF(stdout,"Audio device closed\n\n");
-    mem_exit();
+    mem_exit(mem_handle);
 
+#ifdef XAF_PROFILE
     dsp_comps_cycles = pcm_gain_cycles + capturer_cycles;
     dsp_mcps = compute_comp_mcps(capturer_format.output_produced, capturer_cycles, capturer_format, &strm_duration);
 
     pcm_gain_mcps = compute_comp_mcps(capturer_format.output_produced, pcm_gain_cycles, pcm_gain_format, &strm_duration);
 
     dsp_mcps += pcm_gain_mcps;
+#endif
 
     TST_CHK_API(print_mem_mcps_info(mem_handle, num_comp), "print_mem_mcps_info");
 
