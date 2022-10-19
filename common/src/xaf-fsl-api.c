@@ -631,6 +631,9 @@ XAF_ERR_CODE xaf_adev_open(pVOID *pp_adev, xaf_adev_config_t *pconfig)
 #endif
     if (ret != 0)
         return XAF_RTOS_ERR;
+#else
+    /* avoid set priority error */
+    p_adev->dsp_thread_priority = dsp_thread_priority;
 #endif
 
     p_proxy = &p_adev->proxy;
