@@ -524,6 +524,29 @@ static XA_ERRORCODE xa_capturer_postprocess(XACodecBase *base, int done)
     return XA_NO_ERROR;
 }
 
+static XA_ERRORCODE xa_capturer_suspend(XACodecBase *base, xf_message_t *m)
+{
+	UWORD32        state = XA_CAPTURER_STATE_PAUSE;
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_CAPTURER_CONFIG_PARAM_STATE, &state);
+
+	state = XA_CAPTURER_STATE_SUSPEND;
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_CAPTURER_CONFIG_PARAM_STATE, &state);
+	return XA_NO_ERROR;
+}
+static XA_ERRORCODE xa_capturer_suspend_resume(XACodecBase *base, xf_message_t *m)
+{
+	UWORD32        state = XA_CAPTURER_STATE_SUSPEND_RESUME;
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_CAPTURER_CONFIG_PARAM_STATE, &state);
+
+	state = XA_CAPTURER_STATE_RUN;
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_CAPTURER_CONFIG_PARAM_STATE, &state);
+	return XA_NO_ERROR;
+}
+
 /*******************************************************************************
  * Component entry point
  ******************************************************************************/
@@ -540,6 +563,9 @@ static XA_ERRORCODE (* const xa_capturer_cmd[])(XACodecBase *, xf_message_t *) =
     [XF_OPCODE_TYPE(XF_FLUSH)] = xa_capturer_flush,
     [XF_OPCODE_TYPE(XF_SET_PARAM_EXT)] = xa_base_set_param_ext,
     [XF_OPCODE_TYPE(XF_GET_PARAM_EXT)] = xa_base_get_param_ext,
+
+    [XF_OPCODE_TYPE(XF_SUSPEND)] = xa_capturer_suspend,
+    [XF_OPCODE_TYPE(XF_SUSPEND_RESUME)] = xa_capturer_suspend_resume,
 };
 
 /* ...total number of commands supported */
