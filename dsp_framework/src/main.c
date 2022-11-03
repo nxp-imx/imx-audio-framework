@@ -44,6 +44,11 @@ extern struct mu_cfg  dsp_mu_cfg;
 xf_dsp_t *xf_g_dsp;
 struct dsp_main_struct *g_dsp;
 
+struct dsp_main_struct *get_main_struct()
+{
+	return g_dsp;
+}
+
 int xf_ipc_deinit(UWORD32 core)
 {
 	xf_core_data_t  *cd = XF_CORE_DATA(core);

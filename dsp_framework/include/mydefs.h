@@ -95,4 +95,6 @@ struct dsp_main_struct {
 	void					*platform_lock;
 };
 
+struct dsp_main_struct* get_main_struct();
+
 #endif
