@@ -93,6 +93,10 @@ struct dsp_main_struct {
 	struct mem_cfg				*mem_cfg;
 	struct mu_cfg				*mu_cfg;
 	void					*platform_lock;
+
+	void					*dma_device;
+
+	void					*micfil;
 };
 
 struct dsp_main_struct* get_main_struct();
