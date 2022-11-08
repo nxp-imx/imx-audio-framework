@@ -7,11 +7,11 @@
 #
 # **************************************************************************
 
-CC          = $(CCACHE) xt-xcc
-CPLUS       = $(CCACHE) xt-xc++
+CC          = $(CCACHE) xt-clang
+CPLUS       = $(CCACHE) xt-clang++
 OBJCOPY     = xt-objcopy
 PKG_LOADLIB = xt-pkg-loadlib
-XTENSA_CORE = hifi4_nxp_v4_3_1_prod
+XTENSA_CORE = hifi4_nxp_v5_3_1_prod
 
 CFLAGS  = -O3 -DHAVE_XOS
 CFLAGS += -DXA_FSL_UNIA_CODEC -DXA_PCM_GAIN
@@ -28,12 +28,12 @@ ifeq ($(TIME_PROFILE), 1)
 endif
 
 ifeq ($(PLATF), imx8m)
-	XTENSA_CORE = hifi4_mscale_v1_0_2_prod
+	XTENSA_CORE = hifi4_mscale_v2_0_2_prod
 	CFLAGS += -DPLATF_8M
 endif
 
 ifeq ($(PLATF), imx8ulp)
-	XTENSA_CORE = hifi4_nxp2_s7_v1_1a_prod
+	XTENSA_CORE = hifi4_nxp2_s7_v2_1a_prod
 	CFLAGS += -DPLATF_8ULP
 endif
 
@@ -42,7 +42,7 @@ SRC_DIR     = ./
 INC_DIR     = ./
 
 LINK_DIR    = ./memmap/$(PLATF)
-SYSTEM_DIR  = $(TOOL_PATH)/builds/RI-2020.4-linux/$(XTENSA_CORE)/config
+SYSTEM_DIR  = $(TOOL_PATH)/builds/RI-2023.11-linux/$(XTENSA_CORE)/config
 
 CFLAGS      += -mlongcalls -fmessage-length=0 -DPROC_$(XTENSA_CORE)       \
 			  -DCONFIG_$(XTENSA_CORE) \
