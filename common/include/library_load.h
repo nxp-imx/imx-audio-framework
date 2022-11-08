@@ -68,6 +68,8 @@ struct xtlib_pil_info {
 	xt_uint  symtab;
 	xt_uint  strtab;
 	xt_int  align;
+	xt_uint scratch_section_found;
+	xt_ptr  scratch_addr;
 };
 
 struct icm_xtlib_pil_info {
