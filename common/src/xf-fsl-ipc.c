@@ -108,11 +108,14 @@ int xf_ipc_wait(xf_proxy_ipc_data_t *ipc, UWORD32 timeout)
 	pollfd.fd = fd;
 	pollfd.events = POLLIN | POLLRDNORM;
 
+POLL_AGAIN:
 	/* ...wait until there is a data in file */
 	ret = poll(&pollfd, 1, -1);
-	if (ret < 0)
+	if (ret < 0) {
+		if (errno == EINTR)
+			goto POLL_AGAIN;
 		return ret;
-	else if (ret == 0)
+	} else if (ret == 0)
 		return -ETIMEDOUT;
 
 	return 0;
