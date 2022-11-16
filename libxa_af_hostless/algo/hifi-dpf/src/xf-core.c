@@ -496,6 +496,7 @@ static int xf_proxy_suspend(UWORD32 core, xf_message_t *m)
 	xf_cmap_link_t *link;
 	xf_component_t *component;
 	UWORD32 i;
+	int32_t rc;
 
 	TRACE(info, _b("Process XF_SUSPEND command\n"));
 	/* ...call suspend of each component */
@@ -504,6 +505,18 @@ static int xf_proxy_suspend(UWORD32 core, xf_message_t *m)
 		if (link->next > XF_CFG_MAX_CLIENTS) {
 			component = link->c;
 			component->entry(component, m);
+		}
+	}
+
+	if (cd->n_workers) {
+		for (i = 0; i < cd->n_workers; i++) {
+			struct xf_worker *worker = cd->worker + i;
+			rc = xos_thread_suspend(&worker->thread);
+			/* If the thread is already blocked on some other
+			 * condition, then this function will return an
+			 * error. */
+			if (rc != XOS_OK)
+				LOG("thread suspend fail\n");
 		}
 	}
 	/* ???? */
@@ -524,6 +537,7 @@ static int xf_proxy_suspend_resume(UWORD32 core, xf_message_t *m)
 	xf_cmap_link_t *link;
 	xf_component_t *component;
 	UWORD32 i;
+	int32_t rc;
 
 	TRACE(info, _b("Process XF_RESUME command\n"));
 
@@ -533,6 +547,15 @@ static int xf_proxy_suspend_resume(UWORD32 core, xf_message_t *m)
 		if (link->next > XF_CFG_MAX_CLIENTS) {
 			component = link->c;
 			component->entry(component, m);
+		}
+	}
+
+	if (cd->n_workers) {
+		for (i = 0; i < cd->n_workers; i++) {
+			struct xf_worker *worker = cd->worker + i;
+			rc = xos_thread_resume(&worker->thread);
+			if (rc != XOS_OK)
+				LOG("thread resume fail\n");
 		}
 	}
 
