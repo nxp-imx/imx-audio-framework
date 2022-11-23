@@ -592,7 +592,8 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_comp_isr, 0);
 	xos_interrupt_enable(d->irq_2_dsp);
 
-	WM8960_Init();
+	if (board_type == DSP_IMX8MP_TYPE)
+		WM8960_Init();
 
 	LOG("hw_init finished\n");
 	return 0;
