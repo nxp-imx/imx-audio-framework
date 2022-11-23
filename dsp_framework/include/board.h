@@ -88,25 +88,51 @@ enum {
  */
 #define I2C_BITRATE           (375000)
 
-#define MICFIL_BASE		0x30CA0000
-#define MICFIL_VAD_INT_NUM	44
-#define MICFIL_VADE_INT_NUM	45
-#define MICFIL_INT_NUM		109
-#define MICFIL_INTE_NUM		110
+#define MICFIL_ADDR		0x30CA0000
+#define MICFIL_VAD_INT		44
+#define MICFIL_VADE_INT		45
+#define MICFIL_INT		109
+#define MICFIL_INTE		110
 
 #define IRQSTR_MP_ADDR		0x30A80000
-#define SAI_MP_ADDR		0x30c30000
-#define EASRC_MP_ADDR		0x30c90000
-#define SDMA2_ADDR		0x30e10000
-#define SDMA3_ADDR		0x30e00000
-/* module interrupte number */
-#define SAI_MP_INT_NUM		50
-#define SDMA2_INT_NUM		103
-#define SDMA3_INT_NUM		34
-#define EASRC_MP_INT_NUM	122
+#define IRQ_STR_ADDR		IRQSTR_MP_ADDR
 
+#define SAI_MP_ADDR		0x30c30000
+#define SAI_MP_INT_NUM		50
+#define SAI_ADDR		SAI_MP_ADDR
+#define SAI_INT			SAI_MP_INT_NUM
+
+#define EASRC_MP_ADDR		0x30c90000
+#define EASRC_MP_INT_NUM	122
+#define EASRC_ADDR		EASRC_MP_ADDR
+#define EASRC_INT		EASRC_MP_INT_NUM
+
+/* sdma2 not used in dsp */
+#define SDMA2_ADDR		0x30e10000
+#define SDMA2_INT_NUM		103
 #define SDMA2_MICFIL_EVENTID	24
+
+#define SDMA3_ADDR		0x30e00000
+#define SDMA3_INT_NUM		34
 #define SDMA3_MICFIL_EVENTID	24
+#define SDMA_ADDR		SDMA3_ADDR
+#define SDMA_INT		SDMA3_INT_NUM
+#define SDMA_MICFIL_EVENT	SDMA3_MICFIL_EVENTID
+
+/* not exist or not used hw */
+#define EDMA_ADDR_ESAI_TX	0
+#define EDMA_ADDR_ESAI_RX	0
+#define EDMA_ADDR_ASRC_RXA	0
+#define EDMA_ADDR_ASRC_TXA	0
+#define EDMA_SAI_INT_NUM	0
+#define EDMA_ESAI_INT_NUM	0
+#define EDMA_ASRC_INT_NUM	0
+
+#define ESAI_ADDR		0
+#define ESAI_INT		0
+
+#define ASRC_ADDR		0
+#define ASRC_INT		0
 
 #else /* PLATF_8M */
 #ifdef PLATF_8ULP
@@ -143,10 +169,39 @@ enum {
 #define UART_BASE             (~0U)
 #define UART_CLK_ROOT         (48000000)
 
-/* TODO */
-#define I2C_ADDR              0
-#define I2C_CLK               0
-#define I2C_BITRATE           (375000)
+/* not exist or not used hw */
+#define I2C_ADDR		0
+#define I2C_CLK			0
+#define I2C_BITRATE		(375000)
+
+#define EDMA_ADDR_ESAI_TX	0
+#define EDMA_ADDR_ESAI_RX	0
+#define EDMA_ADDR_ASRC_RXA	0
+#define EDMA_ADDR_ASRC_TXA	0
+#define EDMA_SAI_INT_NUM	0
+#define EDMA_ESAI_INT_NUM	0
+#define EDMA_ASRC_INT_NUM	0
+
+#define IRQ_STR_ADDR		0
+
+#define SAI_ADDR		0
+#define SAI_INT			0
+
+#define ESAI_ADDR		0
+#define ESAI_INT		0
+
+#define SDMA_ADDR		0
+#define SDMA_INT		0
+#define SDMA_MICFIL_EVENT	0
+
+#define EASRC_ADDR		0
+#define EASRC_INT		0
+
+#define ASRC_ADDR		0
+#define ASRC_INT		0
+
+#define MICFIL_ADDR		0
+#define MICFIL_INT		0
 
 #else /* !PLATF_8ULP && ! PLATF_8M  (8QXP || 8QM)*/
 
@@ -179,25 +234,43 @@ enum {
 #define UART_BASE             (~0U)
 #define UART_CLK_ROOT         (80000000)
 
-/* TODO */
-#define I2C_ADDR              0
-#define I2C_CLK               0
-#define I2C_BITRATE           (375000)
-
 #define IRQSTR_QXP_ADDR		0x51080000
 #define IRQSTR_QM_ADDR		0x510A0000
+#define IRQ_STR_ADDR		IRQSTR_QXP_ADDR
+
+#define SAI0_ADDR		0x59040000
+#define SAI0_INT		314
+#define SAI_ADDR		SAI0_ADDR
+#define SAI_INT			SAI0_INT
+
 #define ESAI_ADDR		0x59010000
+#define ESAI_INT		409
+
 #define EDMA_ADDR_ESAI_TX	0x59270000
 #define EDMA_ADDR_ESAI_RX	0x59260000
-#define ASRC_ADDR		0x59000000
 #define EDMA_ADDR_ASRC_RXA	0x59200000
 #define EDMA_ADDR_ASRC_TXA	0x59230000
-#define SAI_INT_NUM		314
 #define EDMA_SAI_INT_NUM	315
-#define ESAI_INT_NUM		409
 #define EDMA_ESAI_INT_NUM	410
-#define ASRC_INT_NUM		372
 #define EDMA_ASRC_INT_NUM	374
+
+#define ASRC_ADDR		0x59000000
+#define ASRC_INT		372
+
+/* not exist or not used hw */
+#define I2C_ADDR		0
+#define I2C_CLK			0
+#define I2C_BITRATE		(375000)
+
+#define EASRC_ADDR		0
+#define EASRC_INT		0
+
+#define MICFIL_ADDR		0
+#define MICFIL_INT		0
+
+#define SDMA_ADDR		0
+#define SDMA_INT		0
+#define SDMA_MICFIL_EVENT	0
 
 #endif /*PLATF_8ULP */
 #endif /*PLATF_8M */
@@ -210,114 +283,5 @@ enum {
 #define INT_NUM_IRQSTR_DSP_5   24
 #define INT_NUM_IRQSTR_DSP_6   25
 #define INT_NUM_IRQSTR_DSP_7   26
-
-#ifdef PLATF_8M
-
-#define DEV_ADDR			SAI_MP_ADDR
-#define DEV_INT				SAI_MP_INT_NUM
-#define DEV_FIFO_OFF			FSL_SAI_TDR0
-
-#define FE_DMA_INT			SDMA3_INT_NUM
-#define FE_DMA_ADDR			NULL
-#define FE_DEV_INT			SAI_MP_INT_NUM
-#define FE_DEV_ADDR			EASRC_MP_ADDR
-#define FE_DEV_FIFO_IN_OFF		REG_EASRC_WRFIFO(0)
-#define FE_DEV_FIFO_OUT_OFF		REG_EASRC_RDFIFO(0)
-
-#define IRQ_STR_ADDR			IRQSTR_MP_ADDR
-
-#define SAI_ADDR			SAI_MP_ADDR
-#define SAI_INT				SAI_MP_INT_NUM
-
-#define ESAI_ADDR			-1
-#define ESAI_INT			-1
-
-#define DMA_ADDR			SDMA3_ADDR
-#define DMA_INT				SDMA3_INT_NUM
-
-#define EASRC_ADDR			EASRC_MP_ADDR
-#define EASRC_INT			EASRC_MP_INT_NUM
-
-#define ASRC_ADDR			-1
-#define ASRC_INT			-1
-
-#define MICFIL_ADDR			MICFIL_BASE
-#define MICFIL_INT			MICFIL_INT_NUM
-
-#else /* PLATF_8M */
-#ifdef PLATF_8ULP
-
-#define DEV_ADDR			-1
-#define DEV_INT				-1
-#define DEV_FIFO_OFF			-1
-
-#define DMA_INT				-1
-#define DMA_ADDR			-1
-
-#define FE_DMA_INT			-1
-#define FE_DMA_ADDR			-1
-#define FE_DEV_INT			-1
-#define FE_DEV_ADDR			-1
-#define FE_DEV_FIFO_IN_OFF		-1
-#define FE_DEV_FIFO_OUT_OFF		-1
-
-#define IRQ_STR_ADDR			-1
-
-#define SAI_ADDR			-1
-#define SAI_INT				-1
-
-#define ESAI_ADDR			-1
-#define ESAI_INT			-1
-
-#define DMA_ADDR			-1
-#define DMA_INT				-1
-
-#define EASRC_ADDR			-1
-#define EASRC_INT			-1
-
-#define ASRC_ADDR			-1
-#define ASRC_INT			-1
-
-#define MICFIL_ADDR			-1
-#define MICFIL_INT			-1
-
-#else /* !PLATF_8ULP && ! PLATF_8M  (8QXP || 8QM)*/
-
-#define DEV_ADDR			ESAI_ADDR
-#define DEV_INT				ESAI_INT_NUM
-#define DEV_FIFO_OFF			REG_ESAI_ETDR
-
-#define FE_DMA_INT			EDMA_ASRC_INT_NUM
-#define FE_DMA_ADDR			EDMA_ADDR_ASRC_RXA
-#define FE_DEV_INT			ASRC_INT_NUM
-#define FE_DEV_ADDR			ASRC_ADDR
-#define FE_DEV_FIFO_IN_OFF		REG_ASRDIA
-#define FE_DEV_FIFO_OUT_OFF		REG_ASRDOA
-
-#if PLATF_8QXP
-#define IRQ_STR_ADDR			IRQSTR_QXP_ADDR
-#else
-#define IRQ_STR_ADDR			IRQSTR_QM_ADDR
-#endif
-
-#define SAI_ADDR			ESAI_ADDR
-#define SAI_INT				ESAI_INT_NUM
-
-#define ESAI_INT			ESAI_INT_NUM
-
-#define DMA_ADDR			EDMA_ADDR_ESAI_TX
-#define DMA_INT				EDMA_ESAI_INT_NUM
-
-#define EASRC_ADDR			-1
-#define EASRC_INT			-1
-
-#define ASRC_INT			372
-
-#define MICFIL_ADDR			-1
-#define MICFIL_INT			-1
-
-#endif
-#endif /* END OF PLATF_8M */
-
 
 #endif /* _BOARD_H_ */
