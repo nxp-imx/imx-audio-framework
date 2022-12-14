@@ -468,6 +468,9 @@ int micfil_init(void *p_micfil)
 	}
 	micfil = (struct fsl_micfil*)p_micfil;
 
+	/* Disable the module */
+	write32_bit(micfil->base_addr + REG_MICFIL_CTRL1, MICFIL_CTRL1_PDMIEN_MASK, 0);
+
 	if (!micfil->quality)
 		micfil->quality = VLOW0_QUALITY;
 	ret = set_quality(micfil);
