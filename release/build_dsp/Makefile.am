@@ -45,6 +45,7 @@ libfsldspunittestbindir = $(bindir)/DSP
 libfsldspunittestbin_DATA = \
 	$(TOPDIR)/release/exe/dsp_test.out \
 	$(TOPDIR)/release/exe/dsp_rend_test.out \
+	$(TOPDIR)/release/exe/dsp_capturer_test.out \
 	$(TOPDIR)/release/exe/dsp_tflm_test.out
 
 libfsldspreleasenotedir =
