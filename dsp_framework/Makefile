@@ -16,6 +16,7 @@ XTENSA_CORE = hifi4_nxp_v5_3_1_prod
 CFLAGS  = -O3 -DHAVE_XOS
 CFLAGS += -DXA_FSL_UNIA_CODEC -DXA_PCM_GAIN
 CFLAGS += -DXA_CAPTURER
+CFLAGS += -DXA_VOICEPROCESS
 
 TOOL_PATH   := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../../imx-audio-toolchain/Xtensa_Tool
 
@@ -95,6 +96,7 @@ C_OBJS  =	$(SRC_DIR)/src/board.o						\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-audio-codec.o	\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-renderer.o	\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-capturer.o	\
+		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-mimo-proc.o	\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-isr.o		\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xf-io.o		\
 		$(ROOT_DIR)/libxa_af_hostless/algo/hifi-dpf/src/xa-class-base.o	\
@@ -107,6 +109,7 @@ C_OBJS  =	$(SRC_DIR)/src/board.o						\
 C_OBJS  +=	$(SRC_DIR)/src/plugins/xa-unia-codec.o				\
 		$(SRC_DIR)/src/plugins/xa-fsl-renderer.o			\
 		$(SRC_DIR)/src/plugins/xa-fsl-capturer.o			\
+		$(SRC_DIR)/src/plugins/xa-voiceprocess.o 			\
 		$(SRC_DIR)/src/libloader/dpu_lib_load.o				\
 		$(SRC_DIR)/src/libloader/common.o				\
 		$(SRC_DIR)/src/libloader/pi_library_load.o			\
@@ -124,7 +127,6 @@ C_OBJS  +=	$(SRC_DIR)/src/plugins/xa-unia-codec.o				\
 		$(SRC_DIR)/src/driver/micfil.o 					\
 		$(SRC_DIR)/src/driver/fsl_dma.o 				\
 		$(SRC_DIR)/src/driver/dsp_irq_handler.o
-
 
 TARGET = hifi4_imx8qmqxp.bin
 
