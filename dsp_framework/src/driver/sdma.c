@@ -608,6 +608,8 @@ static int load_channel(dmac_t *dmac)
 	struct SDMA *sdma = (struct SDMA *)dmac->dma_device;
 	struct sdma_chan *sdmac = (struct sdma_chan *)dmac;
 	sdmac_cfg_t *sdmac_cfg = &sdmac->sdmac_cfg;
+	if (!sdma)
+		return -1;
 
 	unsigned int done_cfg;
 	struct sdma_buffer_descriptor *bd0 = sdma->bd0;
@@ -625,7 +627,7 @@ static int load_channel(dmac_t *dmac)
 	int ch_watermark = sdmac_cfg->watermark;
 	int event = sdmac_cfg->events[0], event2 = sdmac_cfg->events[1];
 
-	if (!sdma || !dest_addr || !src_addr)
+	if (!dest_addr || !src_addr)
 		return -1;
 	if (event < 0)
 		return -1;
