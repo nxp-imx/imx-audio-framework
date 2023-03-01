@@ -620,6 +620,7 @@ static inline int xa_hw_renderer_deinit(struct XARenderer *d)
 		d->g_fifo_renderer = NULL;
 		d->pfifo_w = d->pfifo_r = NULL;
 	}
+	return XA_NO_ERROR;
 }
 
 static XA_ERRORCODE xa_fw_renderer_init (XARenderer *d)
@@ -696,6 +697,7 @@ static XA_ERRORCODE xa_renderer_deinit(XARenderer *d, WORD32 i_idx, pVOID pv_val
 {
     xa_hw_renderer_deinit(d);
     LOG("xa_renderer_deinit\n");
+    return XA_NO_ERROR;
 }
 
 /* ...HW-renderer control function */

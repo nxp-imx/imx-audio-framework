@@ -440,6 +440,7 @@ static XA_ERRORCODE xa_capturer_deinit(XACapturer *d, WORD32 i_idx, pVOID pv_val
 {
     xa_hw_capturer_deinit(d);
     LOG("xa_capturer_deinit\n");
+    return XA_NO_ERROR;
 }
 
 /* ...HW-capturer control function */
