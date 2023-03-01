@@ -235,12 +235,16 @@ static int get_clk_div(struct fsl_micfil *micfil, unsigned int rate)
 	unsigned int ctrl2_reg;
 	int64_t mclk_rate;
 	int clk_div;
+	int pdm_clk = 0;
 
 	ctrl2_reg = read32(micfil->base_addr + REG_MICFIL_CTRL2);
 
 	mclk_rate = clk_get_rate(micfil);
 
-	clk_div = mclk_rate / (get_pdm_clk(micfil, rate) * 2);
+	pdm_clk = get_pdm_clk(micfil, rate);
+	if (pdm_clk <= 0)
+		return 0;
+	clk_div = mclk_rate / (pdm_clk * 2);
 
 	return clk_div;
 }
