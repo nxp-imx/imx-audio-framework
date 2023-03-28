@@ -62,6 +62,21 @@
 
 /* ...number of max input buffers */
 #define INBUF_SIZE                      4096
+
+#define NBAMR_FRAMESIZE                 250
+/* NB-AMR file format */
+#define NBAMR_ETSI      0
+/* MMS format */
+#define NBAMR_MMSIO     1
+/* IF1 format */
+#define NBAMR_IF1IO     2
+/* IF2 format */
+#define NBAMR_IF2IO     3
+#define MAX_FRAME_SIZE_MMS_IF		(35)
+
+#define WBAMR_SERIAL_FRAMESIZE                 480
+#define MAX_WBAMR_PACKET_MIME_IF1_IF2   63
+
 /* Enlarge outbuf size for receive wma10 output */
 #define OUTBUF_SIZE                     8192*3*8*2
 /* size of parameter buffer for pass complex parameter */

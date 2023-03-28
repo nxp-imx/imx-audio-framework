@@ -210,7 +210,7 @@ static const CODECINFO codecinfo_factory[] = {
 UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 {
 	struct DSP_Handle *pDSP_handle = NULL;
-	UWORD32 frame_maxlen;
+	UWORD32 threshold;
 	int codec_type = 0;
 	int err = 0;
 	enum ChipCode chip_info;
@@ -234,7 +234,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	memcpy(&pDSP_handle->sMemOps, memOps, sizeof(UniACodecMemoryOps));
 	pDSP_handle->audio_type = type;
 
-	frame_maxlen = INBUF_SIZE;
+	threshold = INBUF_SIZE;
 	pDSP_handle->outbuf_alloc_size = OUTBUF_SIZE;
 
 	chip_info = getChipCodeFromSocid();
@@ -284,9 +284,11 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 		break;
 	case NBAMR:
 		codec_type = CODEC_FSL_NBAMR_DEC;
+		threshold = MAX_FRAME_SIZE_MMS_IF * 10;
 		break;
 	case WBAMR:
 		codec_type = CODEC_FSL_WBAMR_DEC;
+		threshold = MAX_WBAMR_PACKET_MIME_IF1_IF2 * 10;
 		break;
 	case WMA:
 		codec_type = CODEC_FSL_WMA_DEC;
@@ -317,7 +319,7 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 	}
 
 	pDSP_handle->inner_buf.buf_size = INBUF_SIZE;
-	pDSP_handle->inner_buf.threshold = INBUF_SIZE;
+	pDSP_handle->inner_buf.threshold = threshold;
 	memset(pDSP_handle->inner_buf.data, 0, INBUF_SIZE);
 	pDSP_handle->codecoffset = 0;
 	pDSP_handle->codecdata_copy = false;
@@ -462,7 +464,7 @@ UA_ERROR_TYPE DSPDecReset(UniACodec_Handle pua_handle)
 		goto Fail;
 	}
 	ResetInnerBuf(&pDSP_handle->inner_buf,
-		      pDSP_handle->inner_buf.threshold,
+		      pDSP_handle->inner_buf.buf_size,
 		      pDSP_handle->inner_buf.threshold);
 
 Fail:
@@ -528,6 +530,38 @@ UA_ERROR_TYPE DSPDecSetPara(UniACodec_Handle pua_handle,
 	case UNIA_STREAM_TYPE:
 		pDSP_handle->stream_type = parameter->stream_type;
 		param[1] = parameter->stream_type;
+
+		if(pDSP_handle->codec_type == CODEC_FSL_NBAMR_DEC &&
+			(parameter->stream_type < STREAM_WBAMR_BASE ||
+			 parameter->stream_type >= STREAM_NBAMR_BASE)) {
+		    uint32_t BitStreamFormat = parameter->stream_type - STREAM_NBAMR_BASE;
+		    if(NBAMR_ETSI == BitStreamFormat) {
+			pDSP_handle->inner_buf.threshold = NBAMR_FRAMESIZE * 4;
+		    } else if(BitStreamFormat <= NBAMR_IF2IO) {
+			pDSP_handle->inner_buf.threshold = MAX_FRAME_SIZE_MMS_IF * 10;
+		    } else {
+			ret = ACODEC_PARA_ERROR;
+			fprintf(stderr, "Not support file type:%d!\n", (int)parameter->stream_type);
+		    }
+		}
+
+		if(pDSP_handle->codec_type == CODEC_FSL_WBAMR_DEC &&
+				parameter->stream_type >= STREAM_WBAMR_BASE) {
+			uint32_t bitstreamformat = parameter->stream_type - STREAM_WBAMR_BASE;
+			if(0 == bitstreamformat || 1 == bitstreamformat) {
+				//default and itu file format
+				pDSP_handle->inner_buf.threshold = WBAMR_SERIAL_FRAMESIZE * 4;
+			} else if(bitstreamformat <= 4) {
+				//mime, if1, if2 file format
+				pDSP_handle->inner_buf.threshold = MAX_WBAMR_PACKET_MIME_IF1_IF2 * 10;
+			}
+			else
+			{
+				ret = ACODEC_PARA_ERROR;
+				fprintf(stderr, "Not support file type:%d!\n", (int)parameter->stream_type);
+			}
+		}
+
 		break;
 	case UNIA_BITRATE:
 		param[1] = parameter->bitrate;
