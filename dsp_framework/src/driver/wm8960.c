@@ -86,6 +86,7 @@ int WM8960_WriteReg(uint8_t reg, uint16_t val)
 	uint8_t ctrl_data;
 	uint8_t ctrl_data2;
 	uint32_t slave_addr = BUS_CODEC_ADDR;
+	int32_t data_width = 8;
 	/* Copy data to cache */
 	reg_cache[reg] = val;
 
@@ -95,7 +96,7 @@ int WM8960_WriteReg(uint8_t reg, uint16_t val)
 	/* remain 8bit data */
 	ctrl_data2 = val & 0x00ff;
 
-	ret = i2c_transfer_data(slave_addr, ctrl_data, ctrl_data2);
+	ret = i2c_transfer_data(slave_addr, ctrl_data, ctrl_data2, data_width);
 	return ret;
 }
 
