@@ -234,6 +234,8 @@ typedef struct XARenderer
 	void                  *dma;
 	dmac_t                *dmac[2];
 
+	uint32_t              codec_type;
+
 	struct fsl_easrc      easrc;
 	struct fsl_easrc_context   ctx;
 
@@ -592,8 +594,12 @@ static inline int xa_hw_renderer_init(struct XARenderer *d)
 	xos_register_interrupt_handler(d->irq_2_dsp, (XosIntFunc *)xa_hw_comp_isr, 0);
 	xos_interrupt_enable(d->irq_2_dsp);
 
-	if (board_type == DSP_IMX8MP_TYPE)
-		WM8960_Init();
+	if (board_type == DSP_IMX8MP_TYPE) {
+		if (d->codec_type == TYPE_WM8960)
+			WM8960_Init();
+		if (d->codec_type == TYPE_WM8962)
+			WM8962_Init();
+	}
 
 	LOG("hw_init finished\n");
 	return 0;
@@ -893,6 +899,15 @@ static XA_ERRORCODE xa_renderer_set_config_param(XARenderer *d, WORD32 i_idx, pV
             
             return XA_NO_ERROR;
         }
+
+    case XA_RENDERER_CONFIG_PARAM_CODEC_TYPE:
+
+	i_value = (UWORD32) *(WORD32 *)pv_value;
+	d->codec_type = i_value;
+	LOG1("codec type %d\n", d->codec_type);
+
+        return XA_NO_ERROR;
+
     default:
         /* ...unrecognized parameter */
         return XF_CHK_ERR(0, XA_API_FATAL_INVALID_CMD_TYPE);
