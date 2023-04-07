@@ -107,7 +107,7 @@ static int i2c_get_ifdr()
 	return imx_i2c_clk_div[i].div;
 }
 
-int i2c_transfer_data(uint32_t slave_addr, int reg, char data)
+int i2c_transfer_data(uint32_t slave_addr, int reg, uint32_t data, int32_t data_width)
 {
 	int result = 0;
 	uint32_t val;
@@ -125,27 +125,176 @@ int i2c_transfer_data(uint32_t slave_addr, int reg, char data)
 		goto fail;
 
 	delay(50);
-	/* write data */
-	i2c_write(IMX_I2C_I2DR, reg);
-	result = i2c_clear_Int();
-	if (result)
-		return result;
-	result = i2c_imx_acked();
-	if (result)
-		goto fail;
-	delay(50);
+	if (data_width == 8) {
+		/* write data */
+		i2c_write(IMX_I2C_I2DR, reg);
+		result = i2c_clear_Int();
+		if (result)
+			return result;
+		result = i2c_imx_acked();
+		if (result)
+			goto fail;
+		delay(50);
 
-	i2c_write(IMX_I2C_I2DR, data);
-	result = i2c_clear_Int();
-	if (result)
-		return result;
-	result = i2c_imx_acked();
-	if (result)
-		goto fail;
+		i2c_write(IMX_I2C_I2DR, data);
+		result = i2c_clear_Int();
+		if (result)
+			return result;
+		result = i2c_imx_acked();
+		if (result)
+			goto fail;
+	} else if (data_width == 16) {
+		/* write reg addr */
+		uint16_t reg_addr = (uint16_t)reg;
+		i2c_write(IMX_I2C_I2DR, ((reg_addr & 0xff00)>>8));
+		result = i2c_clear_Int();
+		if (result)
+			return result;
+		result = i2c_imx_acked();
+		if (result)
+			goto fail;
+		delay(50);
+		i2c_write(IMX_I2C_I2DR, (reg_addr & 0x00ff));
+		result = i2c_clear_Int();
+		if (result)
+			return result;
+		result = i2c_imx_acked();
+		if (result)
+			goto fail;
+		delay(50);
+
+		/* write value */
+		uint16_t val = (uint16_t)data;
+		i2c_write(IMX_I2C_I2DR, ((val & 0xff00)>>8));
+		result = i2c_clear_Int();
+		if (result)
+			return result;
+		result = i2c_imx_acked();
+		if (result)
+			goto fail;
+		delay(50);
+		i2c_write(IMX_I2C_I2DR, (val & 0x00ff));
+		result = i2c_clear_Int();
+		if (result)
+			return result;
+		result = i2c_imx_acked();
+		if (result)
+			goto fail;
+		delay(50);
+	}
 
 fail:
 	i2c_stop();
+	delay(200);
 
+	return result;
+}
+
+int i2c_read_data(uint32_t slave_addr, int reg, uint32_t *data, int32_t data_width)
+{
+	int result = 0;
+	if (data_width != 16)
+		return 0;
+
+	if (slave_addr <= 0)
+		return -1;
+	if (!data)
+		return -1;
+
+	i2c_start();
+
+	volatile char val = ((slave_addr & 0xFF) << 1) | WD;
+	/* device addr and write bit */
+	i2c_write(IMX_I2C_I2DR, val);
+	result = i2c_clear_Int();
+	if (result)
+		return result;
+	result = i2c_imx_acked();
+	if (result)
+		goto fail;
+
+	delay(10);
+	val = (reg & 0xFF00) >> 8;
+	/* reg num: A15 ~ A8 */
+	i2c_write(IMX_I2C_I2DR, val);
+	result = i2c_clear_Int();
+	if (result)
+		return result;
+	result = i2c_imx_acked();
+	if (result)
+		goto fail;
+	delay(10);
+	val = reg & 0x00FF;
+	/* reg num: A7 ~ A0 */
+	i2c_write(IMX_I2C_I2DR, val);
+	result = i2c_clear_Int();
+	if (result)
+		return result;
+	result = i2c_imx_acked();
+	if (result)
+		goto fail;
+
+
+	uint32_t temp = i2c_read(IMX_I2C_I2CR);
+	temp |= I2CR_RSTA;
+	i2c_write(IMX_I2C_I2CR, temp);
+	delay(50);
+
+
+	val = ((slave_addr & 0xFF) << 1) | RD;
+	/* device addr and read bit */
+	i2c_write(IMX_I2C_I2DR, val);
+	result = i2c_clear_Int();
+	if (result)
+		return result;
+	result = i2c_imx_acked();
+	if (result)
+		goto fail;
+
+	/* receive mode */
+	val = i2c_read(IMX_I2C_I2CR);
+	val &= ~I2CR_MTX;
+	val &= ~I2CR_TXAK;
+	i2c_write(IMX_I2C_I2CR, val);
+	val = i2c_read(IMX_I2C_I2DR);
+
+	delay(500);
+
+	val = i2c_read(IMX_I2C_I2CR);
+	val |= I2CR_TXAK;
+	i2c_write(IMX_I2C_I2CR, val);
+
+	delay(500);
+
+	/* read A15 ~ A8 */
+	val = i2c_read(IMX_I2C_I2DR);
+	*data = val << 8;
+	result = i2c_clear_Int();
+	if (result)
+		return result;
+	delay(500);
+
+	val = i2c_read(IMX_I2C_I2CR);
+	val &= ~(I2CR_MSTA | I2CR_MTX);
+	i2c_write(IMX_I2C_I2CR, val);
+
+	while (1) {
+		val = i2c_read(IMX_I2C_I2SR);
+		LOG1("I2SR %x\n", val);
+		if ((val & I2SR_IBB) == 0)
+			break;
+		delay(20);
+	}
+
+	delay(500);
+
+	/* read A7 ~ A0 */
+	val = i2c_read(IMX_I2C_I2DR);
+	*data |= val;
+
+fail:
+	i2c_stop();
+	LOG2("read %x, data %x\n", reg, *data);
 	return result;
 }
 

@@ -29,7 +29,7 @@
 #define WD 0
 #define RD 1
 
-int i2c_transfer_data(uint32_t slave_addr, int reg, char data);
+int i2c_transfer_data(uint32_t slave_addr, int reg, uint32_t data, int32_t data_width);
 void i2c_start();
 void i2c_stop();
 void i2c_reset();
