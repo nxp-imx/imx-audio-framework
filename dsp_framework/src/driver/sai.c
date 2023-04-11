@@ -73,6 +73,11 @@ void sai_init(volatile void * sai_addr,  int mode, int channel, int rate,
 		    FSL_SAI_CR5_WNW_MASK|FSL_SAI_CR5_W0W_MASK|FSL_SAI_CR5_FBT_MASK,
 		    FSL_SAI_CR5_WNW(16)|FSL_SAI_CR5_W0W(16)|FSL_SAI_CR5_FBT(15));
 
+	write32_bit(sai_addr + FSL_SAI_TCSR(offset),
+		    FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
+	write32_bit(sai_addr + FSL_SAI_RCSR(offset),
+		    FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
+
 	if (channel > 1)
 		write32(sai_addr + FSL_SAI_TMR, 0xFFFFFFFC);
 	else
