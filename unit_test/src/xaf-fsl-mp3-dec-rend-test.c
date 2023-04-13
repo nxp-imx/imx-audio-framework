@@ -118,6 +118,8 @@ void help_info()
 	FIO_PRINTF(stdout, "                        1(CHMODE_DUAL)\n");
 	FIO_PRINTF(stdout, "                        2(CHMODE_STEREO)\n");
 	FIO_PRINTF(stdout, "                        3(CHMODE_JOINT)\n");
+	FIO_PRINTF(stdout, "          -C codec type 1(WM8960)\n");
+	FIO_PRINTF(stdout, "                        2(WM8962)\n");
 	FIO_PRINTF(stdout, "Must set correct parameters for stream\n");
 	FIO_PRINTF(stdout, "**************************************************\n\n");
 }
@@ -136,9 +138,9 @@ static int dummy_setup(void *p_decoder)
 	return XAF_NO_ERR;
 }
 
-static int renderer_setup(void *p_renderer,xaf_format_t renderer_format)
+static int renderer_setup(void *p_renderer,xaf_format_t renderer_format, uint32_t codec_type)
 {
-    int param[6];
+    int param[8];
 
     param[0] = XA_RENDERER_CONFIG_PARAM_PCM_WIDTH;
     param[1] = renderer_format.pcm_width;
@@ -146,7 +148,9 @@ static int renderer_setup(void *p_renderer,xaf_format_t renderer_format)
     param[3] = renderer_format.channels;
     param[4] = XA_RENDERER_CONFIG_PARAM_SAMPLE_RATE;
     param[5] = renderer_format.sample_rate;
-    return(xaf_comp_set_config(p_renderer, 3, &param[0]));
+    param[6] = XA_RENDERER_CONFIG_PARAM_CODEC_TYPE;
+    param[7] = codec_type;
+    return(xaf_comp_set_config(p_renderer, 4, &param[0]));
 }
 
 static int get_comp_config(void *p_comp, xaf_format_t *comp_format)
@@ -213,6 +217,8 @@ struct AudioOption {
 	/* Input & Output File Name */
 	char *InFileName;
 	char *OutFileName;
+
+	uint32_t codec_type;
 };
 
 //component parameters
@@ -303,6 +309,9 @@ int GetParameter(int argc_t, char *argv_t[], struct AudioOption *pAOption)
 				break;
 			case 'u':
 				pAOption->channel_mode = atoi(in);
+				break;
+			case 'C':
+				pAOption->codec_type = atoi(in);
 				break;
 			default:
 				goto Error;
@@ -508,6 +517,7 @@ int main_task(int argc, char **argv)
 
     xaf_format_t dec_format;
     xaf_format_t renderer_format;
+    uint32_t codec_type;
     int num_comp;
     pUWORD8 ver_info[3] = {0,0,0};    //{ver,lib_rev,api_rev}
     unsigned short board_id = 0;
@@ -558,10 +568,21 @@ int main_task(int argc, char **argv)
     AOption.streamtype = -1;
     AOption.channel_mode = -1;
 
+    AOption.codec_type = 0;
+
     if (GetParameter(argc, argv, &AOption)) {
         help_info();
         return 0;
     }
+
+    if (AOption.codec_type < 0 || AOption.codec_type > 2) {
+	fprintf(stderr, "Not support codec type %d\n", AOption.codec_type);
+	return 0;
+    }
+    if (AOption.codec_type == 0)
+	codec_type = 1;
+    else
+	codec_type = AOption.codec_type;
 
     /* ...open file */
     if ((fp = fio_fopen(AOption.InFileName, "rb")) == NULL)
@@ -740,7 +761,7 @@ int main_task(int argc, char **argv)
     renderer_format.channels = dec_format.channels;
     renderer_format.pcm_width = dec_format.pcm_width;
     TST_CHK_API_COMP_CREATE(p_adev, &p_renderer, "renderer", 0, 0, NULL, XAF_RENDERER, "xaf_comp_create");
-    TST_CHK_API(renderer_setup(p_renderer, renderer_format), "renderer_setup");
+    TST_CHK_API(renderer_setup(p_renderer, renderer_format, codec_type), "renderer_setup");
     TST_CHK_API(xaf_connect(p_decoder, 1, p_renderer, 0, 4), "renderer_connect");
     TST_CHK_API(xaf_comp_process(p_adev, p_renderer, NULL, 0, XAF_START_FLAG), "xaf_comp_process");
     TST_CHK_API(xaf_comp_get_status(p_adev, p_renderer, &dec_status, &dec_info[0]), "xaf_comp_get_status");

@@ -47,7 +47,8 @@ enum xa_config_param_renderer {
     XA_RENDERER_CONFIG_PARAM_FRAME_SIZE     = 5,    /* frame size per channel in bytes. Deprecated, use XA_RENDERER_CONFIG_PARAM_FRAME_SIZE_IN_SAMPLES instead. */
 	XA_RENDERER_CONFIG_PARAM_BYTES_PRODUCED = 6,
     XA_RENDERER_CONFIG_PARAM_FRAME_SIZE_IN_SAMPLES = 7,    /* frame size per channel in samples */
-    XA_RENDERER_CONFIG_PARAM_NUM            = 8
+    XA_RENDERER_CONFIG_PARAM_CODEC_TYPE     = 8,
+    XA_RENDERER_CONFIG_PARAM_NUM            = 9
 };
 
 /* ...XA_RENDERER_CONFIG_PARAM_CB: compound parameters data structure */
