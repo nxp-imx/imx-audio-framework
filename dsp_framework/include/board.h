@@ -45,6 +45,11 @@ enum {
 #define RP_MBOX_RESUME_SYSTEM   (0xFF13)
 #define RP_MBOX_RESUME_ACK      (0xFF14)
 
+typedef enum {
+	TYPE_WM8960 = 1,
+	TYPE_WM8962 = 2,
+} CODEC_TYPE;
+
 /* PLATF_8M */
 #ifdef PLATF_8M
 
