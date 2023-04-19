@@ -1,4 +1,4 @@
-/* This linker script generated from xt-genldscripts.tpp for LSP . */
+/* This linker script generated from xt-genldscripts.tpp for LSP dsp_framework/memmap/imx8ulp */
 /* Linker Script for ld -Ur */
 
 
@@ -7,7 +7,18 @@ SECTIONS
 
   .text 0 :
   {
+    *(.init.literal)
+    KEEP(*(.init))
     *(.literal .text)
+    *(.fini.literal)
+    KEEP(*(.fini))
+  }
+
+  .data 0 :
+  {
+    *(.rodata)
+    *(.rodata.*)
+    *(.data)
   }
 
   .bss 0 :
@@ -24,6 +35,7 @@ SECTIONS
   .debug_srcinfo  0 :  { *(.debug_srcinfo) }
   .debug_sfnames  0 :  { *(.debug_sfnames) }
   .debug_aranges  0 :  { *(.debug_aranges) }
+  .debug_ranges   0 :  { *(.debug_ranges) }
   .debug_pubnames  0 :  { *(.debug_pubnames) }
   .debug_info  0 :  { *(.debug_info) }
   .debug_abbrev  0 :  { *(.debug_abbrev) }
@@ -36,6 +48,7 @@ SECTIONS
   .debug_funcnames  0 :  { *(.debug_funcnames) }
   .debug_typenames  0 :  { *(.debug_typenames) }
   .debug_varnames  0 :  { *(.debug_varnames) }
+  .debug.xt.map 0 :  { *(.debug.xt.map) }
   .xt.insn 0 :
   {
     KEEP (*(.xt.insn))
@@ -43,19 +56,31 @@ SECTIONS
   }
   .xt.prop 0 :
   {
-    KEEP (*(.xt.prop))
-    KEEP (*(.xt.prop.*))
-    KEEP (*(.gnu.linkonce.prop.*))
+    *(.xt.prop)
+    *(.xt.prop.*)
+    *(.gnu.linkonce.prop.*)
   }
   .xt.lit 0 :
   {
-    KEEP (*(.xt.lit))
-    KEEP (*(.xt.lit.*))
-    KEEP (*(.gnu.linkonce.p.*))
+    *(.xt.lit)
+    *(.xt.lit.*)
+    *(.gnu.linkonce.p.*)
+  }
+  .xtensa.info 0 :
+  {
+    *(.xtensa.info)
   }
   .debug.xt.callgraph 0 :
   {
     KEEP (*(.debug.xt.callgraph .debug.xt.callgraph.* .gnu.linkonce.xt.callgraph.*))
+  }
+  .comment 0 :
+  {
+    KEEP(*(.comment))
+  }
+  .note.GNU-stack 0 :
+  {
+    *(.note.GNU-stack)
   }
 }
 
