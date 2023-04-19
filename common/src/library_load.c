@@ -141,6 +141,29 @@ static xt_ptr xt_ptr_offs(xt_ptr base, Elf32_Word offs,
 			xtlib_globals->byteswap);
 }
 
+static Elf32_Phdr *find_dynamic_segment(Elf32_Ehdr *eheader,
+				    struct lib_info *lib_info)
+{
+	char *base_addr = (char *)eheader;
+	struct xtlib_loader_globals *xtlib_globals =
+					&lib_info->xtlib_globals;
+	Elf32_Phdr *pheader = (Elf32_Phdr *)(base_addr +
+			xtlib_host_word(eheader->e_phoff,
+					xtlib_globals->byteswap));
+
+	int seg = 0;
+	int num = xtlib_host_half(eheader->e_phnum, xtlib_globals->byteswap);
+
+	while (seg < num) {
+		if (xtlib_host_word(pheader[seg].p_type,
+				    xtlib_globals->byteswap) == PT_DYNAMIC) {
+			return &pheader[seg];
+		}
+		seg++;
+	}
+	return 0;
+}
+
 static Elf32_Dyn *find_dynamic_info(Elf32_Ehdr *eheader,
 				    struct lib_info *lib_info)
 {
@@ -211,6 +234,14 @@ static int validate_dynamic(Elf32_Ehdr *header,
 	return XTLIB_NO_ERR;
 }
 
+static int32_t is_scratch_section(Elf32_Phdr* phi, struct lib_info *lib_info)
+{
+	struct xtlib_loader_globals *xtlib_globals =
+					&lib_info->xtlib_globals;
+	return ((xtlib_host_word(phi->p_flags, xtlib_globals->byteswap) & (PF_W | PF_R | PF_X)) == (PF_W | PF_X));
+}
+
+
 static int validate_dynamic_splitload(Elf32_Ehdr *header,
 				      struct lib_info *lib_info)
 {
@@ -222,18 +253,17 @@ static int validate_dynamic_splitload(Elf32_Ehdr *header,
 	if (err != XTLIB_NO_ERR)
 		return err;
 
-	/* make sure it's split load pi library, expecting three headers,
-	 * code, data and dynamic, for example:
+	/* make sure it's split load pi library, expecting four headers,
+	 * code, data, scratch and dynamic, for example:
 	 *
-	 *LOAD	off    0x00000094 vaddr 0x00000000 paddr 0x00000000 align 2**0
-	 *	filesz 0x00000081 memsz 0x00000081 flags r-x
-	 *LOAD  off    0x00000124 vaddr 0x00000084 paddr 0x00000084 align 2**0
-	 *	filesz 0x000001ab memsz 0x000011bc flags rwx
-	 *DYNAMIC off  0x00000124 vaddr 0x00000084 paddr 0x00000084 align 2**2
-	 *	  filesz 0x000000a0 memsz 0x000000a0 flags rw-
-	 */
+		Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
+		LOAD           0x000100 0x00000000 0x00000000 0x02cd5 0x02cd5 R E 0x80
+		LOAD           0x002e00 0x02000000 0x02000000 0x00ed0 0x00ed0 RWE 0x80
+		LOAD           0x003d00 0x03000000 0x03000000 0x00a00 0x00a00  WE 0x80
+		DYNAMIC        0x003d00 0x03000000 0x03000000 0x000a4 0x000a4 RW  0x4
+	*/
 
-	if (xtlib_host_half(header->e_phnum, xtlib_globals->byteswap) != 3)
+	if (xtlib_host_half(header->e_phnum, xtlib_globals->byteswap) != 4)
 		return XTLIB_NOT_SPLITLOAD;
 
 	pheader = (Elf32_Phdr *)((char *)header +
@@ -255,10 +285,17 @@ static int validate_dynamic_splitload(Elf32_Ehdr *header,
 			& (PF_R | PF_W | PF_X)) != (PF_R | PF_W | PF_X))
 		return XTLIB_NOT_SPLITLOAD;
 
-	/* DYNAMIC RW- */
+	/* LOAD -WX */
 	if (xtlib_host_word(pheader[2].p_type,
+			    xtlib_globals->byteswap) != PT_LOAD ||
+			!is_scratch_section(&pheader[2], lib_info)) {
+		return XTLIB_NOT_SPLITLOAD;
+	}
+
+	/* DYNAMIC RW- */
+	if (xtlib_host_word(pheader[3].p_type,
 			    xtlib_globals->byteswap) != PT_DYNAMIC ||
-			(xtlib_host_word(pheader[2].p_flags,
+			(xtlib_host_word(pheader[3].p_flags,
 			xtlib_globals->byteswap)
 			& (PF_R | PF_W | PF_X)) != (PF_R | PF_W))
 		return XTLIB_NOT_SPLITLOAD;
@@ -270,6 +307,7 @@ static unsigned int xtlib_split_pi_library_size(
 				struct xtlib_packaged_library *library,
 				unsigned int *code_size,
 				unsigned int *data_size,
+				unsigned int *scratch_data_size,
 				struct lib_info *lib_info)
 {
 	struct xtlib_loader_globals *xtlib_globals =
@@ -289,10 +327,12 @@ static unsigned int xtlib_split_pi_library_size(
 	pheader = (Elf32_Phdr *)((char *)library +
 		xtlib_host_word(header->e_phoff, xtlib_globals->byteswap));
 
-	*code_size = xtlib_host_word(pheader[0].p_memsz,
-					xtlib_globals->byteswap) + align;
-	*data_size = xtlib_host_word(pheader[1].p_memsz,
-					xtlib_globals->byteswap) + align;
+	*code_size = (align + (xtlib_host_word(pheader[0].p_paddr, 0) & (align - 1)) +
+	      xtlib_host_word(pheader[0].p_memsz, 0) + align - 1) & (~(align - 1));
+	*data_size = (align + (xtlib_host_word(pheader[1].p_paddr, 0) & (align - 1)) +
+	      xtlib_host_word(pheader[1].p_memsz, 0) + align - 1) & (~(align - 1));
+	*scratch_data_size = (align + (xtlib_host_word(pheader[2].p_paddr, 0) & (align - 1)) +
+	      xtlib_host_word(pheader[2].p_memsz, 0) + align - 1) & (~(align - 1));
 
 	return XTLIB_NO_ERR;
 }
@@ -302,6 +342,8 @@ static int get_dyn_info(Elf32_Ehdr *eheader,
 			xt_uint src_offs,
 			xt_ptr dst_data_addr,
 			xt_uint src_data_offs,
+			xt_ptr dst_s_data_addr,
+			xt_uint src_s_data_offs,
 			struct xtlib_pil_info *info,
 			struct lib_info *lib_info)
 {
@@ -309,6 +351,8 @@ static int get_dyn_info(Elf32_Ehdr *eheader,
 	unsigned int pltrelsz = 0;
 	struct xtlib_loader_globals *xtlib_globals =
 					&lib_info->xtlib_globals;
+
+	Elf32_Phdr *dyn_segment = find_dynamic_segment(eheader, lib_info);
 	Elf32_Dyn *dyn_entry = find_dynamic_info(eheader, lib_info);
 
 	if (dyn_entry == 0)
@@ -318,7 +362,7 @@ static int get_dyn_info(Elf32_Ehdr *eheader,
 						xtlib_globals->byteswap);
 	info->src_offs = xtlib_xt_word(src_offs, xtlib_globals->byteswap);
 	info->dst_data_addr = (xt_uint)xtlib_xt_word(
-			(Elf32_Word)dst_data_addr + src_data_offs,
+			(Elf32_Word)dst_data_addr,
 			xtlib_globals->byteswap);
 	info->src_data_offs = xtlib_xt_word(src_data_offs,
 				xtlib_globals->byteswap);
@@ -338,8 +382,9 @@ static int get_dyn_info(Elf32_Ehdr *eheader,
 			(Elf32_Word)dyn_entry->d_tag,
 			xtlib_globals->byteswap)) {
 		case DT_RELA:
-			info->rel = xt_ptr_offs(dst_data_addr,
-					dyn_entry->d_un.d_ptr, lib_info);
+			info->rel = xt_ptr_offs(dst_s_data_addr,
+					dyn_entry->d_un.d_ptr - dyn_segment->p_vaddr,
+					lib_info);
 			break;
 		case DT_RELASZ:
 			info->rela_count = xtlib_xt_word(
@@ -393,6 +438,7 @@ static xt_ptr xtlib_load_split_pi_library_common(
 				struct xtlib_packaged_library *library,
 				xt_ptr destination_code_address,
 				xt_ptr destination_data_address,
+				xt_ptr destination_scratch_data_address,
 				struct xtlib_pil_info *info,
 				struct lib_info *lib_info)
 {
@@ -404,6 +450,7 @@ static xt_ptr xtlib_load_split_pi_library_common(
 	int err = validate_dynamic_splitload(header, lib_info);
 	xt_ptr destination_code_address_back;
 	xt_ptr destination_data_address_back;
+	xt_ptr destination_scratch_data_address_back;
 
 	if (err != XTLIB_NO_ERR) {
 		xtlib_globals->err = err;
@@ -414,13 +461,17 @@ static xt_ptr xtlib_load_split_pi_library_common(
 
 	destination_code_address_back = destination_code_address;
 	destination_data_address_back = destination_data_address;
+	destination_scratch_data_address_back = destination_scratch_data_address;
 
 	destination_code_address = align_ptr(destination_code_address, align);
 	destination_data_address = align_ptr(destination_data_address, align);
+	destination_scratch_data_address = align_ptr(destination_scratch_data_address, align);
 	lib_info->code_buf_virt += (destination_code_address -
 				destination_code_address_back);
 	lib_info->data_buf_virt += (destination_data_address -
 				destination_data_address_back);
+	lib_info->s_data_buf_virt += (destination_scratch_data_address -
+				destination_scratch_data_address_back);
 
 	pheader = (Elf32_Phdr *)((char *)library +
 			xtlib_host_word(header->e_phoff,
@@ -432,6 +483,9 @@ static xt_ptr xtlib_load_split_pi_library_common(
 					   xtlib_globals->byteswap),
 			   destination_data_address,
 			   xtlib_host_word(pheader[1].p_paddr,
+					   xtlib_globals->byteswap),
+			   destination_scratch_data_address,
+			   xtlib_host_word(pheader[2].p_paddr,
 					   xtlib_globals->byteswap),
 			   info,
 			   lib_info);
@@ -457,9 +511,13 @@ static xt_ptr xtlib_load_split_pi_library_common(
 	xtlib_load_seg(&pheader[1],
 		       (char *)library + xtlib_host_word(pheader[1].p_offset,
 						xtlib_globals->byteswap),
-		  (xt_ptr)lib_info->data_buf_virt +
-		  xtlib_host_word(pheader[1].p_paddr,
-				  xtlib_globals->byteswap),
+		  (xt_ptr)lib_info->data_buf_virt,
+		  lib_info);
+
+	xtlib_load_seg(&pheader[2],
+		       (char *)library + xtlib_host_word(pheader[2].p_offset,
+						xtlib_globals->byteswap),
+		  (xt_ptr)lib_info->s_data_buf_virt,
 		  lib_info);
 
 	if (err != XTLIB_NO_ERR) {
@@ -475,12 +533,14 @@ static xt_ptr xtlib_host_load_split_pi_library(
 				  struct xtlib_packaged_library *library,
 				  xt_ptr destination_code_address,
 				  xt_ptr destination_data_address,
+				  xt_ptr destination_data_scratch_address,
 				  struct xtlib_pil_info *info,
 				  struct lib_info *lib_info)
 {
 	return  xtlib_load_split_pi_library_common(library,
 					      destination_code_address,
 					      destination_data_address,
+					      destination_data_scratch_address,
 					      info,
 					      lib_info);
 }
@@ -518,12 +578,14 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 			(struct xtlib_packaged_library *)(srambuf),
 			(unsigned int *)&dpulib.size_code,
 			(unsigned int *)&dpulib.size_data,
+			(unsigned int *)&dpulib.size_scratch_data,
 			lib_info);
 	if (ret_val != XTLIB_NO_ERR)
 		return -EINVAL;
 
 	lib_info->code_buf_size = dpulib.size_code;
 	lib_info->data_buf_size = dpulib.size_data;
+	lib_info->s_data_buf_size = dpulib.size_scratch_data;
 
 	header = (Elf32_Ehdr *)srambuf;
 	pheader = (Elf32_Phdr *)((char *)srambuf +
@@ -546,9 +608,21 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 
 	ret_val = xf_pool_alloc(proxy,
 				1,
-				dpulib.size_data + pheader[1].p_paddr + align,
+				dpulib.size_data + align,
 				XF_POOL_AUX,
 				&lib_info->data_section_pool,
+				XAF_MEM_ID_COMP);
+	if (ret_val) {
+		free(srambuf);
+		printf("not enough buffer when loading data section\n");
+		return -ENOMEM;
+	}
+
+	ret_val = xf_pool_alloc(proxy,
+				1,
+				dpulib.size_scratch_data + align,
+				XF_POOL_AUX,
+				&lib_info->s_data_section_pool,
 				XAF_MEM_ID_COMP);
 	if (ret_val) {
 		free(srambuf);
@@ -564,16 +638,22 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 	lib_info->data_buf_phys = xf_proxy_b2a(proxy, xf_buffer_data(buf));
 	lib_info->data_buf_virt = xf_buffer_data(buf);
 
+	buf = xf_buffer_get(lib_info->s_data_section_pool);
+	lib_info->s_data_buf_phys = xf_proxy_b2a(proxy, xf_buffer_data(buf));
+	lib_info->s_data_buf_virt = xf_buffer_data(buf);
+
 	xf_buffer_put(buf);
 
 	dpulib.pbuf_code = (unsigned long)lib_info->code_buf_phys;
 	dpulib.pbuf_data = (unsigned long)lib_info->data_buf_phys;
+	dpulib.pbuf_scratch_data = (unsigned long)lib_info->s_data_buf_phys;
 
 	dpulib.ppil_inf = &lib_info->pil_info;
 	xtlib_host_load_split_pi_library(
 			(struct xtlib_packaged_library *)(srambuf),
 			(xt_ptr)(dpulib.pbuf_code),
 			(xt_ptr)(dpulib.pbuf_data),
+			(xt_ptr)(dpulib.pbuf_scratch_data),
 			(struct xtlib_pil_info *)dpulib.ppil_inf,
 			(void *)lib_info);
 
@@ -585,10 +665,12 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 static long unload_dpu_with_library(struct xf_proxy *proxy,
 				    struct lib_info *lib_info)
 {
-	if (!lib_info->code_section_pool || !lib_info->data_section_pool)
+	if (!lib_info->code_section_pool || !lib_info->data_section_pool ||
+			!lib_info->s_data_section_pool)
 		return XAF_INVALIDPTR_ERR;
 	xf_pool_free(lib_info->code_section_pool, XAF_MEM_ID_COMP);
 	xf_pool_free(lib_info->data_section_pool, XAF_MEM_ID_COMP);
+	xf_pool_free(lib_info->s_data_section_pool, XAF_MEM_ID_COMP);
 
 	return 0;
 }

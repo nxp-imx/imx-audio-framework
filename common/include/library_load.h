@@ -80,8 +80,10 @@ struct icm_xtlib_pil_info {
 struct lib_dnld_info_t {
 	unsigned long pbuf_code;
 	unsigned long pbuf_data;
+	unsigned long pbuf_scratch_data;
 	unsigned int size_code;
 	unsigned int size_data;
+	unsigned int size_scratch_data;
 	struct xtlib_pil_info *ppil_inf;
 	unsigned int lib_on_dpu;    /* 0: not loaded, 1: loaded. */
 };
@@ -92,6 +94,7 @@ struct lib_info {
 
 	struct xf_pool	 *code_section_pool;
 	struct xf_pool	 *data_section_pool;
+	struct xf_pool	 *s_data_section_pool;
 
 	void		 *code_buf_virt;
 	unsigned int code_buf_phys;
@@ -99,6 +102,9 @@ struct lib_info {
 	void		 *data_buf_virt;
 	unsigned int data_buf_phys;
 	unsigned int data_buf_size;
+	void		 *s_data_buf_virt;
+	unsigned int s_data_buf_phys;
+	unsigned int s_data_buf_size;
 
 	const char   *filename;
 	unsigned int lib_type;
