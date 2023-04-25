@@ -1742,6 +1742,26 @@ static XA_ERRORCODE xa_mimo_proc_port_resume(XACodecBase *base, xf_message_t *m)
     return XA_NO_ERROR;
 }
 
+static XA_ERRORCODE xa_mimo_proc_suspend(XACodecBase *base, xf_message_t *m)
+{
+	UWORD32        state = 1;
+	LOG("mimo class suspend\n");
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_MIMO_PROC_CONFIG_PARAM_SUSPEND, &state);
+
+	return XA_NO_ERROR;
+}
+
+static XA_ERRORCODE xa_mimo_proc_suspend_resume(XACodecBase *base, xf_message_t *m)
+{
+	UWORD32        state = 1;
+	LOG("mimo class suspend_resume\n");
+
+	XA_API(base, XA_API_CMD_SET_CONFIG_PARAM, XA_MIMO_PROC_CONFIG_PARAM_SUSPEND_RESUME, &state);
+
+	return XA_NO_ERROR;
+}
+
 /*******************************************************************************
  * Command-processing function
  ******************************************************************************/
@@ -1765,6 +1785,8 @@ static XA_ERRORCODE (* const xa_mimo_proc_cmd[])(XACodecBase *, xf_message_t *) 
     [XF_OPCODE_TYPE(XF_PAUSE)] = xa_mimo_proc_port_pause,
     [XF_OPCODE_TYPE(XF_RESUME)] = xa_mimo_proc_port_resume,
 
+    [XF_OPCODE_TYPE(XF_SUSPEND)] = xa_mimo_proc_suspend,
+    [XF_OPCODE_TYPE(XF_SUSPEND_RESUME)] = xa_mimo_proc_suspend_resume,
 };
 
 /* ...total number of commands supported */

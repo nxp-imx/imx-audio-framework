@@ -46,6 +46,8 @@ enum xa_config_param_mimo_proc {
     XA_MIMO_PROC_CONFIG_PARAM_PORT_RESUME     = 0x10000 + 5,
     XA_MIMO_PROC_CONFIG_PARAM_PORT_CONNECT    = 0x10000 + 6,
     XA_MIMO_PROC_CONFIG_PARAM_PORT_DISCONNECT = 0x10000 + 7,
+    XA_MIMO_PROC_CONFIG_PARAM_SUSPEND            = 0x10000 + 8,
+    XA_MIMO_PROC_CONFIG_PARAM_SUSPEND_RESUME     = 0x10000 + 9,
 };
 
 /* ...generic mimo-proc fatal config error */
