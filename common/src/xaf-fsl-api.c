@@ -1062,6 +1062,11 @@ XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t co
 	ret = xaf_malloc(p_adev->xf_g_ap, &p_comp->codec_wrap_lib, sizeof(struct lib_info), XAF_MEM_ID_COMP);
 	codec_wrap_lib = (struct lib_info *)p_comp->codec_wrap_lib;
 
+	if (!strcmp(comp_id, "voice-process/dummy")) {
+		strcat(lib_wrap_path, "lib_dsp_voice_process_dummy.so");
+		dec_type = CODEC_DEMO_DEC;
+	}
+
 	if (!strcmp(comp_id, "audio-decoder/mp3")) {
 		strcat(lib_path, "lib_dsp_mp3_dec.so");
 		dec_type = CODEC_MP3_DEC;
@@ -1243,11 +1248,13 @@ XAF_ERR_CODE xaf_comp_create(pVOID adev_ptr, pVOID *pp_comp, xaf_comp_config_t *
     case XAF_MIXER:
         p_comp->inp_ports = 4; p_comp->out_ports = 1;
         break;
-    case XAF_MIMO_PROC_12 ... (XAF_MAX_COMPTYPE-1):
 #if 0 /* by S.J*/
+    case XAF_MIMO_PROC_12 ... (XAF_MAX_COMPTYPE-1):
         p_comp->inp_ports  = xf_io_ports[comp_type][0];
         p_comp->out_ports  = xf_io_ports[comp_type][1];
 #endif
+    case XAF_MIMO_PROC_22:
+        p_comp->inp_ports = 2; p_comp->out_ports = 2;
         break;
     case XAF_RENDERER:
         p_comp->inp_ports = 1; p_comp->out_ports = 1; /* optional outport */
