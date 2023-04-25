@@ -59,7 +59,7 @@ static void delay(int num)
 
 	for (; temp < num; temp++) {
 		count = 0;
-		while (count < 100)
+		while (count < 10)
 			count++;
 	}
 }
@@ -82,7 +82,7 @@ static int i2c_clear_Int()
 
 static int i2c_imx_acked()
 {
-	delay(50);
+	delay(10);
 	if (i2c_read(IMX_I2C_I2SR) & I2SR_RXAK) {
 		LOG("I2C No ACK\n");
 		return -ENXIO;  /* No ACK */
@@ -240,7 +240,6 @@ int i2c_read_data(uint32_t slave_addr, int reg, uint32_t *data, int32_t data_wid
 	i2c_write(IMX_I2C_I2CR, temp);
 	delay(50);
 
-
 	val = ((slave_addr & 0xFF) << 1) | RD;
 	/* device addr and read bit */
 	i2c_write(IMX_I2C_I2DR, val);
@@ -333,12 +332,12 @@ void i2c_stop()
 	i2c_write(IMX_I2C_I2CR, val);
 
 	/* need delay to wait generate stop singal */
-	delay(50);
+	delay(10);
 	/* Disable I2C controller */
 	val = i2c_read(IMX_I2C_I2CR);
 	val &= ~I2CR_IEN;
 	i2c_write(IMX_I2C_I2CR, val);
-	delay(50);
+	delay(10);
 }
 
 void i2c_reset()
