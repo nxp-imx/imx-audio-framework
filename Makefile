@@ -31,6 +31,7 @@
 FRAMEWORK_DIR = dsp_framework
 WRAPPER_DIR   = dsp_wrapper
 UNIT_TEST_DIR = unit_test
+VOICE_PROCESS_DIR = dsp_voice_process
 RELEASE_DIR = release
 
 CFLAGS  = -O3
@@ -43,7 +44,7 @@ ifeq ($(TIME_PROFILE), 1)
 	CFLAGS += -DTIME_PROFILE
 endif
 
-all: DSP_FRAMEWORK UNIT_TEST DSP_WRAPPER
+all: DSP_FRAMEWORK UNIT_TEST DSP_WRAPPER VOICE_PROCESS
 	echo "--- Build all dsp library ---"
 
 DSP_FRAMEWORK: $(FRAMEWORK_DIR)
@@ -71,20 +72,29 @@ else
 	cp ./$(UNIT_TEST_DIR)/*.out $(RELEASE_DIR)/exe
 endif
 
+VOICE_PROCESS: $(VOICE_PROCESS_DIR)
+	echo "--- Build voice process ---"
+	mkdir -p $(RELEASE_DIR)/lib
+	make -C $(VOICE_PROCESS_DIR)
+	cp ./$(VOICE_PROCESS_DIR)/*.so $(RELEASE_DIR)/lib
+
 help:
 	@echo "targets are:"
 	@echo "\tDSP_FRAMEWORK\t- build DSP framework"
 	@echo "\tDSP_WRAPPER\t- build DSP wrapper"
 	@echo "\tUNIT_TEST\t- build DSP unit test"
+	@echo "\tVOICE_PROCESS\t- build DSP voice process lib"
 	@echo "\tall\t\t- build the above"
 
 clean:
 	make -C $(FRAMEWORK_DIR) clean
 	make -C $(UNIT_TEST_DIR) clean
 	make -C $(WRAPPER_DIR) clean
+	make -C $(VOICE_PROCESS_DIR) clean
 	rm -rf ./$(RELEASE_DIR)/*.so
 	rm -rf ./$(RELEASE_DIR)/exe
 	rm -rf ./$(RELEASE_DIR)/wrapper
+	rm -rf ./$(RELEASE_DIR)/lib
 	rm -rf ./$(RELEASE_DIR)/hifi4_imx8mp.bin
 	rm -rf ./$(RELEASE_DIR)/hifi4_imx8qmqxp.bin
 	rm -rf ./$(RELEASE_DIR)/hifi4_imx8ulp.bin
