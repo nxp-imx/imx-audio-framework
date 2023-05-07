@@ -81,6 +81,9 @@ OUT_DEC     =	dsp_test.out
 C_OBJS_CAPTURER  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-capturer-pcm-gain-test.o
 OUT_CAPTURER     =	dsp_capturer_test.out
 
+C_OBJS_VOICE  =	$(C_OBJS) $(SRC_DIR)/xaf-fsl-mimo-voice-process-test.o
+OUT_VOICE     =	dsp_voiceproc_test.out
+
 ifeq ($(TFLM), 1)
 INCLUDES	+=	-I$(SRC_DIR)/tflm \
 			-I$(ROOT_DIR)/testxa_af_hostless/test/plugins/cadence/tflm_common
@@ -91,7 +94,7 @@ C_OBJS_TFLM =	$(C_OBJS) $(SRC_DIR)/dsp_tflm_test.o \
 OUT_TFLM    =	dsp_tflm_test.out
 endif
 
-all: DEC REND CAPTURER TFLM
+all: DEC REND CAPTURER VOICEPROCESS TFLM
 
 DEC: $(C_OBJS_DEC)
 	$(CC) $(CFLAGS) $(C_OBJS_DEC) -o $(OUT_DEC)
@@ -99,6 +102,8 @@ REND: $(C_OBJS_REND)
 	$(CC) $(CFLAGS) $(C_OBJS_REND) -o $(OUT_REND)
 CAPTURER: $(C_OBJS_CAPTURER)
 	$(CC) $(CFLAGS) $(C_OBJS_CAPTURER) -o $(OUT_CAPTURER)
+VOICEPROCESS: $(C_OBJS_VOICE)
+	$(CC) $(CFLAGS) $(C_OBJS_VOICE) -o $(OUT_VOICE)
 
 ifeq ($(TFLM), 1)
 TFLM: $(C_OBJS_TFLM)
