@@ -523,7 +523,7 @@ int micfil_release(void *p_micfil)
 	return 0;
 }
 
-int micfil_set_param(void *p_micfil, int i_idx, unsigned int *p_vaule)
+int micfil_set_quality(void *p_micfil, int quality)
 {
 	if (!p_micfil) {
 		LOG("micfil is null\n");
@@ -531,31 +531,49 @@ int micfil_set_param(void *p_micfil, int i_idx, unsigned int *p_vaule)
 	}
 	struct fsl_micfil *micfil = (struct fsl_micfil*)p_micfil;
 
+	micfil->quality = quality;
+	return set_quality(micfil);
+}
+
+int micfil_set_param(void *p_micfil, int i_idx, unsigned int *p_value)
+{
+	if (!p_micfil) {
+		LOG("micfil is null\n");
+		return ERROR;
+	}
+	struct fsl_micfil *micfil = (struct fsl_micfil*)p_micfil;
+	int ret = OK;
+
 	switch (i_idx) {
-	case MICFIL_SAMPLE_RATE:
-		if (!rate_support(*p_vaule))
+	case UNIA_SAMPLERATE:
+		if (!rate_support(*p_value))
 			goto Err;
-		micfil->sample_rate = (int)*p_vaule;
+		micfil->sample_rate = (int)*p_value;
+		ret = set_clock_params(micfil, micfil->sample_rate);
+		if (ret)
+			goto Err;
 		break;
-	case MICFIL_CHANNEL:
-		micfil->channel = (int)*p_vaule;
+	case UNIA_CHANNEL:
+		if (*p_value != 1 && *p_value != 2)
+			goto Err;
+		micfil->channel = (int)*p_value;
+		ret = enable_channel(micfil, micfil->channel);
+		if (ret)
+			goto Err;
 		break;
-	case MICFIL_WIDTH:
-		micfil->width = (int)*p_vaule;
-		break;
-	case MICFIL_QUALITY:
-		micfil->quality = (int)*p_vaule;
+	case UNIA_DEPTH:
+		micfil->width = (int)*p_value;
 		break;
 	default:
 		break;
 	}
 
-	return OK;
+	return ret;
 Err:
 	return ERROR;
 }
 
-int micfil_get_param(void *p_micfil, int i_idx, unsigned int *p_vaule)
+int micfil_get_param(void *p_micfil, int i_idx, unsigned int *p_value)
 {
 	/* TODO */
 	return OK;

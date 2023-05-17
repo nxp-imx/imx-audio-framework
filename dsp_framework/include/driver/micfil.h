@@ -7,16 +7,10 @@
 #define MICFIL_H
 
 #include "mydefs.h"
+#include "fsl_unia.h"
 
 #define ERROR (-1)
 #define OK     0
-
-enum micfil_param {
-	MICFIL_SAMPLE_RATE,
-	MICFIL_CHANNEL,
-	MICFIL_WIDTH,
-	MICFIL_QUALITY
-};
 
 enum micfil_quality {
 	HIGH_QUALITY,
