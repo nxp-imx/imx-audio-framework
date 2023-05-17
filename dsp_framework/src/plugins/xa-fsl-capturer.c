@@ -307,6 +307,9 @@ static XA_ERRORCODE xa_hw_capturer_init(XACapturer *d)
 		return XA_FATAL_ERROR;
 	micfil_init(micfil);
 
+	micfil_set_param(d->micfil, UNIA_CHANNEL, &d->channels);
+	micfil_set_param(d->micfil, UNIA_SAMPLERATE, &d->rate);
+
 	d->dma = dma = dsp->dma_device;
 	dma_init(dma);
 
@@ -327,7 +330,7 @@ static XA_ERRORCODE xa_hw_capturer_init(XACapturer *d)
 	 * 16-19bit: the fifo offset
 	 * 12-15bit: the fifo number
 	*/
-	sdmac_cfg.watermark = 0x00802030;
+	sdmac_cfg.watermark = 0x00800030 | ((d->channels & 0xF) << 12);
 
 	audio_cfg.peripheral_config = &sdmac_cfg;
 	audio_cfg.peripheral_size = sizeof(sdmac_cfg_t);
@@ -568,8 +571,8 @@ static XA_ERRORCODE xa_capturer_set_config_param(XACapturer *d, WORD32 i_idx, pV
         /* ...get requested sampling rate */
         i_value = (UWORD32) *(WORD32 *)pv_value;
 
-        /* ...allow 16 , 44.1 or 48KHz only  */
-        XF_CHK_ERR(i_value == 16000 || i_value == 44100 || i_value == 48000, XA_CAPTURER_CONFIG_NONFATAL_RANGE);
+        /* ...allow 8, 16, 32 or 48KHz only  */
+        XF_CHK_ERR(i_value == 8000 || i_value == 16000 || i_value == 32000 || i_value == 48000, XA_CAPTURER_CONFIG_NONFATAL_RANGE);
 
         /* ...apply setting */
         d->rate = (UWORD32)i_value;
