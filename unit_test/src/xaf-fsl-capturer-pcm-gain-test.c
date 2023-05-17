@@ -30,7 +30,7 @@
 #include "xaf-utils-test.h"
 #include "xaf-fio-test.h"
 
-#define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s  -outfile:out_filename.pcm -samples:<samples-per-channel to be captured(zero for endless capturing)>\n", argv[0]);
+#define PRINT_USAGE FIO_PRINTF(stdout, "\nUsage: %s  -outfile:out_filename.pcm -samples:<samples-per-channel to be captured(zero for endless capturing)> -rate:<optional>\n", argv[0]);
 
 #define AUDIO_FRMWK_BUF_SIZE   (256 << 8)
 #define AUDIO_COMP_BUF_SIZE    (1024 << 8)
@@ -226,6 +226,8 @@ int main_task(int argc, char **argv)
     int capturer_info[4];
     char *filename_ptr;
     char *sample_cnt_ptr;
+    char *sample_rate_ptr;
+    char *channel_ptr;
     void *pcm_gain_thread_args[NUM_THREAD_ARGS];
     FILE *ofp = NULL;
     int i;
@@ -239,6 +241,8 @@ int main_task(int argc, char **argv)
     mem_obj_t* mem_handle;
     xaf_comp_type comp_type;
     long long int sammple_end_capturer = 0;
+    unsigned int capturer_sample_rate = 0;
+    unsigned int capturer_channel = 0;
     double pcm_gain_mcps = 0;
     xf_id_t comp_id;
 
@@ -278,7 +282,7 @@ int main_task(int argc, char **argv)
     TRACE_INIT("Xtensa Audio Framework - \'Capturer + PCM Gain\' Sample App");
 
     /* ...check input arguments */
-    if (argc != 3)
+    if ((argc != 3) && (argc != 4) && (argc != 5))
     {
         PRINT_USAGE;
         return 0;
@@ -336,6 +340,32 @@ int main_task(int argc, char **argv)
         PRINT_USAGE;
         return 0;
     }
+    if(NULL != strstr(argv[3], "-rate:"))
+    {
+        sample_rate_ptr = (char *)&(argv[3][6]);
+
+        capturer_sample_rate = atoi(sample_rate_ptr);
+
+        if (capturer_sample_rate < 8000 || capturer_sample_rate > 48000) {
+            FIO_PRINTF(stderr, "capturer samples-rate is not support\n");
+            exit(-1);
+        }
+    }
+    else
+        capturer_sample_rate = CAPTURER_SAMPLE_RATE;
+    if(NULL != strstr(argv[4], "-channel:"))
+    {
+        channel_ptr = (char *)&(argv[4][9]);
+
+        capturer_channel = atoi(channel_ptr);
+
+        if (capturer_channel < 1 || capturer_channel > 2) {
+            FIO_PRINTF(stderr, "capturer channel is not support\n");
+            exit(-1);
+        }
+    }
+    else
+        capturer_channel = CAPTURER_NUM_CH;
 
 
     p_output = ofp;
@@ -355,8 +385,8 @@ int main_task(int argc, char **argv)
 
     /* ...create capturer component */
     comp_type = XAF_CAPTURER;
-    capturer_format.sample_rate = CAPTURER_SAMPLE_RATE;
-    capturer_format.channels = CAPTURER_NUM_CH;
+    capturer_format.sample_rate = capturer_sample_rate;
+    capturer_format.channels = capturer_channel;
     capturer_format.pcm_width = CAPTURER_PCM_WIDTH;
     TST_CHK_API_COMP_CREATE(p_adev, &p_capturer, "capturer", 0, 0, NULL, comp_type, "xaf_comp_create");
     TST_CHK_API(capturer_setup(p_capturer, capturer_format,sammple_end_capturer), "capturer_setup");
