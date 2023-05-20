@@ -214,12 +214,14 @@ static int pcm_gain_setup(void *p_comp,xaf_format_t comp_format)
 
 static int voiceprocess_setup(void *p_voiceprocess,xaf_format_t voiceprocess_format)
 {
-    int param[2];
+    int param[4];
 
     param[0] = UNIA_CHANNEL;
     param[1] = voiceprocess_format.channels;
+    param[2] = UNIA_DEPTH;
+    param[3] = voiceprocess_format.pcm_width;
 
-    return(xaf_comp_set_config(p_voiceprocess, 1, &param[0]));
+    return(xaf_comp_set_config(p_voiceprocess, 2, &param[0]));
 
    return 0;
 }
@@ -294,16 +296,16 @@ struct AudioOption {
 };
 
 //component parameters
-#define PCM_GAIN_SAMPLE_WIDTH   16
+#define PCM_GAIN_SAMPLE_WIDTH   32
 // supports 8,16,24,32-bit PCM
 
-#define PCM_GAIN_NUM_CH         1
+#define PCM_GAIN_NUM_CH         2
 // supports upto 16 channels
 
 #define PCM_GAIN_IDX_FOR_GAIN   1
 //gain index range is 0 to 6 -> {0db, -6db, -12db, -18db, 6db, 12db, 18db}
 
-#define PCM_GAIN_SAMPLE_RATE    44100
+#define PCM_GAIN_SAMPLE_RATE    48000
 
 //following parameter is provided to simulate desired MHz load in PCM-GAIN for experiments
 #define PCM_GAIN_BURN_CYCLES    0
@@ -833,7 +835,9 @@ int main_task(int argc, char **argv)
     /* init voice seeker */
     voiceprocess_format.sample_rate = capturer_format.sample_rate;
     voiceprocess_format.channels = capturer_format.channels;
-    voiceprocess_format.pcm_width = capturer_format.pcm_width;
+    /* Port 0: FF, Port 1: FF00, Port 2: FF0000, Port 3: FF000000 */
+    voiceprocess_format.pcm_width = capturer_format.pcm_width << 24 | capturer_format.pcm_width << 8 |
+	    dec_format.pcm_width << 16 | dec_format.pcm_width;
     /* input port 0, 1
      * output port 2, 3
      */
