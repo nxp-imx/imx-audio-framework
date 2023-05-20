@@ -122,6 +122,9 @@ typedef struct XAVoiceProc
     UWORD32                 pcm_width;
     UWORD32                 channels;
 
+    UWORD32                 frame_size;
+    UWORD32                 port_pcm_width[XA_MIMO_IN_PORTS + XA_MIMO_OUT_PORTS];
+
     WORD16		    port_state[XA_MIMO_IN_PORTS + XA_MIMO_OUT_PORTS];
 
     void                    *p_voice_handler;
@@ -165,6 +168,8 @@ static inline void xa_voice_proc_preinit(XAVoiceProc *d)
     d->pcm_width 	= XA_VOC_PROC_CFG_DEFAULT_PCM_WIDTH;
     d->channels 	= XA_VOC_PROC_CFG_DEFAULT_CHANNELS;
 
+    d->frame_size       = 1024;
+
     d->in_buffer_size 	= XA_VOC_PROC_CFG_FRAME_SIZE_BYTES;
     d->out_buffer_size 	= XA_VOC_PROC_CFG_FRAME_SIZE_BYTES;
     d->persist_size 	= XA_VOC_PROC_CFG_PERSIST_SIZE;
@@ -183,6 +188,10 @@ static XA_ERRORCODE xa_voice_proc_lib_execute(XAVoiceProc *d)
 		return XA_FATAL_ERROR;
 	int *consumed[2];
 	int *produced[2];
+
+	if (d->input_length[0] < d->frame_size * d->channels * d->port_pcm_width[0]/8 ||
+	    d->input_length[1] < d->frame_size * d->channels * d->port_pcm_width[1]/8)
+		return XA_NO_ERROR;
 
 	consumed[0] = &d->consumed[0];
 	consumed[1] = &d->consumed[1];
@@ -493,9 +502,11 @@ static XA_ERRORCODE xa_vp_set_config_param(XAVoiceProc *d, WORD32 i_idx, pVOID p
 
     case XA_MIMO_PROC_CONFIG_PARAM_PCM_WIDTH:
     case UNIA_DEPTH:
-        /* ...check value is permitted (16 bits only) */
-        XF_CHK_ERR(i_value == 16, XA_VOICE_PROC_CONFIG_FATAL_RANGE);
-        d->pcm_width = (UWORD32)i_value;
+        d->port_pcm_width[0] = (UWORD32)(i_value & 0xFF);
+        d->port_pcm_width[1] = (UWORD32)((i_value & 0xFF00) >> 8);
+        d->port_pcm_width[2] = (UWORD32)((i_value & 0xFF0000) >> 16);
+        d->port_pcm_width[3] = (UWORD32)((i_value & 0xFF000000) >> 24);
+        d->pcm_width = d->port_pcm_width[0];
 	break;
 
     case XA_MIMO_PROC_CONFIG_PARAM_CHANNELS:
@@ -792,13 +803,19 @@ static XA_ERRORCODE xa_vp_get_mem_info_size(XAVoiceProc *d, WORD32 i_idx, pVOID 
     if(i_idx < d->num_in_ports)
     {
         /* ...input buffers */
-        *(WORD32 *)pv_value = d->in_buffer_size;
+        if (i_idx == 0)
+            *(WORD32 *)pv_value = d->frame_size * d->channels * d->port_pcm_width[0]/8;
+        else
+            *(WORD32 *)pv_value = d->frame_size * d->channels * d->port_pcm_width[1]/8;
     }
     else
     if(i_idx < (d->num_in_ports + d->num_out_ports))
     {
         /* ...output buffer */
-        *(WORD32 *)pv_value = d->out_buffer_size;
+        if (i_idx == d->num_in_ports)
+            *(WORD32 *)pv_value = d->frame_size * d->channels * d->port_pcm_width[2]/8;
+        else
+            *(WORD32 *)pv_value = d->frame_size * d->channels * d->port_pcm_width[3]/8;
     }
     else
     if(i_idx < (n_mems-1))
