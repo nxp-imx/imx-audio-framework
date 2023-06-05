@@ -1,12 +1,12 @@
 NXP Software Content Register
 
 Package:            imx-audio-framework
-Outgoing License:   LA_OPT_NXP_Software_License v38 August 2022 - Production Use, Section 2.3 applies
+Outgoing License:   LA_OPT_NXP_Software_License v45 May 2023 - Production Use, Section 2.3 applies
 Release Location:   Moderated download
 
 
 Component:          dsp_framework
-Outgoing License:   LA_OPT_NXP_Software_License v38 August 2022 - Production Use, Section 2.3 applies
+Outgoing License:   LA_OPT_NXP_Software_License v45 May 2023 - Production Use, Section 2.3 applies
 Type of Content:    source
 Description:        The firmware running on the DSP core
 Origin:             NXP (proprietary)
@@ -16,13 +16,13 @@ Origin:             NXP (proprietary)
                     Cadence (MIT)
 
 Component:          dsp_wrapper
-Outgoing License:   LA_OPT_NXP_Software_License v38 August 2022 - Production Use, Section 2.3 applies
+Outgoing License:   LA_OPT_NXP_Software_License v45 May 2023 - Production Use, Section 2.3 applies
 Type of Content:    source
 Description:        User space application providing a unified calling interface for GStreamer
 Origin:             NXP (MIT)
 
 Component:          unit_test
-Outgoing License:   LA_OPT_NXP_Software_License v38 August 2022 - Production Use, Section 2.3 applies
+Outgoing License:   LA_OPT_NXP_Software_License v45 May 2023 - Production Use, Section 2.3 applies
 Type of Content:    source
 Description:        User space test application
 Origin:             NXP (MIT)
@@ -30,7 +30,7 @@ Origin:             NXP (MIT)
 
 
 Component:          include
-Outgoing License:   LA_OPT_NXP_Software_License v38 August 2022 - Production Use, Section 2.3 applies
+Outgoing License:   LA_OPT_NXP_Software_License v45 May 2023 - Production Use, Section 2.3 applies
 Type of Content:    source
 Description:        Interface command definitions
 Origin:             NXP (BSD-2-clause)
