@@ -252,7 +252,7 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 	}
 
 	/* wait /dev/rpmsgx ready or not */
-	for (j = 0; j < 10000; j++) {
+	for (j = 0; j < 20000; j++) {
 		for (i = 0; i < EPT_NUM; i++) {
 			memset(path_buf, 0, 512);
 			sprintf(path_buf, "/dev/rpmsg%d", i);
@@ -268,7 +268,7 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 			usleep(10);
 	}
 
-	if ( j >= 10000 ) {
+	if ( j >= 20000 ) {
 		printf("remote proc is not ready\n");
 		goto err_virtio;
 	}
