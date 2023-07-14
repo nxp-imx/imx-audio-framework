@@ -46,6 +46,9 @@ extern int audio_frmwk_buf_size;
 extern int audio_comp_buf_size;
 double strm_duration;
 
+//global val
+xf_thread_t dec_thread;
+
 #ifdef XAF_PROFILE
     extern long long tot_cycles, frmwk_cycles, fread_cycles, fwrite_cycles;
     extern long long dsp_comps_cycles, dec_cycles;
@@ -316,12 +319,28 @@ Error:
 	return 1;
 }
 
+#ifndef XA_DISABLE_EVENT
+int decode_event_handler(event_info_t *event)
+{
+    extern UWORD32 g_event_handler_exit;
+
+    void *p_error_comp = (void *)event->comp_addr;
+
+    int error_code = *(int *)event->event_buf;
+
+    g_event_handler_exit = 1;
+
+    __xf_thread_cancel(&dec_thread);
+
+    return 0;
+}
+#endif
+
 int main_task(int argc, char **argv)
 {
     void *p_adev = NULL;
     void *p_decoder = NULL;    
     void *p_input, *p_output;  
-    xf_thread_t dec_thread;
     unsigned char dec_stack[STACK_SIZE];
     xaf_comp_status dec_status;
     long dec_info[4];
@@ -344,6 +363,14 @@ int main_task(int argc, char **argv)
     pUWORD8 ver_info[3] = {0,0,0};    //{ver,lib_rev,api_rev}
     unsigned short board_id = 0;
     mem_obj_t* mem_handle;
+
+#ifndef XA_DISABLE_EVENT
+    xa_app_initialize_event_list(MAX_EVENTS); 
+    g_app_handler_fn = decode_event_handler;
+
+    extern UWORD32 g_enable_error_channel_flag;
+    g_enable_error_channel_flag = XAF_ERR_CHANNEL_ALL;
+#endif
 
 
 #ifdef XAF_PROFILE
@@ -495,6 +522,9 @@ int main_task(int argc, char **argv)
     adev_config.pmem_free =  mem_free;
     adev_config.audio_framework_buffer_size =  audio_frmwk_buf_size;
     adev_config.audio_component_buffer_size =  audio_comp_buf_size;
+#ifndef XA_DISABLE_EVENT
+    adev_config.app_event_handler_cb =  xa_app_receive_events_cb;
+#endif
     TST_CHK_API(xaf_adev_open(&p_adev, &adev_config),  "xaf_adev_open");
     
     FIO_PRINTF(stdout, "Audio Device Ready\n");
@@ -504,6 +534,14 @@ int main_task(int argc, char **argv)
 	comp_type = XAF_DECODER;
     else
 	comp_type = XAF_POST_PROC;
+
+#ifndef XA_DISABLE_EVENT
+    xf_thread_t event_handler_thread;
+    unsigned char event_handler_stack[STACK_SIZE];
+    int event_handler_args[1] = {0}; // Dummy
+
+    __xf_thread_create(&event_handler_thread, event_handler_entry, (void *)event_handler_args, "Event Handler Thread", event_handler_stack, STACK_SIZE, XAF_APP_THREADS_PRIORITY);
+#endif
 
     TST_CHK_API_COMP_CREATE(p_adev, &p_decoder, dec_id, 2, 1, &dec_inbuf[0], comp_type, "xaf_comp_create");
 #ifdef XA_FSL_UNIA_CODEC
@@ -607,10 +645,21 @@ int main_task(int argc, char **argv)
     /* ...exec done, clean-up */
     __xf_thread_destroy(&dec_thread); 
     TST_CHK_API(xaf_comp_delete(p_decoder), "xaf_comp_delete");
+#ifndef XA_DISABLE_EVENT
+    extern UWORD32 g_event_handler_exit;
+    g_event_handler_exit = 1;
+    __xf_thread_join(&event_handler_thread, NULL);
+    __xf_thread_destroy(&event_handler_thread);
+    FIO_PRINTF(stdout, "Event handler thread joined with exit code %x\n", i);
+#endif
     TST_CHK_API(xaf_adev_close(p_adev, XAF_ADEV_NORMAL_CLOSE), "xaf_adev_close");
     FIO_PRINTF(stdout,"Audio device closed\n\n");
     
     mem_exit(mem_handle);
+
+#ifndef XA_DISABLE_EVENT
+    xa_app_free_event_list();
+#endif
 
 #ifdef XAF_PROFILE
     dsp_comps_cycles = dec_cycles;

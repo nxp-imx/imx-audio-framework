@@ -530,8 +530,6 @@ static int _event_handler_entry(void *arg)
     {
         __xf_thread_sleep_msec(50);
 
-        fprintf(stderr, "Event Handler Thread: Checking for events\n");
-        
         xa_app_process_events();
 
         if (g_execution_abort_flag || g_event_handler_exit)
