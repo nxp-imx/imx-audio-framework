@@ -668,7 +668,7 @@ static XA_ERRORCODE xa_vp_set_input_bytes(XAVoiceProc *d, WORD32 i_idx, pVOID pv
     XF_CHK_ERR(d->input[i_idx], XA_API_FATAL_INVALID_CMD_TYPE);
 
     /* ...input frame length should not be zero (in bytes) */
-    XF_CHK_ERR((size = (UWORD32)*(WORD32 *)pv_value) >= 0, XA_VOICE_PROC_CONFIG_FATAL_RANGE);
+    XF_CHK_ERR((size = *(WORD32 *)pv_value) >= 0, XA_VOICE_PROC_CONFIG_FATAL_RANGE);
 
     /* ...all is correct; set input buffer length in bytes */
     d->input_length[i_idx] = size;
