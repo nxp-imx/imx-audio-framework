@@ -653,7 +653,7 @@ static XA_ERRORCODE xa_vp_execute(XAVoiceProc *d, WORD32 i_idx, pVOID pv_value)
 /* ...set number of input bytes */
 static XA_ERRORCODE xa_vp_set_input_bytes(XAVoiceProc *d, WORD32 i_idx, pVOID pv_value)
 {
-    UWORD32     size;
+    WORD32     size;
 
     /* ...sanity check - check parameters */
     XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
