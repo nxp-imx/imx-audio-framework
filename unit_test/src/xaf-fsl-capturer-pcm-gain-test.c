@@ -340,7 +340,7 @@ int main_task(int argc, char **argv)
         PRINT_USAGE;
         return 0;
     }
-    if(NULL != strstr(argv[3], "-rate:"))
+    if((argc > 3) && NULL != strstr(argv[3], "-rate:"))
     {
         sample_rate_ptr = (char *)&(argv[3][6]);
 
@@ -353,7 +353,8 @@ int main_task(int argc, char **argv)
     }
     else
         capturer_sample_rate = CAPTURER_SAMPLE_RATE;
-    if(NULL != strstr(argv[4], "-channel:"))
+
+    if((argc > 4) && (NULL != strstr(argv[4], "-channel:")))
     {
         channel_ptr = (char *)&(argv[4][9]);
 
