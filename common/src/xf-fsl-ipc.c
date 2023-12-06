@@ -273,20 +273,42 @@ int xf_rproc_open(struct xf_proxy_ipc_data *ipc)
 		goto err_virtio;
 	}
 
-	found = 0;
-	for (i = 0; i < EPT_NUM; i++) {
-		memset(path_buf, 0, 512);
-		sprintf(path_buf, "/dev/rpmsg%d", i);
-		ipc->fd = open(path_buf, O_RDWR | O_NONBLOCK);
-		if (ipc->fd < 0)
-			continue;
-		found = 1;
-		break;
+	/* avoid to occupy rpmsg0 firstly when rproc_flag is false */
+	if (!rproc_flag) {
+		found = 0;
+		for (i = 1; i >= 0; i--) {
+			memset(path_buf, 0, 512);
+			sprintf(path_buf, "/dev/rpmsg%d", i);
+			ipc->fd = open(path_buf, O_RDWR | O_NONBLOCK);
+			if (ipc->fd < 0)
+				continue;
+			found = 1;
+			break;
+		}
+	} else {
+		found = 0;
+		for (i = 0; i < EPT_NUM; i++) {
+			memset(path_buf, 0, 512);
+			sprintf(path_buf, "/dev/rpmsg%d", i);
+			ipc->fd = open(path_buf, O_RDWR | O_NONBLOCK);
+			if (ipc->fd < 0)
+				continue;
+			found = 1;
+			break;
+		}
 	}
 
 	if (!found){
 		printf("Failed to open rpmsg.\n");
 		goto err_virtio;
+	}
+
+	/* when rproc_flag is true, by default should chose rpmsg0, if not means
+	 * rpmsg0 used by other process and start rproc twice. */
+	if (rproc_flag && found && i != 0) {
+		memset(path_buf, 0, 512);
+		sprintf(path_buf, "/sys/class/remoteproc/remoteproc%u/state", ipc->rproc_id);
+		file_write(path_buf, "stop");
 	}
 
 	return 0;
