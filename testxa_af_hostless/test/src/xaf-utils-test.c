@@ -519,7 +519,7 @@ void *comp_disconnect_entry(void *arg)
 }
 
 #ifndef XA_DISABLE_EVENT
-static int _event_handler_entry(void *arg)
+static long _event_handler_entry(void *arg)
 {
     FIO_PRINTF(stderr,"thread_entry : event_handler\n");
     TST_CHK_PTR(arg, "event_handler_entry");
