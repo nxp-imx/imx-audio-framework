@@ -6,6 +6,7 @@
 #define RPMSG_PLATFORM_H_
 
 #include <stdint.h>
+#include "xa_type_def.h"
 #include "xf-debug.h"
 
 /* RPMSG MU channel index */
@@ -54,5 +55,7 @@ void *platform_patova(uint32_t addr);
 /* platform init/deinit */
 int32_t platform_init(void);
 int32_t platform_deinit(void);
+
+void rpmsg_response(UWORD32 core);
 
 #endif /* RPMSG_PLATFORM_H_ */

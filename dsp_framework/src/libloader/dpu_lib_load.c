@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "dpu_lib_load.h"
+#include "pi_library_load.h"
 
 enum sram_data_type_t {
 	DTYP_DPUSW = 0,

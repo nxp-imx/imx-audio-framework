@@ -63,8 +63,8 @@ extern clk_t voice_proc_cycles;
 
 /* ...API structure */
 
-typedef uint32_t (*Voice_proc_execute)(void *p_voice_handle, void *input[2], int input_length[2],
-		int *consumed[2], void *output[2], int *produced[2]);
+typedef uint32_t (*Voice_proc_execute)(void *p_voice_handle, void *input[2], unsigned int input_length[2],
+				       unsigned int *consumed[2], void *output[2], unsigned int *produced[2]);
 
 struct VoiceWrapFun {
 	UniACodecVersionInfo    VersionInfo;
@@ -186,8 +186,8 @@ static XA_ERRORCODE xa_voice_proc_lib_execute(XAVoiceProc *d)
 	uint32_t ret = XA_NO_ERROR;
 	if (!d->WrapFun.Process)
 		return XA_FATAL_ERROR;
-	int *consumed[2];
-	int *produced[2];
+	unsigned int *consumed[2];
+	unsigned int *produced[2];
 
 	if (d->input_length[0] < d->frame_size * d->channels * d->port_pcm_width[0]/8 ||
 	    d->input_length[1] < d->frame_size * d->channels * d->port_pcm_width[1]/8)

@@ -4,6 +4,7 @@
 #include <errno.h>
 
 #include "board.h"
+#include "edma.h"
 
 #include "fsl_dma.h"
 

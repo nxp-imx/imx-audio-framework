@@ -15,6 +15,7 @@
 #include "sdma_script_code_imx7d_4_5.h"
 
 #include "debug.h"
+#include "io.h"
 
 /* SDMA registers */
 #define SDMA_H_C0PTR		0x000
@@ -821,6 +822,30 @@ int find_last_bit_set(unsigned int val)
 	return shift_bits;
 }
 
+int sdma_change_bd_status(dmac_t *dma_ch)
+{
+	struct sdma_chan *sdmac = (struct sdma_chan *)dma_ch;
+	struct sdma_buffer_descriptor *bd;
+	int bdnum, i, j = 0;
+
+	if (!dma_ch)
+		return 0;
+	bd = sdmac->bd;
+	bdnum = sdmac->bdnum;
+	if (!bd)
+		return 0;
+	for (i = 0; i < bdnum; i++) {
+		if (!(bd[i].mode.status & BD_DONE)) {
+			bd[i].mode.status |= BD_DONE;
+			bd[i].mode.count = dma_ch->period_len;
+			j++;
+		}
+	}
+
+	/*FIXME: return how many BD is consumed */
+	return j;
+}
+
 int sdma_irq_handler(struct dma_device *dev)
 {
 	struct SDMA *sdma = (struct SDMA *)dev;
@@ -971,30 +996,6 @@ int sdma_suspend(struct dma_device *dev)
 		sdma->save_done0_regs[i] = read32(sdma->regs + SDMA_DONE0_CONFIG + 4 * i);
 
 	return 0;
-}
-
-int sdma_change_bd_status(dmac_t *dma_ch)
-{
-	struct sdma_chan *sdmac = (struct sdma_chan *)dma_ch;
-	struct sdma_buffer_descriptor *bd;
-	int bdnum, i, j = 0;
-
-	if (!dma_ch)
-		return 0;
-	bd = sdmac->bd;
-	bdnum = sdmac->bdnum;
-	if (!bd)
-		return 0;
-	for (i = 0; i < bdnum; i++) {
-		if (!(bd[i].mode.status & BD_DONE)) {
-			bd[i].mode.status |= BD_DONE;
-			bd[i].mode.count = dma_ch->period_len;
-			j++;
-		}
-	}
-
-	/*FIXME: return how many BD is consumed */
-	return j;
 }
 
 void sdma_release(struct dma_device *dev)

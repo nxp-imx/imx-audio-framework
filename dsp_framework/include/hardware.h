@@ -15,5 +15,6 @@
 #include "fsl_dma.h"
 #include "wm8960.h"
 #include "micfil.h"
+#include "wm8962.h"
 
 #endif

@@ -6,6 +6,7 @@
 #include "mydefs.h"
 #include "irqstr.h"
 #include "debug.h"
+#include "io.h"
 
 void irqstr_init(volatile void *irqstr_addr, int dev_Int, int dma_Int) {
 #ifndef PLATF_8M

@@ -3,6 +3,7 @@
 
 #include "board.h"
 #include "fsl_mu.h"
+#include "io.h"
 
 void MU_Init(void *base)
 {

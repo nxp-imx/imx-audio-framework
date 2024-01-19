@@ -106,7 +106,7 @@ struct XFUniaCodec {
  * Commands processing
  *****************************************************************************/
 
-static UA_ERROR_TYPE xf_uniacodec_get_api_size(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_get_api_size(struct XFUniaCodec *d,
 						UWORD32 i_idx,
 						void *pv_value)
 {
@@ -165,7 +165,7 @@ static UA_ERROR_TYPE xf_uniacodec_init_process(struct XFUniaCodec *d)
 
 	return ret;
 }
-static UA_ERROR_TYPE xf_uniacodec_init(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_init(struct XFUniaCodec *d,
 					UWORD32 i_idx,
 					void *pv_value)
 {
@@ -234,7 +234,7 @@ static UA_ERROR_TYPE xf_uniacodec_postinit(struct XFUniaCodec *d,
 	return ret;
 }
 
-static UA_ERROR_TYPE xf_unia_load_lib(struct XFUniaCodec *d, void *pv_value)
+static XA_ERRORCODE xf_unia_load_lib(struct XFUniaCodec *d, void *pv_value)
 {
 	UA_ERROR_TYPE ret = ACODEC_SUCCESS;
         UWORD32 core = 0;
@@ -336,7 +336,7 @@ static UA_ERROR_TYPE xf_unia_unload_lib(struct XFUniaCodec *d, void *pv_value)
 	return XA_NO_ERROR;
 }
 
-static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_setparam(struct XFUniaCodec *d,
 					    UWORD32 i_idx,
 					    void *pv_value)
 {
@@ -483,7 +483,7 @@ static UA_ERROR_TYPE xf_uniacodec_setparam(struct XFUniaCodec *d,
 	return ret;
 }
 
-static UA_ERROR_TYPE xf_uniacodec_getparam(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_getparam(struct XFUniaCodec *d,
 					    UWORD32 i_idx,
 					    void *pv_value)
 {
@@ -607,7 +607,7 @@ static UA_ERROR_TYPE xf_uniacodec_runtime_init(struct XFUniaCodec *d,
 	return ret;
 }
 
-static UA_ERROR_TYPE xf_uniacodec_execute(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_execute(struct XFUniaCodec *d,
 					   UWORD32 i_idx,
 					   void *pv_value)
 {
@@ -658,7 +658,7 @@ static UA_ERROR_TYPE xf_uniacodec_set_output_ptr(struct XFUniaCodec *d,
 	return ACODEC_SUCCESS;
 }
 
-static UA_ERROR_TYPE xf_uniacodec_set_input_bytes(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_set_input_bytes(struct XFUniaCodec *d,
 						   UWORD32 i_idx,
 						   void *pv_value)
 {
@@ -669,7 +669,7 @@ static UA_ERROR_TYPE xf_uniacodec_set_input_bytes(struct XFUniaCodec *d,
 	return ACODEC_SUCCESS;
 }
 
-static UA_ERROR_TYPE xf_uniacodec_get_output_bytes(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_get_output_bytes(struct XFUniaCodec *d,
 						    UWORD32 i_idx,
 						    void *pv_value)
 {
@@ -680,7 +680,7 @@ static UA_ERROR_TYPE xf_uniacodec_get_output_bytes(struct XFUniaCodec *d,
 	return ACODEC_SUCCESS;
 }
 
-static UA_ERROR_TYPE xf_uniacodec_get_consumed_bytes(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_get_consumed_bytes(struct XFUniaCodec *d,
 						      UWORD32 i_idx,
 						      void *pv_value)
 {
@@ -691,7 +691,7 @@ static UA_ERROR_TYPE xf_uniacodec_get_consumed_bytes(struct XFUniaCodec *d,
 	return ACODEC_SUCCESS;
 }
 
-static UA_ERROR_TYPE xf_uniacodec_input_over(struct XFUniaCodec *d,
+static XA_ERRORCODE xf_uniacodec_input_over(struct XFUniaCodec *d,
 					      UWORD32 i_idx,
 					      void *pv_value)
 {
@@ -703,7 +703,7 @@ static UA_ERROR_TYPE xf_uniacodec_input_over(struct XFUniaCodec *d,
 	return ACODEC_SUCCESS;
 }
 
-static UA_ERROR_TYPE xa_uniacodec_get_memtabs_size(struct XFUniaCodec *d, UWORD32 i_idx, void* pv_value)
+static XA_ERRORCODE xa_uniacodec_get_memtabs_size(struct XFUniaCodec *d, UWORD32 i_idx, void* pv_value)
 {
 	/* ...basic sanity checks */
 	XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
@@ -717,12 +717,12 @@ static UA_ERROR_TYPE xa_uniacodec_get_memtabs_size(struct XFUniaCodec *d, UWORD3
 	return XA_NO_ERROR;
 }
 
-static UA_ERROR_TYPE xa_uniacodec_set_memtabs_ptr(struct XFUniaCodec *d, UWORD32 i_idx, void* pv_value)
+static XA_ERRORCODE xa_uniacodec_set_memtabs_ptr(struct XFUniaCodec *d, UWORD32 i_idx, void* pv_value)
 {
 	return XA_NO_ERROR;
 }
 
-static UA_ERROR_TYPE xa_uniacodec_get_n_memtabs(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
+static XA_ERRORCODE xa_uniacodec_get_n_memtabs(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
 {
 	/* ...basic sanity checks */
 	XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
@@ -733,7 +733,7 @@ static UA_ERROR_TYPE xa_uniacodec_get_n_memtabs(struct XFUniaCodec *d, UWORD32 i
 	return XA_NO_ERROR;
 }
 
-static UA_ERROR_TYPE xa_uniacodec_get_mem_info_size(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
+static XA_ERRORCODE xa_uniacodec_get_mem_info_size(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
 {
 	 UWORD32     i_value;
 	/* ...basic sanity check */
@@ -775,7 +775,7 @@ static UA_ERROR_TYPE xa_uniacodec_get_mem_info_size(struct XFUniaCodec *d, UWORD
 	return XA_NO_ERROR;
 }
 
-static UA_ERROR_TYPE xa_uniacodec_get_mem_info_alignment(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
+static XA_ERRORCODE xa_uniacodec_get_mem_info_alignment(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
 {
 	/* ...basic sanity check */
 	XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
@@ -789,7 +789,7 @@ static UA_ERROR_TYPE xa_uniacodec_get_mem_info_alignment(struct XFUniaCodec *d, 
 	return XA_NO_ERROR;
 }
 
-static UA_ERROR_TYPE xa_uniacodec_get_mem_info_type(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
+static XA_ERRORCODE xa_uniacodec_get_mem_info_type(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
 {
 	/* ...basic sanity check */
 	XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
@@ -814,7 +814,7 @@ static UA_ERROR_TYPE xa_uniacodec_get_mem_info_type(struct XFUniaCodec *d, UWORD
 		return XF_CHK_ERR(0, XA_API_FATAL_INVALID_CMD_TYPE);
 	}
 }
-static UA_ERROR_TYPE xa_uniacodec_set_mem_ptr(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
+static XA_ERRORCODE xa_uniacodec_set_mem_ptr(struct XFUniaCodec *d, UWORD32 i_idx, pVOID pv_value)
 {
 	/* ...basic sanity check */
 	XF_CHK_ERR(d && pv_value, XA_API_FATAL_INVALID_CMD_TYPE);
@@ -845,7 +845,7 @@ static UA_ERROR_TYPE xa_uniacodec_set_mem_ptr(struct XFUniaCodec *d, UWORD32 i_i
  * API command hooks
  ******************************************************************************/
 
-static UA_ERROR_TYPE (* const xf_unia_codec_api[])(struct XFUniaCodec *, UWORD32, void *) = {
+static XA_ERRORCODE (* const xf_unia_codec_api[])(struct XFUniaCodec *, UWORD32, void *) = {
 	[XA_API_CMD_GET_API_SIZE]             = xf_uniacodec_get_api_size,
 	[XA_API_CMD_INIT]                     = xf_uniacodec_init,
 	[XA_API_CMD_SET_CONFIG_PARAM]         = xf_uniacodec_setparam,

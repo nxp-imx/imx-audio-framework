@@ -9,6 +9,7 @@
 #include "mydefs.h"
 
 #include "debug.h"
+#include "io.h"
 
 #define EDMA_CH_CSR                     0x00
 #define EDMA_CH_ES                      0x04

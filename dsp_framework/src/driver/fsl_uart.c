@@ -3,6 +3,7 @@
 
 #include "fsl_uart.h"
 #include "board.h"
+#include "io.h"
 
 void uart_putc(const char c)
 {

@@ -61,5 +61,8 @@ void MU_SendMsg(void *base, struct mu_cfg *cfg, uint32_t ch_idx, uint32_t msg);
 uint32_t MU_ReceiveMsgNonBlocking(void *base, struct mu_cfg *cfg, uint32_t ch_idx);
 void MU_EnableInterrupts(void *base, struct mu_cfg *cfg, uint32_t ch_idx);
 void MU_DisableInterrupts(void *base, struct mu_cfg *cfg, uint32_t ch_idx);
+void MU_EnableRxInterrupts(void *base, struct mu_cfg *cfg, uint32_t ch_idx);
+void MU_DisableRxInterrupts(void *base, struct mu_cfg *cfg, uint32_t ch_idx);
+uint32_t MU_GetRxStatusFlags(void *base, struct mu_cfg *cfg, uint32_t ch_idx);
 
 #endif /* _FSL_MU_H_*/

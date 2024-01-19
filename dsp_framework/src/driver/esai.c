@@ -5,6 +5,7 @@
 #include "mydefs.h"
 #include "esai.h"
 #include "debug.h"
+#include "io.h"
 
 
 /***********************************************************

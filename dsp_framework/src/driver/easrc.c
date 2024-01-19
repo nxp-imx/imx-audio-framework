@@ -5,6 +5,7 @@
 #include "easrc.h"
 #include "easrc_firmware.h"
 #include "debug.h"
+#include "io.h"
 
 #define swap(x, y) { x ^= y; y ^= x; x ^= y; }
 
@@ -447,9 +448,8 @@ static int fsl_easrc_resampler_config(struct fsl_easrc *easrc)
 	 *  This is due to the fact the resampling function must be
 	 *  symetrical - i.e. odd number of taps
 	 */
-	r = (uint32_t *)&selected_interp->center_tap;
-	r0 = r[0] & EASRC_32b_MASK;
-	r1 = r[1] & EASRC_32b_MASK;
+	r0 = selected_interp->center_tap & EASRC_32b_MASK;
+	r1 = (selected_interp->center_tap >> 32) & EASRC_32b_MASK;
 
 	/* note: if write by marco there have wrong data to reg,
 	 * not find reason */
@@ -579,8 +579,8 @@ static int fsl_easrc_process_format(struct fsl_easrc_context *ctx,
 }
 
 int fsl_easrc_set_ctx_format(struct fsl_easrc_context *ctx,
-			     int *in_raw_format,
-			     int *out_raw_format)
+			     unsigned int *in_raw_format,
+			     unsigned int *out_raw_format)
 {
 	struct fsl_easrc *easrc = ctx->easrc;
 	struct fsl_easrc_data_fmt *in_fmt = &ctx->in_params.fmt;
@@ -864,8 +864,8 @@ static int fsl_easrc_config_one_slot(struct fsl_easrc_context *ctx,
 static int fsl_easrc_config_slot(struct fsl_easrc *easrc, unsigned int ctx_id)
 {
 	struct fsl_easrc_context *ctx = easrc->ctx[ctx_id];
-	int req_channels = ctx->channels;
-	int start_channel = 0, avail_channel;
+	unsigned int req_channels = ctx->channels;
+	unsigned int start_channel = 0, avail_channel;
 	struct fsl_easrc_slot *slot0, *slot1;
 	int i, ret;
 
@@ -1294,7 +1294,7 @@ int fsl_easrc_stop_context(struct fsl_easrc_context *ctx)
 			for (i = 0; i < size * ctx->channels; i++)
 				val = read32(easrc->paddr + REG_EASRC_RDFIFO(ctx->index));
 			/* Check RUN_STOP_DONE */
-			read32(easrc->paddr, REG_EASRC_IRQF);
+			val = read32(easrc->paddr + REG_EASRC_IRQF);
 			if (val & EASRC_IRQF_RSD(1 << ctx->index)) {
 				/*Clear RUN_STOP_DONE*/
 				write32_bit(easrc->paddr + REG_EASRC_IRQF,

@@ -5,6 +5,7 @@
  */
 #include "mydefs.h"
 #include "asrc.h"
+#include "io.h"
 
 static int proc_autosel(int Fsin, int Fsout, int *pre_proc, int *post_proc)
 {
@@ -154,7 +155,7 @@ void asrc_init(volatile void * asrc_addr, int mode, int channels, int rate,
 		     ASRMCR1i_OW16(1) | ASRMCR1i_IWD(1));
 
 	/* enable buffer stall */
-	write32_bit(asrc_addr + REG_ASRMCR(0), REG_ASRMCR(0),
+	write32_bit(asrc_addr + REG_ASRMCR(0),
 		    ASRMCRi_BUFSTALLi_MASK, ASRMCRi_BUFSTALLi);
 
 	/* set default thresholds for input and output fifo */
@@ -205,7 +206,7 @@ void asrc_start(volatile void *asrc_addr, int tx) {
 	} while (!reg && --retry);
 
 	/* Make the input fifo to ASRC STALL level */
-	reg = read32(asrc_addr, REG_ASRCNCR);
+	reg = read32(asrc_addr + REG_ASRCNCR);
 	for (i = 0; i < 2 * 4; i++)
 		write32(asrc_addr + REG_ASRDI(index), 0);
 
