@@ -82,4 +82,23 @@ struct Voice_Wrap_Handle_t {
 typedef struct Voice_Wrap_Handle_t Voice_Wrap_Handle;
 
 
+uint32_t lib_get_handler_size();
+uint32_t lib_create(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_heap_memory_size_get(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_scratch_memory_size_get(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_memory_set(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_postprocess(Voice_Wrap_Handle *voice_handle, void *input[2], uint32_t *consumed_off[2], void *output[2], uint32_t *produced[2]);
+uint32_t lib_process(Voice_Wrap_Handle *voice_handle, void *input[2], uint32_t input_length[2],
+		uint32_t *consumed_off[2], void *output[2], uint32_t *produced[2]);
+uint32_t lib_process_times(Voice_Wrap_Handle *voice_handle, unsigned int input_length[2]);
+uint32_t lib_preprocess(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_process_check(Voice_Wrap_Handle *voice_handle, void *input[2], unsigned int input_length[2]);
+uint32_t lib_set_param(Voice_Wrap_Handle *voice_handle, int para_cmd, void *parameter);
+uint32_t lib_reset(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_init(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_inner_size_get(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_ref_in_size_get(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_mic_in_size_get(Voice_Wrap_Handle *voice_handle);
+uint32_t lib_pre_init(Voice_Wrap_Handle *voice_handle);
+
 #endif

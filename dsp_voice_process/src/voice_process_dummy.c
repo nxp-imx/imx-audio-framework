@@ -1,6 +1,7 @@
 // Copyright 2023 NXP
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <string.h>
 #include "voice_process.h"
 
 #define DEFAULT_MIC_IN_SAMPLES 200
@@ -179,7 +180,7 @@ uint32_t lib_get_param(Voice_Wrap_Handle *voice_handle, int para_cmd, void *para
 }
 
 /* ... check if library ready to process data */
-uint32_t lib_process_check(Voice_Wrap_Handle *voice_handle, void *input[2], int input_length[2])
+uint32_t lib_process_check(Voice_Wrap_Handle *voice_handle, void *input[2], unsigned int input_length[2])
 {
 	Lib_Handle *lib_handle = (Lib_Handle *)voice_handle->lib_handle;
 	uint32_t ret = OK;
@@ -207,7 +208,7 @@ uint32_t lib_preprocess(Voice_Wrap_Handle *voice_handle)
 }
 
 /* ... calculate library process times */
-uint32_t lib_process_times(Voice_Wrap_Handle *voice_handle, int input_length[2])
+uint32_t lib_process_times(Voice_Wrap_Handle *voice_handle, unsigned int input_length[2])
 {
 	return 1;
 }
@@ -250,7 +251,7 @@ uint32_t lib_process(Voice_Wrap_Handle *voice_handle, void *input[2], uint32_t i
 }
 
 /* ... library postprocessing */
-uint32_t lib_postprocess(Voice_Wrap_Handle *voice_handle, void *input[2], uint32_t *consumed_off[2], void *output[2], uint32_t produced[2])
+uint32_t lib_postprocess(Voice_Wrap_Handle *voice_handle, void *input[2], uint32_t *consumed_off[2], void *output[2], uint32_t *produced[2])
 {
 	uint32_t ret = OK;
 

@@ -208,8 +208,8 @@ uint32_t voice_proc_getparameter(void *p_voice_handle, UA_ParaType para_cmd, Uni
 /*
  * input[0]: ref_in stream, input[1]: mic_in stream
  */
-uint32_t voice_proc_execute(void *p_voice_handle, void *input[2], int input_length[2],
-		int *consumed[2], void *output[2], int *produced[2])
+uint32_t voice_proc_execute(void *p_voice_handle, void *input[2], unsigned int input_length[2],
+		int *consumed[2], void *output[2], unsigned int *produced[2])
 {
 	Voice_Wrap_Handle *voice_handle = p_voice_handle;
 	if (!voice_handle)
@@ -239,7 +239,7 @@ uint32_t voice_proc_execute(void *p_voice_handle, void *input[2], int input_leng
 		return ret;
 	}
 
-	voice_proc_iteration = lib_process_times(voice_handle, input_length[2]);
+	voice_proc_iteration = lib_process_times(voice_handle, input_length);
 
 	while (voice_proc_iteration) {
 
