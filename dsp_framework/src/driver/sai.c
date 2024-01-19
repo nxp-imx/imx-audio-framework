@@ -137,8 +137,6 @@ void sai_start(volatile void * sai_addr, int tx) {
 		write32_bit(sai_addr + FSL_SAI_TCSR(offset),
 			    FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
 		write32_bit(sai_addr + FSL_SAI_TCSR(offset),
-			    FSL_SAI_CSR_SE, FSL_SAI_CSR_SE);
-		write32_bit(sai_addr + FSL_SAI_TCSR(offset),
 			    FSL_SAI_CSR_xIE_MASK, FSL_SAI_FLAGS);
 	} else {
 		write32_bit(sai_addr + FSL_SAI_RCSR(offset),
@@ -147,8 +145,6 @@ void sai_start(volatile void * sai_addr, int tx) {
 			    FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
 		write32_bit(sai_addr + FSL_SAI_RCSR(offset),
 			    FSL_SAI_CSR_TERE, FSL_SAI_CSR_TERE);
-		write32_bit(sai_addr + FSL_SAI_RCSR(offset),
-			    FSL_SAI_CSR_SE, FSL_SAI_CSR_SE);
 		write32_bit(sai_addr + FSL_SAI_RCSR(offset),
 			    FSL_SAI_CSR_xIE_MASK, FSL_SAI_FLAGS);
 	}
