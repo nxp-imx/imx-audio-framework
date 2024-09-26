@@ -188,7 +188,7 @@ static inline const char *__xf_thread_name(xf_thread_t *thread)
 /* ... Put calling thread to sleep for at least the specified number of msec */
 static inline int32_t __xf_thread_sleep_msec(uint64_t msecs)
 {
-    int32_t    r;
+    int32_t    r = 0;
     
     usleep(msecs * 1000);
     
