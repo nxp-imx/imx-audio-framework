@@ -425,11 +425,13 @@ Err2:
 UA_ERROR_TYPE DSPDecDelete(UniACodec_Handle pua_handle)
 {
 	struct DSP_Handle *pDSP_handle = (struct DSP_Handle *)pua_handle;
-	xaf_adev_t *p_adev = pDSP_handle->p_adev;
+	xaf_adev_t *p_adev;
 	int err = 0;
 
 	if (!pua_handle)
 		return ACODEC_PARA_ERROR;
+
+	p_adev = pDSP_handle->p_adev;
 
 	xaf_comp_delete(pDSP_handle->p_comp);
 	xaf_adev_close(pDSP_handle->p_adev, XAF_ADEV_NORMAL_CLOSE);
