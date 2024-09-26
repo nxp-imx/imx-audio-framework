@@ -332,6 +332,9 @@ UniACodec_Handle DSPDecCreate(UniACodecMemoryOps *memOps, AUDIOFORMAT type)
 		}
 	}
 
+	if (idx == CODECINFO_LEN)
+		goto Err2;
+
 	/* ... check whether codec library is exist */
 	{
 		char lib_wrap_path[200];
