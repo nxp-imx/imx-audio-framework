@@ -160,7 +160,7 @@ static inline int __xf_thread_cancel(xf_thread_t *thread)
 /* TENA-2117*/
 static inline int __xf_thread_join(xf_thread_t *thread, int32_t * p_exitcode)
 {
-    int    r;
+    int    r = 0;
 
     if (*thread != 0UL)
         r = pthread_join(*thread, (void **)&p_exitcode);
