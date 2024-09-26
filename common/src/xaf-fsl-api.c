@@ -313,7 +313,7 @@ static XAF_ERR_CODE xaf_event_relay(xa_app_submit_event_cb_t *cdata, UWORD32 com
         p_comp = (xaf_comp_t *)p_adev->comp_chain.head;
         for(i = 0; i < ncomp; i++)
         {
-            if((p_comp->handle.id == comp_id) || (NULL == p_comp))
+            if((NULL == p_comp) || (p_comp->handle.id == comp_id))
                 break;
 
             p_comp = p_comp->next;
