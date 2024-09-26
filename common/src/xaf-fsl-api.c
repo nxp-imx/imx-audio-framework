@@ -1049,7 +1049,7 @@ XAF_ERR_CODE xaf_load_library(xaf_adev_t *p_adev, xaf_comp_t *p_comp, xf_id_t co
 	char lib_wrap_path[200];
 	struct lib_info *codec_lib;
 	struct lib_info *codec_wrap_lib;
-	int dec_type;
+	int dec_type = 0;
 	int ret;
 
 	p_handle = &p_comp->handle;
