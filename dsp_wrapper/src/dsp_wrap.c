@@ -155,7 +155,7 @@ WORD32 app_event_handler(pVOID comp_ptr, UWORD32 config_param_id, pVOID config_b
 	int ret;
 	xaf_comp_t *p_comp;
 	xf_handle_t *p_handle;
-	xf_user_msg_t msg;
+	xf_user_msg_t msg = {};
 	if (!comp_error_flag)
 		return 1;
 	UWORD32 decode_err = *(UWORD32 *)config_buf_ptr;
