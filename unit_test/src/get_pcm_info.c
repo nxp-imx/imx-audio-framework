@@ -75,6 +75,9 @@ static int parse_wav_header(FILE *file, unsigned int *num_channels, unsigned int
 			*num_channels = fmt_body.channels;
 			*sample_rate = fmt_body.sample_fq;
 
+			if (fmt_body.channels <= 0)
+				return -1;
+
 			switch (fmt_body.bit_p_spl) {
 			case 8:
 				*format = SND_PCM_FORMAT_U8;
