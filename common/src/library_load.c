@@ -580,8 +580,10 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 			(unsigned int *)&dpulib.size_data,
 			(unsigned int *)&dpulib.size_scratch_data,
 			lib_info);
-	if (ret_val != XTLIB_NO_ERR)
+	if (ret_val != XTLIB_NO_ERR) {
+		free(srambuf);
 		return -EINVAL;
+	}
 
 	lib_info->code_buf_size = dpulib.size_code;
 	lib_info->data_buf_size = dpulib.size_data;
