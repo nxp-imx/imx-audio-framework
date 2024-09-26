@@ -554,7 +554,6 @@ int main_task(int argc, char **argv)
     long dec_info[4];
     int pcm_gain_info[4];
     int capturer_info[4];
-    char *filename_ptr;
     void *dec_thread_args[NUM_THREAD_ARGS];
     void *pcm_gain_thread_args[NUM_THREAD_ARGS];
     FILE *fp;
@@ -644,7 +643,7 @@ int main_task(int argc, char **argv)
     /* ...open file */
     if ((fp = fio_fopen(AOption.InFileName, "rb")) == NULL)
     {
-        FIO_PRINTF(stderr, "Failed to open '%s': %d\n", filename_ptr, errno);
+        FIO_PRINTF(stderr, "Failed to open '%s': %d\n", AOption.InFileName, errno);
         exit(-1);
     }
     p_input  = fp;
