@@ -567,6 +567,10 @@ static long load_dpu_with_library(struct xf_proxy *proxy,
 
 	fseek(fpInfile, 0, SEEK_END);
 	filesize = ftell(fpInfile);
+	if (filesize < 0) {
+		fclose(fpInfile);
+		return -EINVAL;
+	}
 
 	srambuf = malloc(filesize);
 	fseek(fpInfile, 0, SEEK_SET);
