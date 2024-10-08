@@ -503,7 +503,6 @@ int main_task(int argc, char **argv)
     unsigned char dec_stack[STACK_SIZE];
     xaf_comp_status dec_status;
     long dec_info[4];
-    char *filename_ptr;
     void *dec_thread_args[NUM_THREAD_ARGS];
     FILE *fp;
     void *dec_inbuf[2];
@@ -587,7 +586,7 @@ int main_task(int argc, char **argv)
     /* ...open file */
     if ((fp = fio_fopen(AOption.InFileName, "rb")) == NULL)
     {
-        FIO_PRINTF(stderr, "Failed to open '%s': %d\n", filename_ptr, errno);
+        FIO_PRINTF(stderr, "Failed to open '%s': %d\n", AOption.InFileName, errno);
         exit(-1);
     }
     p_input  = fp;
