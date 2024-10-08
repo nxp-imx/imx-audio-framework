@@ -651,6 +651,7 @@ int main_task(int argc, char **argv)
     ofp = fopen(AOption.OutFileName, "wb");
     if (!ofp) {
         FIO_PRINTF(stderr, "outfile: %s open failed!\n", AOption.OutFileName);
+        fio_fclose(fp);
         return -ENOENT;
     }
     p_output = ofp;
