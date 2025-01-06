@@ -80,7 +80,7 @@ static int frontend_process(void *arg)
 {
     void *p_adev, *p_frontend;
     xaf_comp_status comp_status;
-    long comp_info[4];
+    long comp_info[4] = {0};
     void * (*arg_arr)[10];
     xaf_comp_type comp_type;
     int error;
