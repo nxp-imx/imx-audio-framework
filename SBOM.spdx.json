@@ -1,0 +1,107 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-03-18T03:01:20Z",
+    "creators": [
+      "Organization: NXP"
+    ],
+    "licenseListVersion": "3.26"
+  },
+  "name": "imx-audio-framework-xaf_2.6",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://nxp.com/spdx/b7081f20-71c8-4db3-9536-67ccdb29b6b3",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-package-b7081f20-71c8-4db3-9536-67ccdb29b6b3",
+      "name": "imx-audio-framework",
+      "versionInfo": "xaf_2.6",
+      "licenseConcluded": "(BSD-3-Clause)",
+      "licenseDeclared": "(BSD-3-Clause)",
+      "downloadLocation": "https://github.com/nxp-imx/imx-audio-framework",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-b7081f20-71c8-4db3-9536-67ccdb29b6b3---f0e54b63-f1ef-4c0a-8734-b51e989b8813",
+      "name": "TensorFlow",
+      "versionInfo": "2.3.0-rc0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "http://tensorflow.org",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: tensorflow",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.3.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.3.0:rc0:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.3.0:rc0:*:*:-:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.3.0:rc0:*:*:lite:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.3.0:rc1:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "d961661a-fad1-4b52-8f25-98bcf1099fc6",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/tensorflow/tensorflow@v2.3.0-rc0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-b7081f20-71c8-4db3-9536-67ccdb29b6b3---7fb10b93-4bc6-499b-94dd-bdec61d60222",
+      "name": "Xtensa Audio Framework (XAF) - Hostless solution",
+      "versionInfo": "2.6",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "https://www.cadence.com/en_US/home/tools/silicon-solutions/compute-ip/technologies.html#development-toolchain",
+      "downloadLocation": "https://www.cadence.com/en_US/home/tools/silicon-solutions/compute-ip/technologies.html#development-toolchain",
+      "originator": "Organization: Xtensa Audio Framework (XAF) - Hostless solution",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-b7081f20-71c8-4db3-9536-67ccdb29b6b3"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-b7081f20-71c8-4db3-9536-67ccdb29b6b3",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-b7081f20-71c8-4db3-9536-67ccdb29b6b3---7fb10b93-4bc6-499b-94dd-bdec61d60222"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-b7081f20-71c8-4db3-9536-67ccdb29b6b3",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-b7081f20-71c8-4db3-9536-67ccdb29b6b3---f0e54b63-f1ef-4c0a-8734-b51e989b8813"
+    }
+  ]
+}

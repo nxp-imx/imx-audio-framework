@@ -1,6 +1,8 @@
 /*
  * Copyright 2018-2020 NXP
  *
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * This header file is used to wrapper the Cadence codec's header files
  * and provide new interface for the dsp framework to use.
  */

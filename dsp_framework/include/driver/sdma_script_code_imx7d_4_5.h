@@ -2,8 +2,9 @@
 /*
  * Copyright 2004 Freescale Semiconductor, Inc. All Rights Reserved.
  * Copyright 2017 NXP
- * NXP proprietary */
-
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 /*!
  * @file sdma_script_code.h
  * @brief This file contains functions of SDMA scripts code initialization

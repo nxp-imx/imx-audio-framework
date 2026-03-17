@@ -1,3 +1,9 @@
+/*
+ * Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include <stdio.h>
 #include <alsa/asoundlib.h>
 #include "xaf-utils-test.h"

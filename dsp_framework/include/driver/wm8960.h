@@ -1,4 +1,8 @@
-/* SPDX-License-Identifier: BSD-3-Clause */
+/*
+ * Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 
 #ifndef _WM8960_H
 #define _WM8960_H

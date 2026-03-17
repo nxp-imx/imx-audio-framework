@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 
 #ifndef GET_PCM_INFO_H
 
